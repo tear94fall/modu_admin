@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getMember, type Member } from '../api/members'
 import MemberCard from '../components/MemberCard'
+import MemberMiniCard from '../components/MemberMiniCard'
 import RemoteImage from '../components/RemoteImage'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { formatRole } from '../util/format'
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [member, setMember] = useState<Member | null>(null)
   const [friendCount, setFriendCount] = useState(0)
   const [friends, setFriends] = useState<Member[]>([])
@@ -59,6 +62,14 @@ export default function MemberDetailPage() {
           <h2>친구 {friendCount}명</h2>
           {friends.length === 0 ? (
             <p>친구가 없습니다</p>
+          ) : isMobile ? (
+            <ul className="card-list">
+              {friends.map((f) => (
+                <li key={f.id}>
+                  <MemberMiniCard member={f} friendName={f.friendName} onClick={() => goToMember(f.id)} />
+                </li>
+              ))}
+            </ul>
           ) : (
             <table>
               <thead>

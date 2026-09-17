@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PAGE_SIZE } from '../api/client'
 import { clearImageCache } from '../api/imageCache'
 import * as members from '../api/members'
 import * as storage from '../api/storage'
+import { mockViewport } from '../test/viewport'
 import MembersPage from './MembersPage'
 
 const emptyPage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 }
@@ -250,6 +251,43 @@ describe('MembersPage', () => {
 
     for (const value of [username, email, userId, '일반 회원', '2026-09-04 12:34']) {
       expect(await screen.findByText(value)).toHaveAttribute('title', value)
+    }
+  })
+
+  it('on a narrow screen renders cards instead of the table and opens the member on tap', async () => {
+    const restore = mockViewport(true)
+    try {
+      vi.spyOn(members, 'searchMembers').mockResolvedValue({
+        content: [
+          { id: 7, userId: 'u7', email: 'seven@b.c', username: '일곱', role: 'ROLE_ADMIN', createdDate: '2026-09-04T12:34:56' },
+        ],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: 15,
+      })
+      const user = userEvent.setup()
+      const { container } = render(
+        <MemoryRouter initialEntries={['/members']}>
+          <Routes>
+            <Route path="/members" element={<MembersPage />} />
+            <Route path="/members/:id" element={<p>회원 상세 화면</p>} />
+          </Routes>
+        </MemoryRouter>,
+      )
+
+      const card = await screen.findByRole('button', { name: /일곱/ })
+      expect(screen.queryByRole('table')).toBeNull()
+      expect(card).toHaveTextContent('seven@b.c')
+      expect(card).toHaveTextContent('관리자')
+      // 정렬은 표 머리글 대신 카드 위의 버튼 줄로 한다.
+      expect(screen.getByRole('button', { name: /이름/ })).toBeInTheDocument()
+      expect(container.querySelectorAll('.card')).toHaveLength(1)
+
+      await user.click(card)
+      expect(await screen.findByText('회원 상세 화면')).toBeInTheDocument()
+    } finally {
+      restore()
     }
   })
 })

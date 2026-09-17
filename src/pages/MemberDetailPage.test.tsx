@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearImageCache } from '../api/imageCache'
 import * as members from '../api/members'
 import * as storage from '../api/storage'
+import { mockViewport } from '../test/viewport'
 import MemberDetailPage from './MemberDetailPage'
 
 const renderPage = (id = '1') =>
@@ -124,4 +126,34 @@ describe('MemberDetailPage', () => {
     expect(columns?.children.length).toBe(2)
   })
 
+
+  it('on a narrow screen lists friends as cards and opens a friend on tap', async () => {
+    const restore = mockViewport(true)
+    try {
+      vi.spyOn(members, 'getMember').mockImplementation((id) =>
+        Promise.resolve(
+          id === '50'
+            ? { member: { id: 50, userId: 'demo-jiwoo', email: 'jiwoo@modu.chat', username: '김지우', role: 'ROLE_MEMBER' }, friendCount: 0, friends: [] }
+            : {
+                member: { id: 1, userId: 'u1', email: 'a@b.c', username: '민수', role: 'ROLE_MEMBER' },
+                friendCount: 1,
+                friends: [{ id: 50, userId: 'demo-jiwoo', email: 'jiwoo@modu.chat', username: '김지우', role: 'ROLE_MEMBER', friendName: '지우야' }],
+              },
+        ),
+      )
+      const user = userEvent.setup()
+      renderPage()
+
+      const card = await screen.findByRole('button', { name: /김지우/ })
+      expect(screen.queryByRole('table')).toBeNull()
+      expect(card).toHaveTextContent('지우야')
+      expect(card).toHaveTextContent('jiwoo@modu.chat')
+
+      await user.click(card)
+      // 친구 상세로 이동해 그 회원의 카드가 뜬다.
+      expect(await screen.findByText('친구 0명')).toBeInTheDocument()
+    } finally {
+      restore()
+    }
+  })
 })
