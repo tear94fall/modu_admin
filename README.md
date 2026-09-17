@@ -29,6 +29,19 @@ VITE_API_BASE_URL=http://localhost:8000
 
 값을 생략하면 기본값 `http://localhost:8000` 을 사용한다. 게이트웨이([modu_chat](https://github.com/tear94fall/modu_chat) `backend/.env` 의 `ADMIN_ALLOWED_ORIGIN`)는 `http://localhost:5173` 을 허용하도록 이미 설정되어 있어야 한다.
 
+## 도커로 띄우기
+
+개발 서버 대신 nginx 컨테이너로 서빙한다. 빌드된 정적 파일을 nginx 가 내고, `/auth-service/`, `/member-service/`, `/chat-service/`, `/push-service/`, `/storage-service/`, `/commerce-service/` 경로는 같은 네트워크의 `gateway-service:8000` 으로 프록시한다. 브라우저는 같은 출처만 부르므로 게이트웨이 CORS 설정이 필요 없다.
+
+```bash
+# modu_infra, modu_chat backend(gateway-service)가 떠 있는 상태에서
+docker compose up -d --build     # http://localhost:8081
+```
+
+포트는 `ADMIN_PORT` 로 바꾼다(기본 8081). 개발 서버(5173)와 겹치지 않으니 둘을 같이 띄워도 된다. 이미지는 API 주소를 비워(상대 경로) 빌드하므로 환경마다 다시 빌드할 필요가 없다.
+
+`npm run dev` 로 띄울 때만 브라우저가 게이트웨이(`http://localhost:8000`)를 직접 부르며, 이때는 게이트웨이의 `ADMIN_ALLOWED_ORIGIN` 이 `http://localhost:5173` 을 허용해야 한다.
+
 ## 관리자 계정 준비
 
 ### 1. 전용 관리자 행 삽입
