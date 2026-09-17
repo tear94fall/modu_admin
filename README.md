@@ -1,11 +1,20 @@
-# 모두메신저 백오피스 (admin/)
+# 모두메신저 백오피스 (modu_admin)
 
-회원·채팅방 조회와 푸시 발송을 위한 관리자 전용 React 프런트엔드. Vite + React + TypeScript, `react-router-dom` 으로 라우팅한다.
+모두메신저·모두의 커머스 관리자 전용 React 프런트엔드(회원·채팅방·공지·푸시·앱 설정·상품 관리). Vite + React + TypeScript, `react-router-dom` 으로 라우팅한다.
+
+## 필요한 백엔드
+
+이 앱은 별도 저장소의 서비스에 붙는다. 먼저 아래를 띄운다.
+
+- [modu_infra](https://github.com/tear94fall/modu_infra) — MySQL·Redis 등 공용 인프라
+- [modu_chat](https://github.com/tear94fall/modu_chat) `backend/` — gateway(8000), auth, member, chat, push 서비스. 어드민은 게이트웨이의 `/api-admin/**` 라우트만 호출한다.
+- [modu_commerce](https://github.com/tear94fall/modu_commerce) `backend/` — 상품 관리 화면이 쓰는 commerce-service(8200). 게이트웨이가 `/commerce-service/api-admin/**` 로 넘긴다.
+
+원래 modu_chat 저장소의 `admin/` 폴더였고, 2026-09-18 에 이력을 유지한 채 이 저장소로 분리했다.
 
 ## 실행
 
 ```bash
-cd admin
 npm install
 npm run dev       # http://localhost:5173
 ```
@@ -18,13 +27,13 @@ cp .env.example .env
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-값을 생략하면 기본값 `http://localhost:8000` 을 사용한다. 게이트웨이(`backend/.env` 의 `ADMIN_ALLOWED_ORIGIN`)는 `http://localhost:5173` 을 허용하도록 이미 설정되어 있어야 한다.
+값을 생략하면 기본값 `http://localhost:8000` 을 사용한다. 게이트웨이([modu_chat](https://github.com/tear94fall/modu_chat) `backend/.env` 의 `ADMIN_ALLOWED_ORIGIN`)는 `http://localhost:5173` 을 허용하도록 이미 설정되어 있어야 한다.
 
 ## 관리자 계정 준비
 
 ### 1. 전용 관리자 행 삽입
 
-로그인은 `member` 테이블에서 `role = 'ROLE_ADMIN'` 인 회원만 통과한다 (`backend/member-service/.../member/entity/Member.java`, `backend/auth-service/.../admin/AdminLoginService.java`). 관리자 계정은 **기존 회원을 승격하는 것이 아니라 전용 행을 새로 삽입**해서 만든다:
+로그인은 `member` 테이블에서 `role = 'ROLE_ADMIN'` 인 회원만 통과한다 (modu_chat 의 `backend/member-service/.../member/entity/Member.java`, `backend/auth-service/.../admin/AdminLoginService.java`). 관리자 계정은 **기존 회원을 승격하는 것이 아니라 전용 행을 새로 삽입**해서 만든다:
 
 ```sql
 INSERT INTO member (email, user_id, username, role, created_date, updated_date)
@@ -41,14 +50,14 @@ VALUES ('admin@modu.local', 'admin', '관리자', 'ROLE_ADMIN', NOW(), NOW());
 htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n'
 ```
 
-결과를 `backend/.env` 의 `ADMIN_PASSWORD_HASH` 에 넣을 때, docker compose 가 `.env` 안의 `$` 를 변수 참조로 해석하므로 bcrypt 해시에 포함된 모든 `$` 를 `$$` 로 이스케이프해야 한다:
+결과를 modu_chat `backend/.env` 의 `ADMIN_PASSWORD_HASH` 에 넣을 때, docker compose 가 `.env` 안의 `$` 를 변수 참조로 해석하므로 bcrypt 해시에 포함된 모든 `$` 를 `$$` 로 이스케이프해야 한다:
 
 ```bash
 htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n' | sed 's/\$/$$/g'
 ```
 
 ```
-# backend/.env
+# modu_chat backend/.env
 ADMIN_PASSWORD_HASH=$$2y$$10$$........................................
 ```
 
