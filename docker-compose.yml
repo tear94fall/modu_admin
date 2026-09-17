@@ -1,0 +1,15 @@
+# 백오피스를 도커로 띄운다. 게이트웨이와 같은 external 네트워크(modu-infra)에 붙어 컨테이너 이름으로 프록시한다.
+# 먼저 modu_infra 와 modu_chat backend(gateway-service)가 떠 있어야 한다.
+services:
+  modu-admin:
+    build: .
+    container_name: modu-admin
+    ports:
+      - "${ADMIN_PORT:-8081}:80"
+    networks:
+      - modu-infra
+    restart: unless-stopped
+
+networks:
+  modu-infra:
+    external: true
