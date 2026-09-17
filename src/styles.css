@@ -44,17 +44,21 @@ h2 {
   gap: 4px;
 }
 
-.sidebar .brand {
+/* 사이드바와 폰 상단 바가 같이 쓴다. 로고 크기를 여기서 못 박지 않으면 SVG 원본 크기로 커진다. */
+.brand {
   display: flex;
   align-items: center;
   gap: 8px;
   color: #fff;
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+.sidebar .brand {
   margin-bottom: 16px;
 }
 
-.sidebar .brand-logo {
+.brand-logo {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
@@ -759,4 +763,305 @@ a.btn {
   border-radius: 8px;
   object-fit: cover;
   background: #eef0f3;
+}
+
+/* ---------- 폰 배치 (768px 이하). PC 는 위 규칙 그대로. ---------- */
+
+/* 상단 바 + 드로어. 사이드바 대신 쓴다. */
+.mobile-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #1f2430;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.mobile-bar .brand {
+  margin: 0;
+  min-width: 0;
+}
+
+.menu-button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.menu-button:hover {
+  background: #2a3142;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 30;
+}
+
+.sidebar--drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(280px, 85vw);
+  z-index: 40;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  overflow-y: auto;
+}
+
+.sidebar--drawer.open {
+  transform: translateX(0);
+}
+
+/* 카드 목록. 표 대신 쓴다. */
+.sort-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sort-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sort-chip.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.card:active {
+  background: #f3f4f6;
+}
+
+.card-num {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-size: 12px;
+  color: var(--color-muted);
+  padding-top: 2px;
+}
+
+.card .avatar,
+.card .product-thumb {
+  flex-shrink: 0;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.card-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-line {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-clamp {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-muted {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef0f3;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .layout--mobile {
+    flex-direction: column;
+  }
+
+  .layout--mobile .content {
+    padding: 16px;
+  }
+
+  .layout--mobile h1 {
+    font-size: 1.3rem;
+  }
+
+  /* 검색줄·버튼은 폭에 맞춰 줄바꿈하고 입력창은 전체 폭. */
+  .layout--mobile .list-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .layout--mobile .search-form {
+    flex: 1 1 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .layout--mobile .search-form input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .layout--mobile .pager {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .layout--mobile .member-columns,
+  .layout--mobile .room-columns {
+    grid-template-columns: 1fr;
+  }
+
+  /* 상세 화면: 라벨·값을 한 줄씩 쌓고, 긴 값(ID·파일명)은 줄바꿈해서 가로 스크롤이 안 생기게 한다. */
+  .layout--mobile .detail-grid,
+  .layout--mobile .detail-list {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .layout--mobile .detail-grid dt,
+  .layout--mobile .detail-list dt {
+    font-size: 0.8rem;
+    color: var(--color-muted);
+  }
+
+  .layout--mobile .detail-grid dd + dt,
+  .layout--mobile .detail-list dd + dt {
+    margin-top: 8px;
+  }
+
+  .layout--mobile .detail-grid dd,
+  .layout--mobile .profile-email,
+  .layout--mobile .ellipsis {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .layout--mobile .profile-card,
+  .layout--mobile .info-card {
+    max-width: none;
+  }
+
+  .layout--mobile .info-card {
+    padding: 16px 16px 8px;
+  }
+
+  .layout--mobile .room-header h1,
+  .layout--mobile .profile-username {
+    font-size: 1.2rem;
+    overflow-wrap: anywhere;
+  }
+
+  /* 폰 배치가 따로 없는 표(푸시 발송 등)는 표 안에서만 가로로 밀리게 한다. */
+  .layout--mobile table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+/* 채팅방 상세: 폰의 메시지 목록 */
+.message-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.message-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.message-sender {
+  font-weight: 600;
+}
+
+.message-body {
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

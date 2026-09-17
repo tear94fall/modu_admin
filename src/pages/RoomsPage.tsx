@@ -4,10 +4,20 @@ import { PAGE_SIZE } from '../api/client'
 import { DEFAULT_ROOM_SORT, listRooms, type RoomSort, type RoomSummary } from '../api/rooms'
 import Pager from '../components/Pager'
 import RemoteImage from '../components/RemoteImage'
+import SortChips, { type SortOption } from '../components/SortChips'
 import SortableHeader from '../components/SortableHeader'
+import { useIsMobile } from '../hooks/useIsMobile'
+
+/** 폰 카드 목록의 정렬 기준. 표 머리글과 같은 열·같은 기본 방향이다. */
+const ROOM_SORT_OPTIONS: SortOption[] = [
+  { label: '채팅방 이름', field: 'roomName', defaultDir: 'asc' },
+  { label: '멤버 수', field: 'memberCount', defaultDir: 'desc' },
+  { label: '마지막 시각', field: 'lastChatTime', defaultDir: 'desc' },
+]
 
 export default function RoomsPage() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [page, setPage] = useState(0)
   const [sort, setSort] = useState<RoomSort>(DEFAULT_ROOM_SORT)
   const [rooms, setRooms] = useState<RoomSummary[]>([])
@@ -51,7 +61,31 @@ export default function RoomsPage() {
       {loading && <p>불러오는 중...</p>}
       {error && <p className="error-text">{error}</p>}
 
-      {!loading && !error && (
+      {!loading && !error && isMobile && (
+        <>
+          <SortChips options={ROOM_SORT_OPTIONS} currentSort={sort} onChange={changeSort} />
+          <ul className="card-list">
+            {rooms.map((r, i) => (
+              <li key={r.id}>
+                <button type="button" className="card" onClick={() => navigate(`/rooms/${r.roomId}`)}>
+                  <span className="card-num">{pageNumber * PAGE_SIZE + i + 1}</span>
+                  <RemoteImage filename={r.roomImage} alt="" className="avatar avatar--sm" />
+                  <span className="card-body">
+                    <span className="card-title">
+                      {r.roomName} <span className="card-muted">{r.memberCount}명</span>
+                    </span>
+                    <span className="card-line">{r.lastChatMsg ?? '-'}</span>
+                    <span className="card-line card-muted">{r.lastChatTime ?? '-'}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Pager page={page} totalPages={totalPages} onChange={setPage} />
+        </>
+      )}
+
+      {!loading && !error && !isMobile && (
         <>
           <table className="list-table">
             {/* 열 너비를 비율로 못 박는다. 안 그러면 페이지마다 내용 길이를 따라 열이 들썩인다. */}

@@ -4,11 +4,22 @@ import { PAGE_SIZE } from '../api/client'
 import { DEFAULT_MEMBER_SORT, searchMembers, type Member, type MemberSort } from '../api/members'
 import Pager from '../components/Pager'
 import RemoteImage from '../components/RemoteImage'
+import SortChips, { type SortOption } from '../components/SortChips'
 import SortableHeader from '../components/SortableHeader'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { formatDateTime, formatRole } from '../util/format'
+
+/** 폰 카드 목록의 정렬 기준. 표 머리글과 같은 열·같은 기본 방향이다. */
+const MEMBER_SORT_OPTIONS: SortOption[] = [
+  { label: '이름', field: 'name', defaultDir: 'asc' },
+  { label: '이메일', field: 'email', defaultDir: 'asc' },
+  { label: '권한', field: 'role', defaultDir: 'asc' },
+  { label: '가입일', field: 'createdDate', defaultDir: 'desc' },
+]
 
 export default function MembersPage() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(0)
@@ -74,7 +85,33 @@ export default function MembersPage() {
       {loading && <p>불러오는 중...</p>}
       {error && <p className="error-text">{error}</p>}
 
-      {!loading && !error && (
+      {!loading && !error && isMobile && (
+        <>
+          <SortChips options={MEMBER_SORT_OPTIONS} currentSort={sort} onChange={changeSort} />
+          <ul className="card-list">
+            {members.map((m, i) => (
+              <li key={m.id}>
+                <button type="button" className="card" onClick={() => navigate(`/members/${m.id}`)}>
+                  <span className="card-num">{pageNumber * PAGE_SIZE + i + 1}</span>
+                  <RemoteImage filename={m.profileImage} alt="" className="avatar avatar--sm" />
+                  <span className="card-body">
+                    <span className="card-title">{m.username}</span>
+                    <span className="card-line">{m.email}</span>
+                    <span className="card-line card-muted">{m.userId}</span>
+                    <span className="card-meta">
+                      <span className="chip">{formatRole(m.role)}</span>
+                      <span className="card-muted">{formatDateTime(m.createdDate)}</span>
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Pager page={page} totalPages={totalPages} onChange={setPage} />
+        </>
+      )}
+
+      {!loading && !error && !isMobile && (
         <>
           <table className="list-table">
             {/* 열 너비를 비율로 못 박는다. 안 그러면 페이지마다 내용 길이를 따라 열이 들썩인다. */}
