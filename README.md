@@ -1,4 +1,4 @@
-# 모두메신저 백오피스 (modu_admin)
+# 모두의 어드민 (modu_admin)
 
 모두메신저·모두의 커머스 관리자 전용 React 프런트엔드(회원·채팅방·공지·푸시·앱 설정·상품 관리). Vite + React + TypeScript, `react-router-dom` 으로 라우팅한다.
 
