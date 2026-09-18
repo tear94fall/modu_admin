@@ -21,7 +21,7 @@ describe('Layout', () => {
     expect(logo).toHaveAttribute('src', '/favicon.svg')
     // 옆 글자가 이름을 말하므로 로고는 장식이다 — 낭독기가 두 번 읽으면 안 된다.
     expect(logo).toHaveAttribute('alt', '')
-    expect(screen.getByText('모두메신저 백오피스')).toBeInTheDocument()
+    expect(screen.getByText('모두의 어드민')).toBeInTheDocument()
   })
 
   it('links to the main sections', () => {
@@ -68,7 +68,7 @@ describe('Layout', () => {
       const { container } = renderLayout()
 
       expect(screen.getByRole('button', { name: '메뉴' })).toBeInTheDocument()
-      expect(screen.getByText('모두메신저 백오피스')).toBeInTheDocument()
+      expect(screen.getByText('모두의 어드민')).toBeInTheDocument()
       // 드로어는 닫힌 채로 시작한다.
       expect(container.querySelector('.sidebar--drawer.open')).toBeNull()
     })
