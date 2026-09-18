@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mockViewport } from '../test/viewport'
 import Layout from './Layout'
 
 const renderLayout = () =>
@@ -19,7 +21,7 @@ describe('Layout', () => {
     expect(logo).toHaveAttribute('src', '/favicon.svg')
     // 옆 글자가 이름을 말하므로 로고는 장식이다 — 낭독기가 두 번 읽으면 안 된다.
     expect(logo).toHaveAttribute('alt', '')
-    expect(screen.getByText('모두메신저 백오피스')).toBeInTheDocument()
+    expect(screen.getByText('모두의 어드민')).toBeInTheDocument()
   })
 
   it('links to the main sections', () => {
@@ -55,5 +57,34 @@ describe('Layout', () => {
     expect(footer?.querySelector('a')?.textContent).toBe('내 정보')
     expect(footer?.querySelector('button')?.textContent).toBe('로그아웃')
     expect(footer?.closest('.nav-section')).toBeNull()
+  })
+
+  describe('on a narrow screen', () => {
+    let restore: () => void
+    afterEach(() => restore())
+
+    it('replaces the sidebar with a top bar and a menu button', () => {
+      restore = mockViewport(true)
+      const { container } = renderLayout()
+
+      expect(screen.getByRole('button', { name: '메뉴' })).toBeInTheDocument()
+      expect(screen.getByText('모두의 어드민')).toBeInTheDocument()
+      // 드로어는 닫힌 채로 시작한다.
+      expect(container.querySelector('.sidebar--drawer.open')).toBeNull()
+    })
+
+    it('opens the drawer with the same sections and closes it after choosing a menu', async () => {
+      restore = mockViewport(true)
+      const user = userEvent.setup()
+      const { container } = renderLayout()
+
+      await user.click(screen.getByRole('button', { name: '메뉴' }))
+      expect(container.querySelector('.sidebar--drawer.open')).not.toBeNull()
+      const titles = Array.from(container.querySelectorAll('.sidebar--drawer .nav-section-title')).map((el) => el.textContent)
+      expect(titles).toEqual(['회원', '채팅', '커머스'])
+
+      await user.click(screen.getByRole('link', { name: '상품' }))
+      expect(container.querySelector('.sidebar--drawer.open')).toBeNull()
+    })
   })
 })

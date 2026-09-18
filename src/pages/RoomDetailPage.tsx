@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getRoom, getRoomChats, type Chat, type RoomDetail } from '../api/rooms'
 import type { Page } from '../api/members'
+import MemberMiniCard from '../components/MemberMiniCard'
 import Pager from '../components/Pager'
 import RemoteImage from '../components/RemoteImage'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { formatDateTime, formatRole } from '../util/format'
 
 export default function RoomDetailPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [room, setRoom] = useState<RoomDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -89,6 +92,15 @@ export default function RoomDetailPage() {
       <div className="room-columns">
         <div>
           <h2>멤버</h2>
+          {isMobile ? (
+            <ul className="card-list">
+              {room.members.map((m) => (
+                <li key={m.userId}>
+                  <MemberMiniCard member={m} onClick={() => goToMember(m.id)} />
+                </li>
+              ))}
+            </ul>
+          ) : (
           <table>
             <thead>
               <tr>
@@ -125,13 +137,31 @@ export default function RoomDetailPage() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
         <div>
           <h2>메시지</h2>
           {chatsError && <p className="error-text">{chatsError}</p>}
           {!chatsError && chats && chats.totalElements === 0 && <p>메시지가 없습니다</p>}
-          {!chatsError && chats && chats.totalElements > 0 && (
+          {!chatsError && chats && chats.totalElements > 0 && isMobile && (
+            <>
+              {/* 폰에서는 표 대신 한 줄에 이름·시각, 그 아래 본문. 넓은 표는 가로 스크롤이 생긴다. */}
+              <ul className="message-list">
+                {chats.content.map((c) => (
+                  <li key={c.id} className="message-item">
+                    <span className="message-head">
+                      <span className="message-sender">{usernameByUserId.get(c.sender) ?? c.sender}</span>
+                      <span className="card-muted">{formatDateTime(c.chatTime)}</span>
+                    </span>
+                    <span className="message-body">{c.message}</span>
+                  </li>
+                ))}
+              </ul>
+              <Pager page={page} totalPages={chats.totalPages} onChange={setPage} />
+            </>
+          )}
+          {!chatsError && chats && chats.totalElements > 0 && !isMobile && (
             <>
               <table className="chat-table">
                 <colgroup>

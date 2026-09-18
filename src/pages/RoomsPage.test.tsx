@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PAGE_SIZE } from '../api/client'
 import { clearImageCache } from '../api/imageCache'
 import * as rooms from '../api/rooms'
 import * as storage from '../api/storage'
+import { mockViewport } from '../test/viewport'
 import RoomsPage from './RoomsPage'
 
 const emptyPage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 }
@@ -205,6 +206,41 @@ describe('RoomsPage', () => {
 
     for (const value of [roomName, lastChatMsg, lastChatTime]) {
       expect(await screen.findByText(value)).toHaveAttribute('title', value)
+    }
+  })
+
+  it('on a narrow screen renders room cards with sort chips and opens the room on tap', async () => {
+    const restore = mockViewport(true)
+    try {
+      vi.spyOn(rooms, 'listRooms').mockResolvedValue({
+        content: [
+          { id: 3, roomId: 'room-3', roomName: '캠핑 준비방', roomImage: '', memberCount: 5, lastChatMsg: '토요일 8시 출발', lastChatTime: '2026-09-17 23:29' },
+        ],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: 15,
+      })
+      const user = userEvent.setup()
+      render(
+        <MemoryRouter initialEntries={['/rooms']}>
+          <Routes>
+            <Route path="/rooms" element={<RoomsPage />} />
+            <Route path="/rooms/:roomId" element={<p>채팅방 상세 화면</p>} />
+          </Routes>
+        </MemoryRouter>,
+      )
+
+      const card = await screen.findByRole('button', { name: /캠핑 준비방/ })
+      expect(screen.queryByRole('table')).toBeNull()
+      expect(card).toHaveTextContent('5명')
+      expect(card).toHaveTextContent('토요일 8시 출발')
+      expect(screen.getByRole('group', { name: '정렬' })).toBeInTheDocument()
+
+      await user.click(card)
+      expect(await screen.findByText('채팅방 상세 화면')).toBeInTheDocument()
+    } finally {
+      restore()
     }
   })
 })

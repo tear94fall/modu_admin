@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { PAGE_SIZE } from '../api/client'
 import { searchProducts, type Product } from '../api/products'
 import Pager from '../components/Pager'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { formatPrice } from '../util/format'
 
 export default function ProductsPage() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(0)
@@ -80,7 +82,32 @@ export default function ProductsPage() {
         <p>{searchTerm ? '검색 결과가 없습니다' : '등록된 상품이 없습니다'}</p>
       )}
 
-      {!loading && !error && products.length > 0 && (
+      {!loading && !error && products.length > 0 && isMobile && (
+        <>
+          <ul className="card-list">
+            {products.map((p, i) => (
+              <li key={p.id}>
+                <button type="button" className="card" onClick={() => open(p.id)}>
+                  <span className="card-num">{pageNumber * PAGE_SIZE + i + 1}</span>
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt="" className="product-thumb" />
+                  ) : (
+                    <span className="product-thumb image-placeholder" />
+                  )}
+                  <span className="card-body">
+                    <span className="card-title">{p.name}</span>
+                    <span className="card-line">{formatPrice(p.price)}</span>
+                    <span className="card-line card-muted card-clamp">{p.description}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Pager page={page} totalPages={totalPages} onChange={setPage} />
+        </>
+      )}
+
+      {!loading && !error && products.length > 0 && !isMobile && (
         <>
           <table className="list-table">
             {/* 열 너비를 비율로 못 박는다. 안 그러면 페이지마다 내용 길이를 따라 열이 들썩인다. */}

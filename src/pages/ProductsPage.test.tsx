@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as products from '../api/products'
+import { mockViewport } from '../test/viewport'
 import ProductsPage from './ProductsPage'
 
 const tumbler = { id: 2, name: '모두 텀블러 500ml', description: '하루 종일 차가운', price: 24000, imageUrl: null }
@@ -76,5 +77,36 @@ describe('ProductsPage', () => {
     renderPage()
 
     expect(await screen.findByRole('link', { name: '상품 등록' })).toHaveAttribute('href', '/products/new')
+  })
+
+  it('on a narrow screen renders product cards and opens the product on tap', async () => {
+    const restore = mockViewport(true)
+    try {
+      vi.spyOn(products, 'searchProducts').mockResolvedValue({
+        content: [{ id: 9, name: '무선 이어폰', price: 89000, description: '노이즈 캔슬링', imageUrl: null }],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: 15,
+      })
+      const user = userEvent.setup()
+      render(
+        <MemoryRouter initialEntries={['/products']}>
+          <Routes>
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products/:id" element={<p>상품 상세 화면</p>} />
+          </Routes>
+        </MemoryRouter>,
+      )
+
+      const card = await screen.findByRole('button', { name: /무선 이어폰/ })
+      expect(screen.queryByRole('table')).toBeNull()
+      expect(card).toHaveTextContent('89,000원')
+
+      await user.click(card)
+      expect(await screen.findByText('상품 상세 화면')).toBeInTheDocument()
+    } finally {
+      restore()
+    }
   })
 })

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearImageCache } from '../api/imageCache'
 import * as rooms from '../api/rooms'
 import * as storage from '../api/storage'
+import { mockViewport } from '../test/viewport'
 import RoomDetailPage from './RoomDetailPage'
 
 const room = {
@@ -190,5 +191,38 @@ describe('RoomDetailPage', () => {
     await userEvent.click(memberRow as HTMLElement)
 
     expect(await screen.findByText('회원 상세 스텁')).toBeInTheDocument()
+  })
+
+  it('on a narrow screen shows members as cards and messages as a list, without tables', async () => {
+    const restore = mockViewport(true)
+    try {
+      vi.spyOn(rooms, 'getRoom').mockResolvedValue(room)
+      vi.spyOn(rooms, 'getRoomChats').mockResolvedValue({
+        content: [{ id: 1, sender: 'u1', message: '첫번째 메시지', chatTime: '2026-09-17T10:00:00', chatType: 0 }],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: 50,
+      })
+      render(
+        <MemoryRouter initialEntries={['/rooms/r1']}>
+          <Routes>
+            <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
+          </Routes>
+        </MemoryRouter>,
+      )
+
+      const memberCard = await screen.findByRole('button', { name: /민수/ })
+      expect(memberCard).toHaveTextContent('m@x.y')
+      expect(screen.queryByRole('table')).toBeNull()
+
+      const message = await screen.findByText('첫번째 메시지')
+      const item = message.closest('li')
+      expect(item).not.toBeNull()
+      expect(within(item as HTMLElement).getByText('민수')).toBeInTheDocument()
+      expect(within(item as HTMLElement).getByText('2026-09-17 10:00')).toBeInTheDocument()
+    } finally {
+      restore()
+    }
   })
 })
