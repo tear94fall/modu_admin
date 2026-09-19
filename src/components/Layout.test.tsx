@@ -46,7 +46,7 @@ describe('Layout', () => {
     expect(sections).toEqual([
       { title: '회원', links: ['회원'] },
       { title: '채팅', links: ['채팅방', '푸시', '앱 설정'] },
-      { title: '커머스', links: ['카테고리', '상품'] },
+      { title: '커머스', links: ['카테고리', '상품', '주문'] },
     ])
   })
 

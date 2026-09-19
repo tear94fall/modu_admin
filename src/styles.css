@@ -1289,3 +1289,66 @@ a.btn {
     width: 72px;
   }
 }
+
+/* 주문 */
+.status-badge--shipping {
+  background: rgba(108, 138, 255, 0.18);
+  color: #3f5bd6;
+}
+
+.status-badge--done {
+  background: rgba(46, 160, 67, 0.15);
+  color: #1f7a33;
+}
+
+.status-badge--cancelled {
+  background: rgba(255, 63, 50, 0.12);
+  color: #c62828;
+}
+
+.order-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.order-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.order-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.order-item-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.order-item-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  font-size: 15px;
+}
