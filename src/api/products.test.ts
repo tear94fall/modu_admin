@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from './client'
-import { createProduct, deleteProduct, searchProducts, updateProduct, validationMessage } from './products'
+import { createProduct, deleteProduct, type ProductInput, searchProducts, updateProduct, validationMessage } from './products'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
 
@@ -10,18 +10,32 @@ describe('products api', () => {
   it('searches through the gateway admin route with page size 15', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(json({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 }))
+      .mockImplementation(() => Promise.resolve(json({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 })))
 
     await searchProducts('텀블러', 2)
 
     const [url, init] = fetchMock.mock.calls[0]
     expect(String(url)).toMatch(/\/commerce-service\/api-admin\/v1\/products\?q=%ED%85%80%EB%B8%94%EB%9F%AC&page=2&size=15$/)
     expect(init?.method ?? 'GET').toBe('GET')
+
+    await searchProducts('', 0, { categoryId: 5, status: 'HIDDEN' })
+    expect(String(fetchMock.mock.calls[1][0])).toMatch(/\?q=&page=0&size=15&categoryId=5&status=HIDDEN$/)
   })
 
   it('creates, updates and deletes with the right methods and JSON bodies', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
-    const input = { name: '모두 우산', description: '자동 우산', price: 15000, imageUrl: null }
+    const input: ProductInput = {
+      name: '모두 우산',
+      description: '자동 우산',
+      detail: null,
+      price: 15000,
+      listPrice: null,
+      categoryId: null,
+      status: 'SELLING',
+      images: [],
+      optionGroups: [],
+      skus: [{ options: {}, extraPrice: 0, stock: 3 }],
+    }
 
     fetchMock.mockResolvedValueOnce(json({ id: 7, ...input }, 201))
     await createProduct(input)
