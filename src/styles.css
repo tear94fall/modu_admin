@@ -1065,3 +1065,227 @@ a.btn {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* 카탈로그(카테고리·상품 폼) */
+.form-card--wide {
+  max-width: 880px;
+}
+
+.form-heading {
+  font-size: 15px;
+  margin: 4px 0 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-field--narrow {
+  max-width: 200px;
+}
+
+.form-field select,
+.filter-row select {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.inline-form--compact {
+  margin-top: 6px;
+}
+
+.tree-list,
+.tree-children,
+.image-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tree-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.tree-root {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.tree-children {
+  margin: 8px 0 0 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.tree-name {
+  font-weight: 500;
+}
+
+.tree-count {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.tree-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.image-list {
+  display: grid;
+  /* 그리드 항목의 min-width:auto 가 긴 URL 을 카드 밖으로 밀어내지 않게 0 으로 잠근다. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.image-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.image-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.image-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.option-group {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.option-group input {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font: inherit;
+  min-width: 0;
+}
+
+.sku-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sku-table th,
+.sku-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+/* 조합 이름("블랙 / M")은 한 줄로. 입력칸이 줄어들지언정 이름이 세로로 쪼개지면 못 읽는다. */
+.sku-table td:first-child {
+  white-space: nowrap;
+}
+
+.sku-table input {
+  width: 110px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #eee;
+  color: var(--color-muted);
+}
+
+.status-badge--selling {
+  background: rgba(120, 107, 252, 0.15);
+  color: var(--color-accent);
+}
+
+.stock-out {
+  color: #ff3f32;
+}
+
+@media (max-width: 768px) {
+  .form-grid,
+  .option-group {
+    grid-template-columns: 1fr;
+  }
+
+  .tree-row {
+    flex-wrap: wrap;
+  }
+
+  .tree-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .image-item {
+    flex-wrap: wrap;
+  }
+
+  .image-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .sku-table th,
+  .sku-table td {
+    padding: 6px 4px;
+  }
+
+  .sku-table input {
+    width: 72px;
+  }
+}

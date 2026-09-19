@@ -15,7 +15,13 @@ const SECTIONS = [
       { to: '/settings', label: '앱 설정' },
     ],
   },
-  { title: '커머스', links: [{ to: '/products', label: '상품' }] },
+  {
+    title: '커머스',
+    links: [
+      { to: '/categories', label: '카테고리' },
+      { to: '/products', label: '상품' },
+    ],
+  },
 ]
 
 const linkClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'nav-link active' : 'nav-link')
