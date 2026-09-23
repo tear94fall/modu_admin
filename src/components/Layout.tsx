@@ -25,6 +25,7 @@ const SECTIONS = [
       { to: '/categories', label: '카테고리' },
       { to: '/products', label: '상품' },
       { to: '/orders', label: '주문' },
+      { to: '/reviews', label: '리뷰' },
     ],
   },
 ]
