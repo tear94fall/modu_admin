@@ -24,6 +24,10 @@ export interface OrderSummary {
   userId: string
   status: OrderStatus
   totalAmount: number
+  /** 결제에 쓴 포인트(1P = 1원). */
+  pointAmount: number
+  /** 실제 결제 금액 = 상품 금액 − 포인트. */
+  paymentAmount: number
   itemCount: number
   firstItemName: string
   firstImageUrl: string | null
@@ -48,6 +52,8 @@ export interface OrderDetail {
   userId: string
   status: OrderStatus
   totalAmount: number
+  pointAmount: number
+  paymentAmount: number
   paymentMethod: string
   recipient: string
   phone: string

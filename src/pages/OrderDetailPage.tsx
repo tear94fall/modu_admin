@@ -131,9 +131,19 @@ export default function OrderDetailPage() {
               </li>
             ))}
           </ul>
+          <div className="order-total muted">
+            <span>상품 금액</span>
+            <span>{formatPrice(order.totalAmount)}</span>
+          </div>
+          {order.pointAmount > 0 && (
+            <div className="order-total muted">
+              <span>포인트 사용{order.status === 'CANCELLED' ? ' (환불됨)' : ''}</span>
+              <span>-{formatPrice(order.pointAmount)}</span>
+            </div>
+          )}
           <div className="order-total">
-            <span>총 금액</span>
-            <strong>{formatPrice(order.totalAmount)}</strong>
+            <span>결제 금액</span>
+            <strong>{formatPrice(order.paymentAmount)}</strong>
           </div>
         </div>
       </div>
