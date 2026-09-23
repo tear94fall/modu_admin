@@ -1426,3 +1426,15 @@ a.btn {
 .rule-card .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .rule-card--new { border-style: dashed; margin-bottom: 12px; }
 .rules-list { display: grid; gap: 12px; }
+
+/* 리뷰 관리 */
+.stars { color: #f5a623; letter-spacing: 1px; white-space: nowrap; }
+.review-product { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.review-product-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.review-product-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-content { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-body { margin: 0; white-space: pre-wrap; line-height: 1.6; }
+.review-hidden-reason { margin: 0; color: var(--color-muted); font-size: 14px; }
+.review-hide-form { display: grid; gap: 8px; padding: 12px; border: 1px dashed var(--color-border); border-radius: 8px; }
+.review-hide-form label { display: grid; gap: 6px; font-size: 14px; }
+.review-hide-form input { padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; }
