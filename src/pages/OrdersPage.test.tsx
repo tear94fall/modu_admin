@@ -11,6 +11,8 @@ const order = (over: Partial<orders.OrderSummary> = {}): orders.OrderSummary => 
   userId: '11',
   status: 'PAID',
   totalAmount: 38000,
+  pointAmount: 0,
+  paymentAmount: 38000,
   itemCount: 3,
   firstItemName: '모두 베이직 티셔츠',
   firstImageUrl: null,

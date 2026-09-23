@@ -12,6 +12,8 @@ const detail: orders.OrderDetail = {
   userId: '11',
   status: 'PAID',
   totalAmount: 38000,
+  pointAmount: 0,
+  paymentAmount: 38000,
   paymentMethod: 'MOCK',
   recipient: '임준섭',
   phone: '010-1234-5678',

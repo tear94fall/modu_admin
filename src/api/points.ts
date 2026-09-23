@@ -21,7 +21,7 @@ export interface PointMember {
   email?: string | null
 }
 
-export type PointTransactionType = 'EARN' | 'SPEND' | 'ADJUST'
+export type PointTransactionType = 'EARN' | 'SPEND' | 'REFUND' | 'ADJUST'
 
 export interface PointTransaction {
   id: number
@@ -79,6 +79,7 @@ export const updateRule = (code: string, body: Omit<PointRule, 'code'>) =>
 export const TRANSACTION_TYPE_LABEL: Record<PointTransactionType, string> = {
   EARN: '적립',
   SPEND: '사용',
+  REFUND: '환불',
   ADJUST: '조정',
 }
 
