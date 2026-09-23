@@ -44,6 +44,28 @@ h2 {
   gap: 4px;
 }
 
+/*
+ * PC 사이드바는 화면 높이에 붙어 본문과 따로 스크롤한다. 본문을 내려도 메뉴는 그 자리에 있고,
+ * 화면이 낮아 메뉴가 넘치면 메뉴 안에서만 스크롤된다(폰 드로어는 position: fixed 라 이미 그렇다).
+ */
+.sidebar:not(.sidebar--drawer) {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 메뉴 목록만 스크롤한다. 로고와 아래쪽(내 정보·로그아웃)은 늘 제자리에 있다. */
+.sidebar .sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3b4256 transparent;
+}
+
 /* 사이드바와 폰 상단 바가 같이 쓴다. 로고 크기를 여기서 못 박지 않으면 SVG 원본 크기로 커진다. */
 .brand {
   display: flex;
@@ -819,7 +841,8 @@ a.btn {
   z-index: 40;
   transform: translateX(-100%);
   transition: transform 0.2s ease;
-  overflow-y: auto;
+  /* 드로어도 메뉴 목록만 스크롤하고 아래쪽은 고정이다(.sidebar-nav 규칙). */
+  overflow: hidden;
 }
 
 .sidebar--drawer.open {
@@ -1352,3 +1375,54 @@ a.btn {
   border-top: 1px solid var(--color-border);
   font-size: 15px;
 }
+
+/* 포인트 적립 규칙 */
+.rules-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.rules-header .form-hint { margin: 0; max-width: 60ch; }
+.rules-table { background: #fff; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; }
+.rules-table th, .rules-table td { vertical-align: middle; }
+.rules-table tbody tr:last-child td { border-bottom: 0; }
+.rules-table .rule-points-cell { text-align: right; }
+.rule-row--off .rule-name, .rule-row--off .rule-points { color: var(--color-muted); }
+.rule-name { font-weight: 600; }
+.rule-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+}
+.rule-points { font-variant-numeric: tabular-nums; font-weight: 600; }
+.rule-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+.rule-row-card { display: block; }
+.rule-row-card .rule-actions { margin-top: 8px; justify-content: flex-start; }
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #f3f4f6;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.status-pill .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; }
+.status-pill--on { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+.status-pill--on .status-dot { background: var(--color-success); }
+.status-pill:hover { filter: brightness(0.97); }
+.status-pill:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.rule-edit-row td { padding: 8px; background: #f8fafc; }
+/* 편집·추가 폼은 표 너비를 그대로 쓴다(form-card 의 최대 너비를 풀어 둔다). */
+.rule-card { max-width: none; }
+.rule-card .form-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rule-card .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.rule-card--new { border-style: dashed; margin-bottom: 12px; }
+.rules-list { display: grid; gap: 12px; }

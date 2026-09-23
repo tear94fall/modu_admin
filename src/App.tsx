@@ -10,6 +10,8 @@ import ProductFormPage from './pages/ProductFormPage'
 import CategoriesPage from './pages/CategoriesPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import OrdersPage from './pages/OrdersPage'
+import PointAccountPage from './pages/PointAccountPage'
+import PointsPage from './pages/PointsPage'
 import ProductsPage from './pages/ProductsPage'
 import PushPage from './pages/PushPage'
 import RoomDetailPage from './pages/RoomDetailPage'
@@ -39,6 +41,8 @@ export default function App() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/push" element={<PushPage />} />
+          <Route path="/points" element={<PointsPage />} />
+          <Route path="/points/:userId" element={<PointAccountPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
           <Route path="/me" element={<MePage />} />
         </Route>
