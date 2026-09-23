@@ -16,6 +16,10 @@ const SECTIONS = [
     ],
   },
   {
+    title: '그로스',
+    links: [{ to: '/points', label: '포인트' }],
+  },
+  {
     title: '커머스',
     links: [
       { to: '/categories', label: '카테고리' },
