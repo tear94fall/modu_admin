@@ -1,6 +1,7 @@
 import { api, PAGE_SIZE } from './client'
 import type { Page } from './members'
-export interface RoomSummary { id: number; roomId: string; roomName: string; roomImage?: string; memberCount: number; lastChatMsg?: string; lastChatTime?: string }
+/** 시각 필드(lastChatTime, createdDate, chatTime)는 모두 시간대 표시가 없는 UTC 값이다. 화면은 formatUtcDateTime 으로 보여 준다. */
+export interface RoomSummary { id: number; roomId: string; roomName: string; roomImage?: string; memberCount: number; lastChatMsg?: string; lastChatTime?: string; createdDate?: string }
 export interface RoomDetail {
   id: number
   roomId: string
@@ -9,6 +10,7 @@ export interface RoomDetail {
   lastChatMsg?: string
   lastChatId?: number
   lastChatTime?: string
+  createdDate?: string
   members: { id: number; userId: string; email: string; username: string; role?: string; profileImage?: string }[]
 }
 export interface Chat { id: number; sender: string; message: string; chatTime: string; chatType: number }

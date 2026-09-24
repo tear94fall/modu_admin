@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setDisplayTimeZone } from '../util/timeZone'
 import { clearImageCache } from '../api/imageCache'
 import * as rooms from '../api/rooms'
 import * as storage from '../api/storage'
@@ -14,11 +15,16 @@ const room = {
   roomName: '테스트방',
   lastChatMsg: '이전 대화 요약',
   lastChatTime: '2025-02-08 11:10:33',
+  createdDate: '2025-02-01 23:00:00',
   members: [{ id: 11, userId: 'u1', username: '민수', email: 'm@x.y', role: 'ROLE_MEMBER' }],
 }
 
 describe('RoomDetailPage', () => {
+  afterEach(() => setDisplayTimeZone(null))
+
   beforeEach(() => {
+    // 실행하는 기기의 시간대와 무관하게: 표시 시간대를 UTC 로 고정한다.
+    setDisplayTimeZone('UTC')
     clearImageCache()
   })
 
@@ -224,5 +230,23 @@ describe('RoomDetailPage', () => {
     } finally {
       restore()
     }
+  })
+
+  it('shows the room created time and times in the chosen time zone', async () => {
+    setDisplayTimeZone('Asia/Seoul')
+    vi.spyOn(rooms, 'getRoom').mockResolvedValue(room)
+    vi.spyOn(rooms, 'getRoomChats').mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 50 })
+    render(
+      <MemoryRouter initialEntries={['/rooms/r1']}>
+        <Routes>
+          <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    // UTC 2025-02-01 23:00 → 한국 02-02 08:00, UTC 02-08 11:10 → 한국 20:10
+    expect(await screen.findByText('2025-02-02 08:00')).toBeInTheDocument()
+    expect(screen.getByText('2025-02-08 20:10')).toBeInTheDocument()
+    expect(screen.getByText(/Asia\/Seoul \(UTC\+9\)/)).toBeInTheDocument()
   })
 })
