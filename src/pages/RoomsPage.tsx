@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { PAGE_SIZE } from '../api/client'
 import { DEFAULT_ROOM_SORT, listRooms, type RoomSort, type RoomSummary } from '../api/rooms'
 import Pager from '../components/Pager'
+import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
 import RemoteImage from '../components/RemoteImage'
 import SortChips, { type SortOption } from '../components/SortChips'
 import SortableHeader from '../components/SortableHeader'
@@ -13,10 +14,14 @@ const ROOM_SORT_OPTIONS: SortOption[] = [
   { label: '채팅방 이름', field: 'roomName', defaultDir: 'asc' },
   { label: '멤버 수', field: 'memberCount', defaultDir: 'desc' },
   { label: '마지막 시각', field: 'lastChatTime', defaultDir: 'desc' },
+  { label: '생성 시각', field: 'createdDate', defaultDir: 'desc' },
 ]
 
 export default function RoomsPage() {
   const navigate = useNavigate()
+  // 시각은 서버 UTC 값을 '내 정보'에서 고른 시간대(기본: 브라우저)로 보여 준다.
+  const timeZone = useDisplayTimeZone()
+  const time = (value?: string) => formatUtcDateTime(value, timeZone) || '-'
   const isMobile = useIsMobile()
   const [page, setPage] = useState(0)
   const [sort, setSort] = useState<RoomSort>(DEFAULT_ROOM_SORT)
@@ -58,6 +63,7 @@ export default function RoomsPage() {
   return (
     <div>
       <h1>채팅방 관리</h1>
+      <p className="time-zone-note">시각은 {timeZoneLabel(timeZone)} 기준입니다. 시간대는 내 정보에서 바꿀 수 있습니다.</p>
       {loading && <p>불러오는 중...</p>}
       {error && <p className="error-text">{error}</p>}
 
@@ -75,7 +81,9 @@ export default function RoomsPage() {
                       {r.roomName} <span className="card-muted">{r.memberCount}명</span>
                     </span>
                     <span className="card-line">{r.lastChatMsg ?? '-'}</span>
-                    <span className="card-line card-muted">{r.lastChatTime ?? '-'}</span>
+                    <span className="card-line card-muted">
+                      마지막 {time(r.lastChatTime)} · 생성 {time(r.createdDate)}
+                    </span>
                   </span>
                 </button>
               </li>
@@ -91,11 +99,12 @@ export default function RoomsPage() {
             {/* 열 너비를 비율로 못 박는다. 안 그러면 페이지마다 내용 길이를 따라 열이 들썩인다. */}
             <colgroup>
               <col style={{ width: '6%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '19%' }} />
               <col style={{ width: '8%' }} />
-              <col style={{ width: '22%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '32%' }} />
-              <col style={{ width: '24%' }} />
+              <col style={{ width: '26%' }} />
+              <col style={{ width: '17%' }} />
+              <col style={{ width: '17%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -129,6 +138,13 @@ export default function RoomsPage() {
                   defaultDir="desc"
                   onChange={changeSort}
                 />
+                <SortableHeader
+                  label="생성 시각"
+                  field="createdDate"
+                  currentSort={sort}
+                  defaultDir="desc"
+                  onChange={changeSort}
+                />
               </tr>
             </thead>
             <tbody>
@@ -142,7 +158,8 @@ export default function RoomsPage() {
                   <td title={r.roomName}>{r.roomName}</td>
                   <td>{r.memberCount}</td>
                   <td title={r.lastChatMsg ?? '-'}>{r.lastChatMsg ?? '-'}</td>
-                  <td title={r.lastChatTime ?? '-'}>{r.lastChatTime ?? '-'}</td>
+                  <td>{time(r.lastChatTime)}</td>
+                  <td>{time(r.createdDate)}</td>
                 </tr>
               ))}
             </tbody>

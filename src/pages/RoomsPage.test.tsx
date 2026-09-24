@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setDisplayTimeZone } from '../util/timeZone'
 import { PAGE_SIZE } from '../api/client'
 import { clearImageCache } from '../api/imageCache'
 import * as rooms from '../api/rooms'
@@ -12,7 +13,11 @@ import RoomsPage from './RoomsPage'
 const emptyPage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 }
 
 describe('RoomsPage', () => {
+  afterEach(() => setDisplayTimeZone(null))
+
   beforeEach(() => {
+    // 실행하는 기기의 시간대와 무관하게: 표시 시간대를 UTC 로 고정한다.
+    setDisplayTimeZone('UTC')
     clearImageCache()
   })
 
@@ -204,9 +209,34 @@ describe('RoomsPage', () => {
       </MemoryRouter>,
     )
 
-    for (const value of [roomName, lastChatMsg, lastChatTime]) {
+    for (const value of [roomName, lastChatMsg]) {
       expect(await screen.findByText(value)).toHaveAttribute('title', value)
     }
+    // 시각은 짧아서 잘리지 않는다. 서버 UTC 값을 표시 시간대(여기서는 UTC)로 보여 준다.
+    expect(screen.getByText('2026-09-04 12:34')).toBeInTheDocument()
+  })
+
+  it('shows created and last times in the chosen time zone and says which zone', async () => {
+    setDisplayTimeZone('Asia/Seoul')
+    vi.spyOn(rooms, 'listRooms').mockResolvedValue({
+      content: [{ id: 1, roomId: 'r1', roomName: '유럽 여행 계획', memberCount: 6, lastChatMsg: '정리해서 올릴게요', lastChatTime: '2026-09-17 15:15:22', createdDate: '2026-09-16 16:30:00' }],
+      totalElements: 1,
+      totalPages: 1,
+      number: 0,
+      size: PAGE_SIZE,
+    })
+
+    render(
+      <MemoryRouter>
+        <RoomsPage />
+      </MemoryRouter>,
+    )
+
+    // UTC 15:15 → 한국 00:15 다음 날, UTC 16:30 → 한국 01:30 다음 날
+    expect(await screen.findByText('2026-09-18 00:15')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-17 01:30')).toBeInTheDocument()
+    expect(screen.getByText(/Asia\/Seoul \(UTC\+9\) 기준/)).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /생성 시각/ })).toBeInTheDocument()
   })
 
   it('on a narrow screen renders room cards with sort chips and opens the room on tap', async () => {

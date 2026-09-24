@@ -3,6 +3,7 @@ import { getMe, updateMe, type Member } from '../api/members'
 import { uploadImage } from '../api/storage'
 import MemberCard from '../components/MemberCard'
 import RemoteImage from '../components/RemoteImage'
+import TimeZoneSetting from '../components/TimeZoneSetting'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const IMAGE_GUARD_MESSAGE = '이미지 파일만 5MB 이하로 올릴 수 있습니다'
@@ -156,6 +157,7 @@ export default function MePage() {
               </button>
             </div>
           </div>
+          <TimeZoneSetting />
         </>
       )}
 

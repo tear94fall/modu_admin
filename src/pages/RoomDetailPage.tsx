@@ -6,12 +6,15 @@ import MemberMiniCard from '../components/MemberMiniCard'
 import Pager from '../components/Pager'
 import RemoteImage from '../components/RemoteImage'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { formatDateTime, formatRole } from '../util/format'
+import { formatRole } from '../util/format'
+import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
 
 export default function RoomDetailPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+  // 시각은 서버 UTC 값을 '내 정보'에서 고른 시간대(기본: 브라우저)로 보여 준다.
+  const timeZone = useDisplayTimeZone()
   const [room, setRoom] = useState<RoomDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -84,8 +87,12 @@ export default function RoomDetailPage() {
           <dd>{room.members.length}</dd>
           <dt>마지막 메시지</dt>
           <dd className="ellipsis">{room.lastChatMsg ?? '-'}</dd>
+          <dt>생성 시각</dt>
+          <dd>{formatUtcDateTime(room.createdDate, timeZone) || '-'}</dd>
           <dt>마지막 시각</dt>
-          <dd>{formatDateTime(room.lastChatTime)}</dd>
+          <dd>{formatUtcDateTime(room.lastChatTime, timeZone) || '-'}</dd>
+          <dt>시간대</dt>
+          <dd className="card-muted">{timeZoneLabel(timeZone)} · 내 정보에서 바꿀 수 있습니다</dd>
         </dl>
       </div>
 
@@ -152,7 +159,7 @@ export default function RoomDetailPage() {
                   <li key={c.id} className="message-item">
                     <span className="message-head">
                       <span className="message-sender">{usernameByUserId.get(c.sender) ?? c.sender}</span>
-                      <span className="card-muted">{formatDateTime(c.chatTime)}</span>
+                      <span className="card-muted">{formatUtcDateTime(c.chatTime, timeZone)}</span>
                     </span>
                     <span className="message-body">{c.message}</span>
                   </li>
@@ -181,7 +188,7 @@ export default function RoomDetailPage() {
                     <tr key={c.id}>
                       <td className="message-cell">{c.message}</td>
                       <td>{usernameByUserId.get(c.sender) ?? c.sender}</td>
-                      <td className="nowrap-cell">{formatDateTime(c.chatTime)}</td>
+                      <td className="nowrap-cell">{formatUtcDateTime(c.chatTime, timeZone)}</td>
                     </tr>
                   ))}
                 </tbody>
