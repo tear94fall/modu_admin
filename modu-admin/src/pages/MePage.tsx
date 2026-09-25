@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getMe, updateMe, type Member } from '../api/members'
 import { uploadImage } from '../api/storage'
 import MemberCard from '../components/MemberCard'
+import type { StaffPermission } from '../util/format'
 import RemoteImage from '../components/RemoteImage'
 import TimeZoneSetting from '../components/TimeZoneSetting'
 
@@ -30,6 +31,7 @@ export default function MePage() {
   const [member, setMember] = useState<Member | null>(null)
   const [friendCount, setFriendCount] = useState(0)
   const [createdDate, setCreatedDate] = useState<string | undefined>(undefined)
+  const [staffPermissions, setStaffPermissions] = useState<StaffPermission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,6 +56,7 @@ export default function MePage() {
         setMember(result.member)
         setFriendCount(result.friendCount)
         setCreatedDate(result.createdDate)
+        setStaffPermissions(result.staffPermissions ?? [])
       })
       .catch(() => {
         if (!cancelled) setError('내 정보를 불러오지 못했습니다')
@@ -149,7 +152,7 @@ export default function MePage() {
 
       {!editing && (
         <>
-          <MemberCard member={member} friendCount={friendCount} createdDate={createdDate} />
+          <MemberCard member={member} friendCount={friendCount} createdDate={createdDate} staffPermissions={staffPermissions} />
           <div className="actions-frame">
             <div className="form-actions">
               <button type="button" className="btn btn--primary" onClick={startEdit}>

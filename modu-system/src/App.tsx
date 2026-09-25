@@ -16,7 +16,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage title="모두 시스템 로그인" home="/gateway/routes" />} />
         <Route
           element={
-            <RequireAuth>
+            <RequireAuth role="ROLE_SYSTEM">
               <ConsoleLayout brand="모두 시스템" sections={SECTIONS} />
             </RequireAuth>
           }

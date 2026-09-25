@@ -26,7 +26,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route
           element={
-            <RequireAuth>
+            <RequireAuth role="ROLE_ADMIN">
               <Layout />
             </RequireAuth>
           }

@@ -1,17 +1,19 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatUtcDateTime, PAGE_SIZE, Pager, useIsMobile } from '@modu/console-core'
-import { MEMBER_SORT_LABELS, roleLabel, searchMembers, type Member, type MemberSort } from '../api/members'
+import { displayName, MEMBER_SORT_LABELS, searchMembers, type MemberSort, type StaffMemberSummary } from '../api/members'
+import StaffBadges from '../components/StaffBadges'
 
-/** 회원 조회(읽기 전용). 이름·이메일·userId 로 찾고 상세를 연다. 직원 여부 설정은 이 화면에 붙일 예정이다. */
+/** 회원 조회. 이름·이메일·userId 로 찾고, 직원이면 권한을 배지로 보인다. 직원 지정·권한 변경은 상세에서(최상위만) 한다. */
 export default function MembersPage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [sort, setSort] = useState<MemberSort>('name,asc')
+  const [staffOnly, setStaffOnly] = useState(false)
   const [page, setPage] = useState(0)
-  const [members, setMembers] = useState<Member[]>([])
+  const [members, setMembers] = useState<StaffMemberSummary[]>([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [pageNumber, setPageNumber] = useState(0)
@@ -22,7 +24,7 @@ export default function MembersPage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    searchMembers(searchTerm, page, sort)
+    searchMembers(searchTerm, page, sort, staffOnly)
       .then((r) => {
         if (cancelled) return
         setMembers(r.content)
@@ -39,14 +41,14 @@ export default function MembersPage() {
     return () => {
       cancelled = true
     }
-  }, [searchTerm, page, sort])
+  }, [searchTerm, page, sort, staffOnly])
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault()
     setPage(0)
     setSearchTerm(keyword.trim())
   }
-  const open = (m: Member) => navigate(`/members/${m.id}`)
+  const open = (m: StaffMemberSummary) => navigate(`/members/${m.id}`)
 
   return (
     <div>
@@ -74,12 +76,23 @@ export default function MembersPage() {
             </option>
           ))}
         </select>
+        <label className="form-check">
+          <input
+            type="checkbox"
+            checked={staffOnly}
+            onChange={(e) => {
+              setPage(0)
+              setStaffOnly(e.target.checked)
+            }}
+          />
+          직원만
+        </label>
         {!loading && !error && <span className="result-count">{total.toLocaleString('ko-KR')}명</span>}
       </div>
 
       {loading && <p>불러오는 중...</p>}
       {error && <p className="error-text">{error}</p>}
-      {!loading && !error && members.length === 0 && <p>{searchTerm ? '검색 결과가 없습니다' : '회원이 없습니다'}</p>}
+      {!loading && !error && members.length === 0 && <p>{searchTerm ? '검색 결과가 없습니다' : staffOnly ? '직원이 없습니다' : '회원이 없습니다'}</p>}
 
       {!loading && !error && members.length > 0 && isMobile && (
         <ul className="card-list">
@@ -88,11 +101,16 @@ export default function MembersPage() {
               <button type="button" className="card" onClick={() => open(m)}>
                 <span className="card-num">{pageNumber * PAGE_SIZE + i + 1}</span>
                 <span className="card-body">
-                  <span className="card-title">{m.username}</span>
-                  <span className="card-line">{m.email}</span>
-                  <span className="card-line card-muted">
-                    {roleLabel(m.role)} · 가입 {formatUtcDateTime(m.createdDate) || '-'}
+                  <span className="card-title">
+                    {displayName(m)} {m.status === 'WITHDRAWN' && <span className="withdrawn-badge">탈퇴</span>}
                   </span>
+                  <span className="card-line">{m.email}</span>
+                  {m.permissions.length > 0 && (
+                    <span className="card-line">
+                      <StaffBadges permissions={m.permissions} />
+                    </span>
+                  )}
+                  <span className="card-line card-muted">가입 {formatUtcDateTime(m.createdDate) || '-'}</span>
                 </span>
               </button>
             </li>
@@ -104,11 +122,11 @@ export default function MembersPage() {
         <table className="list-table">
           <colgroup>
             <col style={{ width: '6%' }} />
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '28%' }} />
-            <col style={{ width: '22%' }} />
-            <col style={{ width: '10%' }} />
             <col style={{ width: '16%' }} />
+            <col style={{ width: '24%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '22%' }} />
+            <col style={{ width: '14%' }} />
           </colgroup>
           <thead>
             <tr>
@@ -116,7 +134,7 @@ export default function MembersPage() {
               <th>이름</th>
               <th>이메일</th>
               <th>사용자 ID</th>
-              <th>구분</th>
+              <th>직원 권한</th>
               <th>가입일</th>
             </tr>
           </thead>
@@ -124,10 +142,14 @@ export default function MembersPage() {
             {members.map((m, i) => (
               <tr key={m.id} className="clickable-row" onClick={() => open(m)}>
                 <td className="num-cell">{pageNumber * PAGE_SIZE + i + 1}</td>
-                <td title={m.username}>{m.username}</td>
+                <td title={displayName(m)}>
+                  {displayName(m)} {m.status === 'WITHDRAWN' && <span className="withdrawn-badge">탈퇴</span>}
+                </td>
                 <td title={m.email}>{m.email}</td>
                 <td title={m.userId}>{m.userId}</td>
-                <td>{roleLabel(m.role)}</td>
+                <td>
+                  <StaffBadges permissions={m.permissions} empty="-" />
+                </td>
                 <td>{formatUtcDateTime(m.createdDate) || '-'}</td>
               </tr>
             ))}

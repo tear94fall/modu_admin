@@ -44,43 +44,18 @@ docker compose up -d --build modu-admin     # http://localhost:8081
 
 `npm run dev` 로 띄울 때만 브라우저가 게이트웨이(`http://localhost:8000`)를 직접 부르며, 이때는 게이트웨이의 `ADMIN_ALLOWED_ORIGIN` 이 `http://localhost:5173` 을 허용해야 한다.
 
-## 관리자 계정 준비
+## 로그인(직원 Google 로그인)
 
-### 1. 전용 관리자 행 삽입
+이메일·비밀번호 로그인은 없어졌다. **직원으로 등록된 Google 계정**으로 로그인하고, 토큰에 **어드민 권한(`ROLE_ADMIN`)** 이 있어야 이 콘솔을 쓴다. 권한이 없으면 "이 콘솔을 쓸 권한이 없습니다" 화면(계정·가진 권한·로그아웃)이 나온다.
 
-로그인은 `member` 테이블에서 `role = 'ROLE_ADMIN'` 인 회원만 통과한다 (modu_chat 의 `backend/member-service/.../member/entity/Member.java`, `backend/auth-service/.../admin/AdminLoginService.java`). 관리자 계정은 **기존 회원을 승격하는 것이 아니라 전용 행을 새로 삽입**해서 만든다:
-
-```sql
-INSERT INTO member (email, user_id, username, role, created_date, updated_date)
-VALUES ('admin@modu.local', 'admin', '관리자', 'ROLE_ADMIN', NOW(), NOW());
-```
-
-관리자 로그인 이메일은 비밀번호 없이 자격 증명의 절반을 담당하므로, 실제 사용자가 쓰는 계정을 승격해서 관리자 이메일로 쓰지 않는다. 또한 `ROLE_ADMIN` 으로 지정된 계정은 앱(모바일) 로그인 자체가 거부되므로, 이 계정으로 앱에 로그인할 수는 없다.
-
-### 2. 관리자 비밀번호 해시 생성
-
-관리자 로그인 비밀번호는 회원 비밀번호와 별개로, auth-service 설정(`modu.admin.password-hash`, 환경변수 `ADMIN_PASSWORD_HASH`)의 bcrypt 해시 하나로 검증한다. 해시를 생성한다:
-
-```bash
-htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n'
-```
-
-결과를 modu_chat `backend/.env` 의 `ADMIN_PASSWORD_HASH` 에 넣을 때, docker compose 가 `.env` 안의 `$` 를 변수 참조로 해석하므로 bcrypt 해시에 포함된 모든 `$` 를 `$$` 로 이스케이프해야 한다:
-
-```bash
-htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n' | sed 's/\$/$$/g'
-```
-
-```
-# modu_chat backend/.env
-ADMIN_PASSWORD_HASH=$$2y$$10$$........................................
-```
-
-로그인 이메일은 위에서 `ROLE_ADMIN` 으로 지정한 회원의 이메일을 사용한다.
+- Google 버튼(Google Identity Services 팝업)이 준 ID 토큰을 `POST /auth-service/oauth2/token`(`grant_type=urn:modu:params:oauth:grant-type:google_id_token`, `client_id=modu-admin`)으로 바꾼다. 직원이 아니면 400 `invalid_grant` → "직원 계정이 아닙니다. 최상위 관리자에게 직원 등록을 요청하세요."
+- 직원 권한은 넷이다: 최상위 `SUPER`(모든 콘솔 + 직원 지정·권한 변경), 어드민 `ADMIN`(이 콘솔), 시스템 `SYSTEM`(모두 시스템), 인터널 `INTERNAL`(모두 인터널). 최상위의 토큰은 `ROLE_SUPER`, `ROLE_ADMIN`, `ROLE_SYSTEM`, `ROLE_INTERNAL` 을 모두 가진다.
+- 직원 지정·권한 변경은 모두 인터널(`modu-internal`)의 회원 상세에서 최상위가 한다. **첫 최상위는 member-service DB 에 직접 넣는다**(`staff` 행 + `SUPER` 의 `staff_permission` 행, 자세한 것은 [루트 README](../README.md#첫-최상위-관리자)).
+- Google 웹 클라이언트 ID 는 커머스 웹과 같다(`VITE_GOOGLE_CLIENT_ID` 로 바꿀 수 있다). 그 클라이언트의 **"승인된 JavaScript 원본"** 에 `http://localhost:5173`(개발), `http://localhost:8081`(도커)과 LAN IP 로 여는 `http://192.168.0.3:5173`, `http://192.168.0.3:8081` 이 있어야 한다(다른 콘솔 출처는 루트 README).
 
 ## 기능
 
-- **로그인** (`/login`): 이메일·비밀번호로 로그인, 액세스 토큰을 로컬 스토리지에 저장.
+- **로그인** (`/login`): 직원 Google 계정으로 로그인, 액세스·refresh 토큰을 로컬 스토리지에 저장. 어드민 권한이 없으면 권한 없음 화면.
 - **회원 관리** (`/members`): 키워드 검색, 페이지네이션, 행 클릭 시 상세 이동.
 - **회원 상세** (`/members/:id`): 회원 정보 + 친구 수.
 - **채팅방 관리** (`/rooms`): 채팅방 목록(이름/인원/최근 메시지/최근 시각), 페이지네이션, 행 클릭 시 상세 이동.

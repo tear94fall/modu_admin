@@ -1,4 +1,5 @@
 import { api, PAGE_SIZE } from './client'
+import type { StaffPermission } from '../util/format'
 export interface Member {
   id: number
   userId: string
@@ -11,9 +12,18 @@ export interface Member {
   createdDate?: string
   /** 회원 상세의 친구 목록에서만 온다: 그 회원이 이 친구에게 정한 이름 */
   friendName?: string
+  /** 직원 권한. 비어 있으면 직원이 아니다(role 은 콘솔 권한과 상관없는 옛 값이라 보여 주지 않는다). */
+  staffPermissions?: StaffPermission[]
 }
 export interface Page<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number }
-export interface MemberDetail { member: Member; friendCount: number; createdDate?: string; friends: Member[] }
+export interface MemberDetail {
+  member: Member
+  friendCount: number
+  createdDate?: string
+  friends: Member[]
+  /** 이 회원의 직원 권한. 비어 있으면 직원이 아니다. */
+  staffPermissions?: StaffPermission[]
+}
 /** 서버(MemberSort)가 받아 주는 값. 목록에 값이 보이는 열은 모두 있다. 그 밖의 값을 보내면 400 이 온다. */
 export const MEMBER_SORTS = [
   'name,asc',

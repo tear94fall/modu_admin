@@ -443,6 +443,34 @@ textarea:focus {
 
 .login-form {
   width: 320px;
+  max-width: calc(100vw - 32px);
+}
+
+/* Google 버튼은 GIS 가 iframe 으로 그린다. 높이를 미리 잡아 두어 불러오는 동안 카드가 출렁이지 않게 한다. */
+.google-button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+/* 권한 없음 화면의 계정·권한 */
+.login-account {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.login-account dt {
+  font-weight: 600;
+  color: #374151;
+}
+
+.login-account dd {
+  margin: 0;
+  word-break: break-all;
 }
 
 /* 상세 필드 목록 */

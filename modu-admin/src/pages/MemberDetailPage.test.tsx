@@ -35,13 +35,16 @@ describe('MemberDetailPage', () => {
       },
       friendCount: 3,
       friends: [],
+      staffPermissions: [],
     })
     const fetchImageObjectUrl = vi.spyOn(storage, 'fetchImageObjectUrl').mockResolvedValue('blob:fake')
 
     renderPage()
 
     expect(await screen.findByText('민수')).toBeInTheDocument()
-    expect(screen.getByText('일반 회원')).toBeInTheDocument()
+    // 직원이 아니면 권한 배지 없이 "직원 아님"이다. 옛 role 은 보여 주지 않는다.
+    expect(screen.getByText('직원 아님')).toBeInTheDocument()
+    expect(screen.queryByText('일반 회원')).toBeNull()
 
     const img = (await screen.findAllByAltText(/민수/)).find((el) => el.tagName === 'IMG') as HTMLImageElement
     expect(img).toBeDefined()
@@ -56,17 +59,19 @@ describe('MemberDetailPage', () => {
         userId: 'u2',
         email: 'b@c.d',
         username: '민수',
-        role: 'ROLE_ADMIN',
+        role: 'ROLE_MEMBER',
       },
       friendCount: 0,
       friends: [],
+      staffPermissions: ['SUPER'],
     })
     const fetchImageObjectUrl = vi.spyOn(storage, 'fetchImageObjectUrl').mockResolvedValue('blob:fake')
 
     renderPage('2')
 
     expect(await screen.findByText('민수')).toBeInTheDocument()
-    expect(screen.getByText('관리자')).toBeInTheDocument()
+    // 이름 옆과 "직원 권한" 칸 두 곳에 최상위 배지가 보인다.
+    expect(screen.getAllByText('최상위')).toHaveLength(2)
     expect(screen.getByText('민')).toBeInTheDocument()
     expect(fetchImageObjectUrl).not.toHaveBeenCalled()
   })

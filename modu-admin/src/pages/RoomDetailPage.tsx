@@ -6,7 +6,6 @@ import MemberMiniCard from '../components/MemberMiniCard'
 import Pager from '../components/Pager'
 import RemoteImage from '../components/RemoteImage'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { formatRole } from '../util/format'
 import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
 
 export default function RoomDetailPage() {
@@ -115,7 +114,6 @@ export default function RoomDetailPage() {
                 <th>이름</th>
                 <th>이메일</th>
                 <th>사용자 ID</th>
-                <th>권한</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +137,6 @@ export default function RoomDetailPage() {
                   <td>{m.username}</td>
                   <td>{m.email}</td>
                   <td>{m.userId}</td>
-                  <td>{formatRole(m.role)}</td>
                 </tr>
               ))}
             </tbody>

@@ -21,11 +21,14 @@ const ACCESS_FILTERS: { value: AccessFilter; label: string }[] = [
   { value: 'ADMIN', label: '관리자 토큰' },
 ]
 
+/** 콘솔(직원) 토큰을 받는 라우트. 직원 권한(ROLE_ADMIN·ROLE_SYSTEM·ROLE_INTERNAL·ROLE_SUPER)은 모두 aud=modu-admin 토큰에 담긴다. */
+const isConsoleRoute = (r: GatewayRoute) => r.access.type === 'PROTECTED' && (r.access.audience === 'modu-admin' || r.access.role === 'ROLE_ADMIN')
+
 function matchesAccess(r: GatewayRoute, f: AccessFilter): boolean {
   if (f === 'ALL') return true
   if (f === 'PUBLIC') return r.access.type === 'PUBLIC'
-  if (f === 'ADMIN') return r.access.type === 'PROTECTED' && r.access.role === 'ROLE_ADMIN'
-  return r.access.type === 'PROTECTED' && r.access.role !== 'ROLE_ADMIN'
+  if (f === 'ADMIN') return isConsoleRoute(r)
+  return r.access.type === 'PROTECTED' && !isConsoleRoute(r)
 }
 
 function matchesKeyword(r: GatewayRoute, keyword: string): boolean {
@@ -35,7 +38,7 @@ function matchesKeyword(r: GatewayRoute, keyword: string): boolean {
 }
 
 const accessClass = (r: GatewayRoute) =>
-  r.access.type === 'PUBLIC' ? 'status-badge status-badge--done' : r.access.role === 'ROLE_ADMIN' ? 'status-badge status-badge--cancelled' : 'status-badge status-badge--shipping'
+  r.access.type === 'PUBLIC' ? 'status-badge status-badge--done' : isConsoleRoute(r) ? 'status-badge status-badge--cancelled' : 'status-badge status-badge--shipping'
 
 /** 게이트웨이 라우트 설정 조회. 읽기 전용이다(설정은 modu_platform gateway-service application.yml). */
 export default function GatewayRoutesPage() {
@@ -71,7 +74,7 @@ export default function GatewayRoutesPage() {
   const counts = {
     total: config.routes.length,
     public: config.routes.filter((r) => r.access.type === 'PUBLIC').length,
-    admin: config.routes.filter((r) => r.access.type === 'PROTECTED' && r.access.role === 'ROLE_ADMIN').length,
+    admin: config.routes.filter(isConsoleRoute).length,
   }
 
   return (
