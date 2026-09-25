@@ -2,9 +2,9 @@ import { act, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setOnUnauthorized } from '../api/client'
-import type { GoogleAccountsId } from '../auth/google'
-import { getRefreshToken, getToken } from '../auth/token'
+import type { GoogleAccountsId } from './google'
 import LoginPage, { LOGIN_FAILED_MESSAGE, NOT_STAFF_MESSAGE } from './LoginPage'
+import { getRefreshToken, getToken } from './token'
 
 /** GIS 대신: initialize 의 callback 을 잡아 두고, 테스트가 credential 을 넘겨 "로그인"한다. */
 function stubGoogle() {
@@ -25,8 +25,8 @@ const renderLogin = () =>
   render(
     <MemoryRouter initialEntries={['/login']}>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/members" element={<p>홈 화면</p>} />
+        <Route path="/login" element={<LoginPage title="모두 시스템 로그인" home="/home" />} />
+        <Route path="/home" element={<p>홈 화면</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -44,7 +44,7 @@ describe('LoginPage', () => {
   it('renders the Google button with the web client id and popup mode', async () => {
     const google = stubGoogle()
     renderLogin()
-    expect(screen.getByRole('heading', { name: '관리자 로그인' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '모두 시스템 로그인' })).toBeInTheDocument()
     expect(await screen.findByText('Google 계정으로 로그인')).toBeInTheDocument()
     expect(google.id.initialize).toHaveBeenCalledWith(expect.objectContaining({ client_id: expect.stringContaining('.apps.googleusercontent.com'), ux_mode: 'popup' }))
     expect(screen.queryByLabelText('비밀번호')).not.toBeInTheDocument()

@@ -1,3 +1,40 @@
 /* 사내 업무 콘솔 전용. 공통 모양은 @modu/console-core/styles.css. */
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; word-break: break-all; }
 .result-count { align-self: center; margin-left: 12px; font-size: 13px; color: var(--color-muted); }
+
+/* 직원 권한 배지 */
+.perm-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.staff-badge, .perm-badge, .withdrawn-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.staff-badge { background: #1f2430; color: #fff; }
+.perm-badge { background: #e0e7ff; color: #3730a3; }
+.perm-badge--super { background: #fef3c7; color: #92400e; }
+.withdrawn-badge { background: #f3f4f6; color: var(--color-muted); }
+
+/* 목록 위 "직원만" 체크 */
+.filter-row .form-check { margin-left: 4px; }
+
+/* 회원 상세의 직원 권한 */
+.staff-card { margin-top: 16px; }
+.staff-card h2 { font-size: 1.05rem; margin: 0 0 12px; }
+.perm-options { display: grid; gap: 8px; margin: 16px 0 8px; padding: 0; border: 0; min-width: 0; }
+.perm-option-hint { margin: 0 0 0 26px; font-size: 12px; color: var(--color-muted); }
+.staff-card .form-actions { flex-wrap: wrap; }
+.confirm-box {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+}
+.confirm-box p { margin: 0; }
+.confirm-box .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

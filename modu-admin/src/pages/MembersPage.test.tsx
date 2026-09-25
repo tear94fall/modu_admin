@@ -16,7 +16,7 @@ describe('MembersPage', () => {
     clearImageCache()
   })
 
-  it('renders columns in order (번호, 이름, 이메일, 사용자 ID, 권한, 가입일) with formatted createdDate', async () => {
+  it('renders columns in order (번호, 이름, 이메일, 사용자 ID, 직원, 가입일) with formatted createdDate', async () => {
     vi.spyOn(members, 'searchMembers').mockResolvedValue({
       content: [
         {
@@ -26,6 +26,7 @@ describe('MembersPage', () => {
           username: 'Alice',
           role: 'ROLE_MEMBER',
           createdDate: '2026-09-04T12:34:56',
+          staffPermissions: ['SUPER'],
         },
       ],
       totalElements: 1,
@@ -48,11 +49,13 @@ describe('MembersPage', () => {
       '이름',
       '이메일',
       '사용자 ID',
-      '권한',
+      '직원',
       '가입일',
     ])
 
-    expect(await screen.findByText('일반 회원')).toBeInTheDocument()
+    // 옛 role(ROLE_MEMBER) 대신 직원 권한을 보여 준다.
+    expect(await screen.findByText('최상위')).toBeInTheDocument()
+    expect(screen.queryByText('일반 회원')).toBeNull()
     expect(await screen.findByText('2026-09-04 12:34')).toBeInTheDocument()
   })
 
@@ -145,7 +148,6 @@ describe('MembersPage', () => {
     const columns: [string, string, string][] = [
       ['이메일', 'email,asc', 'email,desc'],
       ['사용자 ID', 'userId,asc', 'userId,desc'],
-      ['권한', 'role,asc', 'role,desc'],
       ['가입일', 'createdDate,desc', 'createdDate,asc'],
       ['이름', 'name,asc', 'name,desc'],
     ]
@@ -179,7 +181,7 @@ describe('MembersPage', () => {
     await waitFor(() => expect(searchMembers).toHaveBeenCalledWith('', 0, 'name,asc'))
 
     const header = (label: string) => screen.getByRole('columnheader', { name: label })
-    const others = ['이메일', '사용자 ID', '권한', '가입일']
+    const others = ['이메일', '사용자 ID', '가입일']
 
     // 엑셀과 같은 방향이다: 오름차순(ㄱ→ㅎ)이 아래 화살표.
     expect(header('이름').textContent).toContain('▼')
@@ -249,7 +251,7 @@ describe('MembersPage', () => {
       </MemoryRouter>,
     )
 
-    for (const value of [username, email, userId, '일반 회원', '2026-09-04 12:34']) {
+    for (const value of [username, email, userId, '2026-09-04 12:34']) {
       expect(await screen.findByText(value)).toHaveAttribute('title', value)
     }
   })
@@ -259,7 +261,15 @@ describe('MembersPage', () => {
     try {
       vi.spyOn(members, 'searchMembers').mockResolvedValue({
         content: [
-          { id: 7, userId: 'u7', email: 'seven@b.c', username: '일곱', role: 'ROLE_ADMIN', createdDate: '2026-09-04T12:34:56' },
+          {
+            id: 7,
+            userId: 'u7',
+            email: 'seven@b.c',
+            username: '일곱',
+            role: 'ROLE_MEMBER',
+            createdDate: '2026-09-04T12:34:56',
+            staffPermissions: ['ADMIN', 'INTERNAL'],
+          },
         ],
         totalElements: 1,
         totalPages: 1,
@@ -279,7 +289,8 @@ describe('MembersPage', () => {
       const card = await screen.findByRole('button', { name: /일곱/ })
       expect(screen.queryByRole('table')).toBeNull()
       expect(card).toHaveTextContent('seven@b.c')
-      expect(card).toHaveTextContent('관리자')
+      expect(card).toHaveTextContent('어드민')
+      expect(card).toHaveTextContent('인터널')
       // 정렬은 표 머리글 대신 카드 위의 버튼 줄로 한다.
       expect(screen.getByRole('button', { name: /이름/ })).toBeInTheDocument()
       expect(container.querySelectorAll('.card')).toHaveLength(1)

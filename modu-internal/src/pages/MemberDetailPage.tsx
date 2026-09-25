@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError, formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '@modu/console-core'
-import { getMember, roleLabel, type MemberDetail } from '../api/members'
+import { ApiError, formatUtcDateTime, hasRole, timeZoneLabel, useDisplayTimeZone } from '@modu/console-core'
+import { displayName, getMember, type StaffInfo, type StaffMemberDetail } from '../api/members'
+import StaffPermissionCard from '../components/StaffPermissionCard'
 
-/** 회원 상세(읽기 전용). */
+/** 회원 상세. 회원 정보는 읽기 전용이고, 직원 권한은 최상위(ROLE_SUPER)만 바꾼다. */
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
   const timeZone = useDisplayTimeZone()
-  const [detail, setDetail] = useState<MemberDetail | null>(null)
+  const [detail, setDetail] = useState<StaffMemberDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -39,31 +40,41 @@ export default function MemberDetailPage() {
     )
   if (!detail) return <p>불러오는 중...</p>
 
-  const m = detail.member
+  const onStaffChange = (staff: StaffInfo | null) => setDetail((d) => (d ? { ...d, staff } : d))
+
   return (
     <div>
       {back}
-      <h1>{m.username}</h1>
+      <h1>
+        {displayName(detail)} {detail.status === 'WITHDRAWN' && <span className="withdrawn-badge">탈퇴</span>}
+      </h1>
       <div className="info-card">
         <dl className="detail-grid">
           <dt>이메일</dt>
-          <dd>{m.email}</dd>
+          <dd>{detail.email}</dd>
           <dt>사용자 ID</dt>
-          <dd className="mono">{m.userId}</dd>
+          <dd className="mono">{detail.userId}</dd>
           <dt>회원 번호</dt>
-          <dd>{m.id}</dd>
-          <dt>구분</dt>
-          <dd>{roleLabel(m.role)}</dd>
+          <dd>{detail.id}</dd>
+          <dt>상태</dt>
+          <dd>{detail.status === 'WITHDRAWN' ? '탈퇴' : '활성'}</dd>
           <dt>상태 메시지</dt>
-          <dd>{m.statusMessage || '-'}</dd>
+          <dd>{detail.statusMessage || '-'}</dd>
           <dt>친구 수</dt>
           <dd>{detail.friendCount}</dd>
           <dt>가입일</dt>
           <dd>
-            {formatUtcDateTime(detail.createdDate ?? m.createdDate, timeZone) || '-'} <span className="card-muted">({timeZoneLabel(timeZone)})</span>
+            {formatUtcDateTime(detail.createdDate, timeZone) || '-'} <span className="card-muted">({timeZoneLabel(timeZone)})</span>
           </dd>
         </dl>
       </div>
+      <StaffPermissionCard
+        memberId={detail.id}
+        staff={detail.staff}
+        withdrawn={detail.status === 'WITHDRAWN'}
+        editable={hasRole('ROLE_SUPER')}
+        onChange={onStaffChange}
+      />
     </div>
   )
 }

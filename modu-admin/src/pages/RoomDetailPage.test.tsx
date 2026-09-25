@@ -119,7 +119,9 @@ describe('RoomDetailPage', () => {
 
     expect(await screen.findByRole('heading', { name: '테스트방' })).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
-    expect(screen.getByText('일반 회원')).toBeInTheDocument()
+    // 채팅방 멤버 표에는 옛 role(권한) 칸이 없다.
+    expect(screen.queryByText('일반 회원')).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: '권한' })).toBeNull()
   })
 
   it('shows the room-name fallback letter when roomImage is empty', async () => {

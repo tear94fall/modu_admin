@@ -19,10 +19,11 @@ describe('MePage', () => {
         userId: 'u1',
         email: 'admin@b.c',
         username: '관리자',
-        role: 'ROLE_ADMIN',
+        role: 'ROLE_MEMBER',
       },
       friendCount: 0,
       friends: [],
+      staffPermissions: ['ADMIN', 'SYSTEM'],
     })
     vi.spyOn(storage, 'fetchImageObjectUrl').mockResolvedValue('blob:fake')
 
@@ -33,7 +34,9 @@ describe('MePage', () => {
     )
 
     expect(await screen.findByRole('heading', { level: 1, name: '내 정보' })).toBeInTheDocument()
-    expect((await screen.findAllByText('관리자')).length).toBeGreaterThanOrEqual(2)
+    expect(await screen.findByRole('heading', { level: 1, name: '관리자' })).toBeInTheDocument()
+    expect(screen.getAllByText('어드민')).toHaveLength(2)
+    expect(screen.getAllByText('시스템')).toHaveLength(2)
   })
 
   it('수정 후 이름만 바꾸면 이미지 파일명은 그대로 저장된다', async () => {

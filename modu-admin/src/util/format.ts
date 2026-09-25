@@ -6,11 +6,14 @@ export function formatDateTime(iso?: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 백오피스 표시용. 서버는 ROLE_ADMIN / ROLE_MEMBER 를 그대로 쓴다. */
-export function formatRole(role?: string): string {
-  if (role === 'ROLE_ADMIN') return '관리자'
-  if (role === 'ROLE_MEMBER') return '일반 회원'
-  return role ?? ''
+/** 직원 권한. 서버(member-service staff)가 이 순서로 내려준다. */
+export type StaffPermission = 'SUPER' | 'ADMIN' | 'SYSTEM' | 'INTERNAL'
+
+export const STAFF_LABELS: Record<StaffPermission, string> = {
+  SUPER: '최상위',
+  ADMIN: '어드민',
+  SYSTEM: '시스템',
+  INTERNAL: '인터널',
 }
 
 /** 89000 → "89,000원". 앱의 가격 표기와 같게 둔다. */

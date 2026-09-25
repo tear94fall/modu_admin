@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, setOnUnauthorized } from './client'
+import { ApiError, setOnUnauthorized } from '../api/client'
 import { isNotStaffError, loginWithGoogle, logout } from './auth'
-import { setRefreshToken } from '../auth/token'
+import { setRefreshToken } from './token'
 
 describe('auth api', () => {
   beforeEach(() => {
@@ -15,7 +15,7 @@ describe('auth api', () => {
 
     await expect(loginWithGoogle('google-id-token')).resolves.toEqual({ accessToken: 'at', refreshToken: 'rt' })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(String(url)).toMatch(/\/auth-service\/oauth2\/token$/)
+    expect(url).toBe('/auth-service/oauth2/token')
     expect(new Headers(init?.headers).get('Content-Type')).toBe('application/x-www-form-urlencoded')
     const body = new URLSearchParams(String(init?.body))
     expect(body.get('grant_type')).toBe('urn:modu:params:oauth:grant-type:google_id_token')

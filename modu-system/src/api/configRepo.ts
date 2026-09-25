@@ -39,7 +39,7 @@ export interface ConfigFileView {
   documents: ConfigDocument[]
 }
 
-/** 게이트웨이가 관리자 토큰을 확인하고 내부 토큰을 붙여 설정 서버로 넘긴다. */
+/** 게이트웨이가 직원 토큰(ROLE_SYSTEM)을 확인하고 내부 토큰을 붙여 설정 서버로 넘긴다. */
 export const getConfigFiles = () => api<ConfigFileSummary[]>('/config-service/api-admin/config-repo/files')
 
 export const getConfigFile = (path: string) =>

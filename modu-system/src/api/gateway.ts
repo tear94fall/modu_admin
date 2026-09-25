@@ -33,7 +33,7 @@ export interface GatewayConfig {
   generatedAt: string
 }
 
-/** 게이트웨이 자신이 내려주는 설정(읽기 전용). ROLE_ADMIN + aud=modu-admin 토큰이 있어야 한다. */
+/** 게이트웨이 자신이 내려주는 설정(읽기 전용). ROLE_SYSTEM + aud=modu-admin(직원) 토큰이 있어야 한다. */
 export const getGatewayConfig = () => api<GatewayConfig>('/gateway-service/api-admin/config')
 
 /** 라우트가 받는 경로들(Path 조건의 값). */

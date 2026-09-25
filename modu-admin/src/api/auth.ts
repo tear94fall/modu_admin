@@ -1,4 +1,4 @@
-import { api } from './client'
+import { api, ApiError } from './client'
 import { getRefreshToken } from '../auth/token'
 
 export interface TokenResponse { accessToken: string; refreshToken: string }
@@ -7,15 +7,21 @@ export interface TokenResponse { accessToken: string; refreshToken: string }
 interface OAuthTokenResponse { access_token: string; refresh_token?: string }
 
 const CLIENT_ID = 'modu-admin'
-const ADMIN_PASSWORD_GRANT = 'urn:modu:params:oauth:grant-type:admin_password'
+const GOOGLE_ID_TOKEN_GRANT = 'urn:modu:params:oauth:grant-type:google_id_token'
 const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' }
 
-/** 관리자 비밀번호 로그인. 토큰은 auth-service 의 표준 /oauth2/token 이 발급한다(aud=modu-admin). */
-export const login = async (email: string, password: string): Promise<TokenResponse> => {
-  const body = new URLSearchParams({ grant_type: ADMIN_PASSWORD_GRANT, client_id: CLIENT_ID, email, password })
+/**
+ * 직원 Google 로그인. Google ID 토큰(credential)을 auth-service 의 표준 /oauth2/token 으로 바꾼다(aud=modu-admin).
+ * 토큰의 roles 가 직원 권한이고, 이 콘솔은 ROLE_ADMIN 이 있어야 쓴다. 직원이 아니면 400 invalid_grant([isNotStaffError]).
+ */
+export const loginWithGoogle = async (idToken: string): Promise<TokenResponse> => {
+  const body = new URLSearchParams({ grant_type: GOOGLE_ID_TOKEN_GRANT, client_id: CLIENT_ID, id_token: idToken })
   const res = await api<OAuthTokenResponse>('/auth-service/oauth2/token', { method: 'POST', headers: FORM, body: body.toString() })
   return { accessToken: res.access_token, refreshToken: res.refresh_token ?? '' }
 }
+
+/** 로그인 실패가 "직원이 아님(또는 탈퇴)"인지. auth-service 는 이때 400 {"error":"invalid_grant"} 를 준다. */
+export const isNotStaffError = (e: unknown): boolean => e instanceof ApiError && e.status === 400 && e.message.includes('invalid_grant')
 
 /** refresh 토큰을 폐기한다. 이미 없거나 실패해도 호출부는 무시하고 로컬 토큰을 지운다. */
 export const logout = () => {

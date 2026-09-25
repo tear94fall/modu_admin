@@ -54,3 +54,21 @@ export interface Page<T> {
   number: number
   size: number
 }
+
+/**
+ * 오류를 화면 문구로. 서버가 Spring 기본 오류 본문({status, error, message, path})에 message 를 담았으면 그것을,
+ * 아니면 [fallback] 을 쓴다(예: 409 "자기 자신의 직원 권한은 바꿀 수 없습니다").
+ */
+export function apiErrorMessage(e: unknown, fallback: string): string {
+  if (!(e instanceof ApiError)) return fallback
+  try {
+    const body: unknown = JSON.parse(e.message)
+    if (body && typeof body === 'object' && 'message' in body) {
+      const message = (body as { message?: unknown }).message
+      if (typeof message === 'string' && message.trim()) return message
+    }
+  } catch {
+    // 본문이 JSON 이 아니다.
+  }
+  return fallback
+}

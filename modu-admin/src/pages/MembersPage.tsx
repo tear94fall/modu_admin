@@ -7,13 +7,13 @@ import RemoteImage from '../components/RemoteImage'
 import SortChips, { type SortOption } from '../components/SortChips'
 import SortableHeader from '../components/SortableHeader'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { formatDateTime, formatRole } from '../util/format'
+import StaffBadges from '../components/StaffBadges'
+import { formatDateTime } from '../util/format'
 
 /** 폰 카드 목록의 정렬 기준. 표 머리글과 같은 열·같은 기본 방향이다. */
 const MEMBER_SORT_OPTIONS: SortOption[] = [
   { label: '이름', field: 'name', defaultDir: 'asc' },
   { label: '이메일', field: 'email', defaultDir: 'asc' },
-  { label: '권한', field: 'role', defaultDir: 'asc' },
   { label: '가입일', field: 'createdDate', defaultDir: 'desc' },
 ]
 
@@ -99,7 +99,7 @@ export default function MembersPage() {
                     <span className="card-line">{m.email}</span>
                     <span className="card-line card-muted">{m.userId}</span>
                     <span className="card-meta">
-                      <span className="chip">{formatRole(m.role)}</span>
+                      <StaffBadges permissions={m.staffPermissions} empty={null} />
                       <span className="card-muted">{formatDateTime(m.createdDate)}</span>
                     </span>
                   </span>
@@ -137,7 +137,8 @@ export default function MembersPage() {
                   defaultDir="asc"
                   onChange={changeSort}
                 />
-                <SortableHeader label="권한" field="role" currentSort={sort} defaultDir="asc" onChange={changeSort} />
+                {/* 직원 권한은 모두 인터널에서 정한다. 회원 테이블의 옛 role 은 콘솔 권한과 상관없어 보여 주지 않는다. */}
+                <th>직원</th>
                 <SortableHeader
                   label="가입일"
                   field="createdDate"
@@ -170,7 +171,9 @@ export default function MembersPage() {
                   <td title={m.username}>{m.username}</td>
                   <td title={m.email}>{m.email}</td>
                   <td title={m.userId}>{m.userId}</td>
-                  <td title={formatRole(m.role)}>{formatRole(m.role)}</td>
+                  <td>
+                    <StaffBadges permissions={m.staffPermissions} />
+                  </td>
                   <td title={formatDateTime(m.createdDate)}>{formatDateTime(m.createdDate)}</td>
                 </tr>
               ))}

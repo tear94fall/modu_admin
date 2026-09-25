@@ -1,12 +1,14 @@
-import { formatRole } from '../util/format'
+import type { StaffPermission } from '../util/format'
 import RemoteImage from './RemoteImage'
+import StaffBadges from './StaffBadges'
 
 /** 회원 상세의 친구(Member)와 채팅방 상세의 멤버(RoomMember)가 공통으로 가진 것만 쓴다. */
 interface MiniMember {
   username: string
   email: string
   userId: string
-  role?: string
+  /** 회원 상세의 친구 목록에서만 온다. 채팅방 멤버에는 없다. */
+  staffPermissions?: StaffPermission[]
   profileImage?: string
 }
 
@@ -29,9 +31,11 @@ export default function MemberMiniCard({ member, friendName, onClick }: Props) {
         </span>
         <span className="card-line">{member.email}</span>
         <span className="card-line card-muted">{member.userId}</span>
-        <span className="card-meta">
-          <span className="chip">{formatRole(member.role)}</span>
-        </span>
+        {member.staffPermissions && member.staffPermissions.length > 0 && (
+          <span className="card-meta">
+            <StaffBadges permissions={member.staffPermissions} />
+          </span>
+        )}
       </span>
     </button>
   )

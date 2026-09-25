@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { api, ApiError, setOnUnauthorized } from './client'
+import { api, ApiError, apiErrorMessage, setOnUnauthorized } from './client'
 import { getToken, setToken } from '../auth/token'
 
 describe('api', () => {
@@ -25,5 +25,16 @@ describe('api', () => {
     await expect(api('/x')).rejects.toBeInstanceOf(ApiError)
     expect(getToken()).toBeNull()
     expect(unauthorized).toHaveBeenCalled()
+  })
+})
+
+describe('apiErrorMessage', () => {
+  it('uses the Spring error body message when there is one', () => {
+    expect(apiErrorMessage(new ApiError(409, '{"status":409,"error":"Conflict","message":"자기 자신의 직원 권한은 바꿀 수 없습니다","path":"/x"}'), '실패')).toBe(
+      '자기 자신의 직원 권한은 바꿀 수 없습니다',
+    )
+    expect(apiErrorMessage(new ApiError(500, 'not json'), '실패')).toBe('실패')
+    expect(apiErrorMessage(new ApiError(400, '{"message":""}'), '실패')).toBe('실패')
+    expect(apiErrorMessage(new Error('x'), '실패')).toBe('실패')
   })
 })

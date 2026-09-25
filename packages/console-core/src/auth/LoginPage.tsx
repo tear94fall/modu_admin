@@ -1,59 +1,66 @@
-import { type FormEvent, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { login } from './auth'
+import { isNotStaffError, loginWithGoogle } from './auth'
+import { renderGoogleButton } from './google'
 import { setRefreshToken, setToken } from './token'
 
 interface LoginPageProps {
-  /** 제목(예: '시스템 콘솔 로그인'). */
+  /** 제목(예: '모두 시스템 로그인'). */
   title: string
   /** 로그인 뒤 갈 경로. */
   home: string
 }
 
+export const NOT_STAFF_MESSAGE = '직원 계정이 아닙니다. 최상위 관리자에게 직원 등록을 요청하세요.'
+export const LOGIN_FAILED_MESSAGE = '로그인하지 못했습니다. 잠시 뒤 다시 시도하세요.'
+export const GOOGLE_UNAVAILABLE_MESSAGE = 'Google 로그인 버튼을 불러오지 못했습니다. 네트워크를 확인하고 새로고침하세요.'
+
+/** 직원 Google 로그인. 버튼은 Google Identity Services 가 그리고, 받은 ID 토큰을 콘솔 토큰으로 바꾼다. */
 export default function LoginPage({ title, home }: LoginPageProps) {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const buttonRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    try {
-      const { accessToken, refreshToken } = await login(email, password)
-      setToken(accessToken)
-      setRefreshToken(refreshToken)
-      navigate(home)
-    } catch {
-      setError('이메일 또는 비밀번호가 올바르지 않습니다')
-    } finally {
-      setSubmitting(false)
+  useEffect(() => {
+    const parent = buttonRef.current
+    if (!parent) return
+    let cancelled = false
+    const onCredential = async (idToken: string) => {
+      setError(null)
+      setSubmitting(true)
+      try {
+        const { accessToken, refreshToken } = await loginWithGoogle(idToken)
+        setToken(accessToken)
+        setRefreshToken(refreshToken)
+        navigate(home)
+      } catch (e) {
+        setError(isNotStaffError(e) ? NOT_STAFF_MESSAGE : LOGIN_FAILED_MESSAGE)
+      } finally {
+        setSubmitting(false)
+      }
     }
-  }
+    renderGoogleButton(parent, (idToken) => void onCredential(idToken)).catch(() => {
+      if (!cancelled) setError(GOOGLE_UNAVAILABLE_MESSAGE)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [navigate, home])
 
   return (
     <div className="login-page">
-      <form className="form-card login-form" onSubmit={onSubmit}>
+      <div className="form-card login-form">
         <h1>{title}</h1>
-        <div className="form-section">
-          <div className="form-field">
-            <label htmlFor="email">이메일</label>
-            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div className="form-field">
-            <label htmlFor="password">비밀번호</label>
-            <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
-        </div>
-        <div className="form-actions">
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
-            로그인
-          </button>
-        </div>
-        {error && <p className="error-text">{error}</p>}
-      </form>
+        <p className="form-hint">직원으로 등록된 Google 계정으로 로그인합니다.</p>
+        <div className="google-button" ref={buttonRef} aria-busy={submitting} />
+        {submitting && <p className="form-hint">로그인하는 중...</p>}
+        {error && (
+          <p className="error-text" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   )
 }

@@ -5,7 +5,8 @@ import MemberCard from '../components/MemberCard'
 import MemberMiniCard from '../components/MemberMiniCard'
 import RemoteImage from '../components/RemoteImage'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { formatRole } from '../util/format'
+import StaffBadges from '../components/StaffBadges'
+import type { StaffPermission } from '../util/format'
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -15,6 +16,7 @@ export default function MemberDetailPage() {
   const [friendCount, setFriendCount] = useState(0)
   const [friends, setFriends] = useState<Member[]>([])
   const [createdDate, setCreatedDate] = useState<string | undefined>(undefined)
+  const [staffPermissions, setStaffPermissions] = useState<StaffPermission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,6 +32,7 @@ export default function MemberDetailPage() {
         setFriendCount(result.friendCount)
         setFriends(result.friends ?? [])
         setCreatedDate(result.createdDate)
+        setStaffPermissions(result.staffPermissions ?? [])
       })
       .catch(() => {
         if (!cancelled) setError('회원 정보를 불러오지 못했습니다')
@@ -56,7 +59,7 @@ export default function MemberDetailPage() {
 
       {/* 회원 정보와 친구 목록을 나란히 둔다. 좁은 화면에서는 CSS 가 한 줄로 접는다. */}
       <div className="member-columns">
-        <MemberCard member={member} friendCount={friendCount} createdDate={createdDate} />
+        <MemberCard member={member} friendCount={friendCount} createdDate={createdDate} staffPermissions={staffPermissions} />
 
         <div>
           <h2>친구 {friendCount}명</h2>
@@ -79,7 +82,7 @@ export default function MemberDetailPage() {
                   <th>내가 정한 이름</th>
                   <th>이메일</th>
                   <th>사용자 ID</th>
-                  <th>권한</th>
+                  <th>직원</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,7 +107,9 @@ export default function MemberDetailPage() {
                     <td>{f.friendName || '-'}</td>
                     <td>{f.email}</td>
                     <td>{f.userId}</td>
-                    <td>{formatRole(f.role)}</td>
+                    <td>
+                      <StaffBadges permissions={f.staffPermissions} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
