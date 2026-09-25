@@ -1,0 +1,3 @@
+/* 사내 업무 콘솔 전용. 공통 모양은 @modu/console-core/styles.css. */
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; word-break: break-all; }
+.result-count { align-self: center; margin-left: 12px; font-size: 13px; color: var(--color-muted); }

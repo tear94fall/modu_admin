@@ -1,0 +1,14 @@
+/* 시스템 콘솔 전용. 공통 모양은 @modu/console-core/styles.css. */
+.page-note { margin: -8px 0 16px; font-size: 13px; color: var(--color-muted); }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.summary-grid .info-card h2 { font-size: 15px; margin: 0 0 10px; }
+.mono, .mono-list { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.mono-list { margin: 0; padding-left: 18px; }
+.route-search { width: 100%; max-width: 420px; height: 36px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 6px; }
+/* 공통 스타일의 .chip(정렬 칩)과 겹치지 않게 이름을 따로 둔다. */
+.access-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.access-chip { height: 30px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: 15px; background: #fff; color: #374151; font-size: 13px; cursor: pointer; }
+.access-chip--on { border-color: var(--color-accent); color: var(--color-accent); font-weight: 600; }
+.route-table td { vertical-align: top; white-space: normal; word-break: break-all; }
+.route-detail td { background: #f8fafc; }
+.route-card { cursor: default; }
