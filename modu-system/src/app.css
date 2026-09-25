@@ -1,0 +1,34 @@
+/* 시스템 콘솔 전용. 공통 모양은 @modu/console-core/styles.css. */
+.page-note { margin: -8px 0 16px; font-size: 13px; color: var(--color-muted); }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.summary-grid .info-card h2 { font-size: 15px; margin: 0 0 10px; }
+.mono, .mono-list { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.mono-list { margin: 0; padding-left: 18px; }
+.route-search { width: 100%; max-width: 420px; height: 36px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 6px; }
+/* 공통 스타일의 .chip(정렬 칩)과 겹치지 않게 이름을 따로 둔다. */
+.access-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.access-chip { height: 30px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: 15px; background: #fff; color: #374151; font-size: 13px; cursor: pointer; }
+.access-chip--on { border-color: var(--color-accent); color: var(--color-accent); font-weight: 600; }
+.route-table td { vertical-align: top; white-space: normal; word-break: break-all; }
+.route-detail td { background: #f8fafc; }
+.route-card { cursor: default; }
+/* Config 설정: 왼쪽 파일 목록 + 오른쪽 키/값 표. 폰에서는 파일 목록이 선택 상자로 바뀐다. */
+.config-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start; }
+.config-files { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px; }
+.config-group { display: flex; flex-direction: column; gap: 2px; }
+.config-group-title { font-size: 12px; font-weight: 600; color: var(--color-muted); letter-spacing: 0.04em; margin: 0 0 4px 8px; }
+.config-file { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; color: #374151; text-align: left; cursor: pointer; }
+.config-file:hover { background: #f1f5f9; }
+.config-file--on { background: #e8effd; color: var(--color-accent); font-weight: 600; }
+.config-file:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.config-file-meta { font-size: 12px; color: var(--color-muted); font-weight: 400; white-space: nowrap; }
+.config-content { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.config-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.config-head h2 { margin: 0; font-size: 16px; }
+.config-doc { display: flex; flex-direction: column; gap: 8px; }
+.config-doc-title { font-size: 13px; font-weight: 600; color: #374151; padding-top: 4px; }
+.config-table td { vertical-align: top; white-space: normal; word-break: break-all; }
+.config-table td.config-line { white-space: nowrap; word-break: normal; font-variant-numeric: tabular-nums; }
+.config-file .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.config-file-select { width: 100%; height: 38px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
+.layout--mobile .config-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }

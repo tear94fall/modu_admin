@@ -1,4 +1,6 @@
-node_modules
-dist
-.env
+# 루트 컨텍스트(modu-system, modu-internal 빌드)용. modu-admin 은 자기 디렉터리를 컨텍스트로 쓴다.
 .git
+**/node_modules
+**/dist
+modu-admin
+**/.env

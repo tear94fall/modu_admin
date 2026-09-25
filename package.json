@@ -1,19 +1,16 @@
 {
-  "name": "admin",
+  "name": "modu-consoles",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "description": "모두의 내부 콘솔 모음. modu-admin(기존 백오피스, 독립 패키지), modu-system(시스템 운영), modu-internal(사내 업무)과 공통 기반 packages/console-core.",
+  "workspaces": [
+    "packages/*",
+    "modu-system",
+    "modu-internal"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3"
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
