@@ -7,9 +7,9 @@ import {
   PROMOTION_STATUS_LABELS,
   type PromotionSummary,
   type PromotionType,
+  promotionKindLabel,
   promotionStatusClass,
   searchPromotions,
-  TYPE_LABELS,
 } from '../api/promotions'
 import Pager from '../components/Pager'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -26,8 +26,13 @@ function BannerThumb({ p }: { p: PromotionSummary }) {
   return <span className="promotion-thumb" data-testid="banner-swatch" style={{ background: p.bannerColor ?? DEFAULT_BANNER_COLOR }} />
 }
 
-/** 기획전은 상품 수, 이벤트는 출석 수. */
-const countText = (p: PromotionSummary) => (p.type === 'EXHIBITION' ? `상품 ${p.productCount}개` : `출석 ${p.attendanceCount}회`)
+/** 기획전은 상품 수(+ 쿠폰 수), 출석 체크는 출석 수, 쿠폰 받기는 쿠폰 수. */
+const countText = (p: PromotionSummary) => {
+  const coupons = p.couponCount ?? 0
+  if (p.type === 'EXHIBITION') return `상품 ${p.productCount}개${coupons > 0 ? ` · 쿠폰 ${coupons}장` : ''}`
+  if (p.eventKind === 'COUPON') return `쿠폰 ${coupons}장`
+  return `출석 ${p.attendanceCount}회`
+}
 
 /** 기획전·이벤트 목록. 종류로 거르고 제목으로 찾는다. 서버가 순서(sortOrder) 오름차순, 최신순으로 준다. */
 export default function PromotionsPage() {
@@ -127,7 +132,7 @@ export default function PromotionsPage() {
                   <BannerThumb p={p} />
                   <span className="card-body">
                     <span className="card-title">
-                      [{TYPE_LABELS[p.type]}] {p.title}
+                      [{promotionKindLabel(p)}] {p.title}
                     </span>
                     <span className="card-line">
                       <span className={promotionStatusClass(p.status)}>{PROMOTION_STATUS_LABELS[p.status]}</span> {visibleBadge(p.visible)}
@@ -151,8 +156,8 @@ export default function PromotionsPage() {
             <colgroup>
               <col style={{ width: '5%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '26%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '24%' }} />
               <col style={{ width: '19%' }} />
               <col style={{ width: '8%' }} />
               <col style={{ width: '7%' }} />
@@ -169,7 +174,7 @@ export default function PromotionsPage() {
                 <th>상태</th>
                 <th>노출</th>
                 <th>순서</th>
-                <th>상품·출석</th>
+                <th>구성</th>
               </tr>
             </thead>
             <tbody>
@@ -179,7 +184,7 @@ export default function PromotionsPage() {
                   <td>
                     <BannerThumb p={p} />
                   </td>
-                  <td>{TYPE_LABELS[p.type]}</td>
+                  <td>{promotionKindLabel(p)}</td>
                   <td title={p.title}>{p.title}</td>
                   <td>{formatPeriod(p.startDate, p.endDate)}</td>
                   <td>

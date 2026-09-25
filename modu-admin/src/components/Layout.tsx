@@ -4,7 +4,7 @@ import { logout as logoutRequest } from '../api/auth'
 import { clearToken } from '../auth/token'
 import { useIsMobile } from '../hooks/useIsMobile'
 
-/** 사이드바 메뉴를 서비스별로 묶는다. 푸시·앱 설정은 채팅 앱의 기능이라 채팅 묶음에 둔다. */
+/** 사이드바 메뉴를 서비스별로 묶는다. 푸시·앱 설정은 채팅 앱의 기능이라 채팅 묶음에, 포인트·쿠폰은 혜택 묶음에 둔다. */
 const SECTIONS = [
   { title: '회원', links: [{ to: '/members', label: '회원' }] },
   {
@@ -16,8 +16,11 @@ const SECTIONS = [
     ],
   },
   {
-    title: '그로스',
-    links: [{ to: '/points', label: '포인트' }],
+    title: '혜택',
+    links: [
+      { to: '/points', label: '포인트' },
+      { to: '/coupons', label: '쿠폰' },
+    ],
   },
   {
     title: '커머스',

@@ -9,6 +9,7 @@ import PromotionsPage from './PromotionsPage'
 const autumn: promotions.PromotionSummary = {
   id: 3,
   type: 'EXHIBITION',
+  eventKind: null,
   title: '가을 신상 기획전',
   startDate: '2026-09-20',
   endDate: '2026-10-05',
@@ -17,6 +18,7 @@ const autumn: promotions.PromotionSummary = {
   sortOrder: 0,
   productCount: 12,
   attendanceCount: 0,
+  couponCount: 0,
   bannerImageUrl: 'https://img/autumn.png',
   bannerColor: '#E11D48',
   createdAt: '2026-09-19 03:00:00',
@@ -27,6 +29,7 @@ const checkin: promotions.PromotionSummary = {
   ...autumn,
   id: 4,
   type: 'EVENT',
+  eventKind: 'ATTENDANCE',
   title: '10월 출석 체크',
   startDate: '2026-10-01',
   endDate: '2026-10-31',
@@ -68,12 +71,24 @@ describe('PromotionsPage', () => {
     expect(autumnRow.querySelector('img.promotion-thumb')).toHaveAttribute('src', 'https://img/autumn.png')
 
     const eventRow = screen.getByText('10월 출석 체크').closest('tr')!
-    expect(within(eventRow).getByText('이벤트')).toBeInTheDocument()
+    expect(within(eventRow).getByText('이벤트 · 출석')).toBeInTheDocument()
     expect(within(eventRow).getByText('예정')).toBeInTheDocument()
     expect(within(eventRow).getByText('숨김')).toBeInTheDocument()
     expect(within(eventRow).getByText('출석 37회')).toBeInTheDocument()
     expect(within(eventRow).getByTestId('banner-swatch')).toHaveStyle({ background: '#2563EB' })
     expect(container.querySelectorAll('tbody tr')).toHaveLength(2)
+  })
+
+  it('shows 쿠폰 받기 events and exhibition coupons distinctly', async () => {
+    const couponEvent: promotions.PromotionSummary = { ...checkin, id: 5, title: '웰컴 쿠폰팩', eventKind: 'COUPON', attendanceCount: 0, couponCount: 3 }
+    vi.spyOn(promotions, 'searchPromotions').mockResolvedValue(page([{ ...autumn, couponCount: 2 }, couponEvent]))
+    renderPage()
+
+    const autumnRow = (await screen.findByText('가을 신상 기획전')).closest('tr')!
+    expect(within(autumnRow).getByText('상품 12개 · 쿠폰 2장')).toBeInTheDocument()
+    const couponRow = screen.getByText('웰컴 쿠폰팩').closest('tr')!
+    expect(within(couponRow).getByText('이벤트 · 쿠폰')).toBeInTheDocument()
+    expect(within(couponRow).getByText('쿠폰 3장')).toBeInTheDocument()
   })
 
   it('filters by type and searches by title from the first page', async () => {
@@ -119,7 +134,7 @@ describe('PromotionsPage', () => {
       vi.spyOn(promotions, 'searchPromotions').mockResolvedValue(page([checkin]))
       const { container } = renderPage()
 
-      expect(await screen.findByText('[이벤트] 10월 출석 체크')).toBeInTheDocument()
+      expect(await screen.findByText('[이벤트 · 출석] 10월 출석 체크')).toBeInTheDocument()
       expect(container.querySelector('table')).toBeNull()
       expect(screen.getByText('순서 2 · 출석 37회')).toBeInTheDocument()
       expect(screen.getByText('2026.10.01 ~ 2026.10.31')).toBeInTheDocument()
