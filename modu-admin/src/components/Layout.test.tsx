@@ -34,7 +34,7 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: '앱 설정' })).toBeInTheDocument()
   })
 
-  it('groups the menu by service: 회원 / 채팅 / 그로스 / 커머스', () => {
+  it('groups the menu by service: 회원 / 채팅 / 혜택 / 커머스', () => {
     const { container } = renderLayout()
 
     // 섹션 제목 → 그 아래 링크 순서. 푸시·앱 설정은 채팅 앱 기능이라 채팅 묶음에 들어간다.
@@ -46,7 +46,7 @@ describe('Layout', () => {
     expect(sections).toEqual([
       { title: '회원', links: ['회원'] },
       { title: '채팅', links: ['채팅방', '푸시', '앱 설정'] },
-      { title: '그로스', links: ['포인트'] },
+      { title: '혜택', links: ['포인트', '쿠폰'] },
       { title: '커머스', links: ['카테고리', '상품', '주문', '리뷰', '기획전·이벤트'] },
     ])
   })
@@ -82,7 +82,7 @@ describe('Layout', () => {
       await user.click(screen.getByRole('button', { name: '메뉴' }))
       expect(container.querySelector('.sidebar--drawer.open')).not.toBeNull()
       const titles = Array.from(container.querySelectorAll('.sidebar--drawer .nav-section-title')).map((el) => el.textContent)
-      expect(titles).toEqual(['회원', '채팅', '그로스', '커머스'])
+      expect(titles).toEqual(['회원', '채팅', '혜택', '커머스'])
 
       await user.click(screen.getByRole('link', { name: '상품' }))
       expect(container.querySelector('.sidebar--drawer.open')).toBeNull()

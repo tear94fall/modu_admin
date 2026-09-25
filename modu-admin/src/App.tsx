@@ -8,6 +8,8 @@ import MembersPage from './pages/MembersPage'
 import MePage from './pages/MePage'
 import ProductFormPage from './pages/ProductFormPage'
 import CategoriesPage from './pages/CategoriesPage'
+import CouponFormPage from './pages/CouponFormPage'
+import CouponsPage from './pages/CouponsPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import OrdersPage from './pages/OrdersPage'
 import PointAccountPage from './pages/PointAccountPage'
@@ -52,6 +54,9 @@ export default function App() {
           <Route path="/push" element={<PushPage />} />
           <Route path="/points" element={<PointsPage />} />
           <Route path="/points/:userId" element={<PointAccountPage />} />
+          <Route path="/coupons" element={<CouponsPage />} />
+          <Route path="/coupons/new" element={<CouponFormPage />} />
+          <Route path="/coupons/:id" element={<CouponFormPage />} />
           <Route path="/settings" element={<AppSettingsPage />} />
           <Route path="/me" element={<MePage />} />
         </Route>

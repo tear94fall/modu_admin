@@ -1502,3 +1502,133 @@ a.btn {
 .promotion-attendance { margin-top: 24px; }
 .promotion-attendance .form-heading { margin-bottom: 8px; }
 .table-scroll { overflow-x: auto; }
+
+/* 쿠폰 */
+.form-subheading { font-size: 14px; margin: 8px 0 0; }
+.coupon-picker { display: grid; gap: 8px; }
+.coupon-table { min-width: 1100px; }
+.coupon-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: #eef0f3; }
+.coupon-stats { margin: -8px 0 16px; color: var(--color-muted); font-size: 14px; }
+.coupon-section { margin-top: 24px; display: grid; gap: 8px; }
+.coupon-section .form-heading { margin-bottom: 0; }
+.coupon-category-list { list-style: none; margin: 0; padding: 8px 12px; display: grid; gap: 4px; max-height: 280px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; }
+.coupon-category--child { padding-left: 20px; }
+.grant-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.grant-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border-radius: 999px; background: #e0e7ff; color: #3730a3; font-size: 13px; }
+.grant-chip button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 4px; }
+.grant-skipped { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+.result-text p { margin: 0; }
+
+/* ── 폼 모양 맞추기 (2026-09-25) ───────────────────────────────── */
+
+/* 전역 button 이 흰 글자라 흰 바탕 칩 글자가 안 보였다. */
+.sort-chip { color: #374151; }
+.sort-chip:hover { border-color: #9ca3af; }
+.sort-chip.active { background: #eff6ff; }
+
+/* 섹션 사이를 띄우고 가는 선으로 나눈다. 제목이 위 칸에 붙어 보이지 않게. */
+.form-card .form-section + .form-section { margin-top: 28px; padding-top: 22px; border-top: 1px solid #eef1f5; }
+.form-card .form-heading { margin: 0 0 2px; font-size: 15px; font-weight: 700; color: #111827; }
+/* 격자 안에서 칸이 옆 칸 높이에 맞춰 늘어나지 않게. */
+.form-field { align-content: start; }
+
+/* 한 줄 입력 칸 폭: 값 길이에 맞춘다. 여러 줄(textarea)은 그대로 넓게. */
+.input-xs { max-width: 96px; }
+.input-sm { max-width: 180px; }
+.input-md { max-width: 280px; }
+.input-lg { max-width: 560px; }
+.input-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.06em; }
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* 숫자 칸 + 단위(원·%·일·장) */
+.input-unit { display: inline-flex; align-items: center; gap: 8px; }
+.input-unit > input { text-align: right; }
+.input-unit > span { font-size: 13px; color: var(--color-muted); }
+
+/* 칸을 값 폭대로 한 줄에 늘어놓는다(좁은 화면에서는 줄바꿈). */
+.form-row { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-start; }
+.form-check--toggle { align-self: center; margin-top: 18px; }
+
+/* 배너 색: 색 고르기 + hex + 자주 쓰는 색 */
+.palette { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 4px; }
+.palette-swatch { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #d1d5db; cursor: pointer; }
+.palette-swatch:hover { transform: scale(1.1); }
+.palette-swatch--on { box-shadow: 0 0 0 2px #111827; }
+
+/* ── 날짜 칸 ── */
+.date-range { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.date-range-sep { padding-bottom: 9px; color: var(--color-muted); font-weight: 600; }
+.date-range-days { margin-bottom: 7px; padding: 3px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; font-size: 12px; font-weight: 600; }
+
+.date-field { position: relative; width: 200px; }
+.date-input {
+  display: flex; align-items: center; gap: 4px;
+  border: 1px solid var(--color-border); border-radius: 6px; background: #fff; padding-right: 4px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.date-input:focus-within { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+.date-input--invalid { border-color: #dc2626; }
+.date-input input { border: 0; box-shadow: none; padding: 8px 0 8px 10px; font-size: 0.95rem; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; min-width: 0; }
+.date-input input:focus { box-shadow: none; }
+.date-weekday { flex: none; font-size: 12px; font-weight: 700; color: #6b7280; }
+.date-weekday--0 { color: #e11d48; }
+.date-weekday--6 { color: #2563eb; }
+.date-icon {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0; border: 0; border-radius: 6px;
+  background: transparent; color: #6366f1;
+}
+.date-icon:hover { background: #eef2ff; }
+
+.date-pop {
+  position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; width: 296px;
+  background: #fff; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.18), 0 2px 6px rgba(17, 24, 39, 0.08);
+}
+.date-pop-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #ec4899 100%); color: #fff;
+}
+.date-pop-head strong { font-size: 15px; letter-spacing: 0.02em; }
+.date-nav {
+  width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 18px; line-height: 1;
+}
+.date-nav:hover { background: rgba(255, 255, 255, 0.32); }
+.date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px 0; padding: 10px 10px 6px; }
+.date-wd { text-align: center; font-size: 11px; font-weight: 700; color: #9ca3af; padding-bottom: 4px; }
+.date-wd--0 { color: #f43f5e; }
+.date-wd--6 { color: #3b82f6; }
+.date-day {
+  position: relative; height: 36px; padding: 0; border: 0; border-radius: 10px;
+  background: transparent; color: #1f2937; font-size: 13px; font-variant-numeric: tabular-nums;
+}
+.date-day:hover:not(:disabled) { background: #f3f4f6; }
+.date-day--wd0 { color: #e11d48; }
+.date-day--wd6 { color: #2563eb; }
+.date-day--today { box-shadow: inset 0 0 0 2px #f59e0b; font-weight: 700; }
+.date-day--range { background: #eef2ff; border-radius: 0; }
+.date-day--edge { background: #c7d2fe; color: #312e81; font-weight: 700; }
+.date-day--selected,
+.date-day--selected:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6366f1, #ec4899); color: #fff; font-weight: 700;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);
+}
+.date-day:disabled { color: #d1d5db; background: transparent; cursor: not-allowed; opacity: 1; }
+.date-pop-foot { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 12px; border-top: 1px solid #f3f4f6; }
+.date-chip {
+  padding: 5px 10px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: #f5f3ff; color: #6d28d9;
+}
+.date-chip:hover:not(:disabled) { background: #ede9fe; }
+.date-chip--today { background: #fff7ed; color: #c2410c; }
+.date-chip--today:hover { background: #ffedd5; }
+/* 색 줄: hex 칸은 좁게(.inline-form input 의 flex:1 을 되돌린다), 미리보기는 앱 배너 크기에 가깝게. */
+.inline-form input.input-sm { flex: 0 0 auto; width: 110px; }
+.promotion-banner { max-width: 400px; margin-top: 4px; }
+/* textarea·select 는 브라우저 기본이 고정폭 글꼴이다. 화면 글꼴을 따른다. */
+input, textarea, select { font-family: inherit; }
+/* 검색 줄(상품·쿠폰·회원 찾기)도 한 줄 입력이라 폭을 줄인다. */
+.form-card .inline-form, .coupon-section .inline-form { max-width: 560px; }

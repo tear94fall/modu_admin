@@ -1,6 +1,9 @@
 import { type FormEvent, useEffect, useState } from 'react'
+import DateField from '../components/DateField'
+import { PERIOD_PRESETS, START_PRESETS } from '../util/dateInput'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
+import type { CouponSummary } from '../api/coupons'
 import { formatPoints, listRules, type PointRule } from '../api/points'
 import { searchProducts, STATUS_LABELS, validationMessage } from '../api/products'
 import {
@@ -8,10 +11,12 @@ import {
   createPromotion,
   DEFAULT_BANNER_COLOR,
   deletePromotion,
+  type EventKind,
   formatPromotionDate,
   getAttendances,
   getPromotion,
   HEX_COLOR,
+  MAX_PROMOTION_COUPONS,
   PROMOTION_STATUS_LABELS,
   type PromotionDetail,
   type PromotionInput,
@@ -23,9 +28,19 @@ import {
   updatePromotion,
   validatePromotion,
 } from '../api/promotions'
+import CouponPicker from '../components/CouponPicker'
 import Pager from '../components/Pager'
 import { formatPrice } from '../util/format'
 import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
+
+/** 배너 색 빠른 선택. */
+const BANNER_PALETTE = ['#E11D48', '#F97316', '#F59E0B', '#16A34A', '#0EA5E9', '#2563EB', '#7C3AED', '#DB2777', '#111827']
+
+/** 시작·종료일 포함 일수. */
+function daysBetween(start: string, end: string): number {
+  const toUtc = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8)))
+  return Math.round((toUtc(end) - toUtc(start)) / 86_400_000) + 1
+}
 
 const MAX_PRODUCTS = 100
 
@@ -116,13 +131,18 @@ function AttendanceSection({ id }: { id: string }) {
   )
 }
 
-/** /promotions/new 는 등록, /promotions/:id 는 수정·삭제. 기획전은 상품 목록, 이벤트(출석 체크)는 보상 규칙을 고른다. */
+/**
+ * /promotions/new 는 등록, /promotions/:id 는 수정·삭제. 기획전은 상품 목록(+ 기획전 쿠폰),
+ * 이벤트는 종류에 따라 출석 체크 보상 규칙 또는 쿠폰 받기 쿠폰을 고른다.
+ */
 export default function PromotionFormPage() {
   const { id } = useParams<{ id: string }>()
   const editing = id !== undefined
   const navigate = useNavigate()
 
   const [type, setType] = useState<PromotionType>('EXHIBITION')
+  const [eventKind, setEventKind] = useState<EventKind>('ATTENDANCE')
+  const [coupons, setCoupons] = useState<CouponSummary[]>([])
   const [title, setTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
   const [description, setDescription] = useState('')
@@ -163,6 +183,8 @@ export default function PromotionFormPage() {
 
   const fill = (p: PromotionDetail) => {
     setType(p.type)
+    setEventKind(p.eventKind ?? 'ATTENDANCE')
+    setCoupons(p.coupons ?? [])
     setTitle(p.title)
     setSubtitle(p.subtitle ?? '')
     setDescription(p.description ?? '')
@@ -242,9 +264,11 @@ export default function PromotionFormPage() {
       visible,
       sortOrder: sortOrder.trim() === '' ? 0 : Number(sortOrder),
     }
-    if (type === 'EXHIBITION') return { ...base, productIds: products.map((p) => p.id) }
+    const couponIds = coupons.map((c) => c.id)
+    if (type === 'EXHIBITION') return { ...base, productIds: products.map((p) => p.id), couponIds }
+    if (eventKind === 'COUPON') return { ...base, eventKind, couponIds }
     const code = pointRuleCode === '' ? null : pointRuleCode
-    return { ...base, pointRuleCode: code, rewardPoints: code === null ? null : (selectedRule?.points ?? savedRewardPoints) }
+    return { ...base, eventKind, pointRuleCode: code, rewardPoints: code === null ? null : (selectedRule?.points ?? savedRewardPoints) }
   }
 
   const onSubmit = async (e: FormEvent) => {
@@ -334,37 +358,50 @@ export default function PromotionFormPage() {
           </fieldset>
           <div className="form-field">
             <label htmlFor="promotion-title">제목</label>
-            <input id="promotion-title" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} />
+            <input id="promotion-title" className="input-lg" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="form-field">
             <label htmlFor="promotion-subtitle">부제</label>
-            <input id="promotion-subtitle" value={subtitle} maxLength={100} onChange={(e) => setSubtitle(e.target.value)} />
+            <input id="promotion-subtitle" className="input-lg" value={subtitle} maxLength={100} onChange={(e) => setSubtitle(e.target.value)} />
           </div>
           <div className="form-field">
             <label htmlFor="promotion-description">설명</label>
             <textarea id="promotion-description" rows={4} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
-          <div className="form-grid">
+          <div className="date-range">
             <div className="form-field">
               <label htmlFor="promotion-start">시작일</label>
-              <input id="promotion-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <DateField id="promotion-start" value={startDate} onChange={setStartDate} rangeStart={startDate} rangeEnd={endDate} presets={START_PRESETS} />
             </div>
+            <span className="date-range-sep" aria-hidden="true">
+              ~
+            </span>
             <div className="form-field">
               <label htmlFor="promotion-end">종료일</label>
-              <input id="promotion-end" type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
+              <DateField
+                id="promotion-end"
+                value={endDate}
+                onChange={setEndDate}
+                min={startDate || undefined}
+                rangeStart={startDate}
+                rangeEnd={endDate}
+                presets={PERIOD_PRESETS}
+                presetBase={startDate}
+              />
             </div>
+            {startDate && endDate && endDate >= startDate && <span className="date-range-days">{daysBetween(startDate, endDate)}일간</span>}
           </div>
           <p className="form-hint">기간은 한국 날짜 기준이며 시작일·종료일을 포함합니다.</p>
-          <div className="form-grid">
-            <label className="form-check" htmlFor="promotion-visible">
+          <div className="form-row">
+            <div className="form-field">
+              <label htmlFor="promotion-sort">순서</label>
+              <input id="promotion-sort" className="input-xs" type="number" step={1} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+              <p className="form-hint">작을수록 앞에 나옵니다.</p>
+            </div>
+            <label className="form-check form-check--toggle" htmlFor="promotion-visible">
               <input id="promotion-visible" type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
               앱에 노출
             </label>
-            <div className="form-field">
-              <label htmlFor="promotion-sort">순서</label>
-              <input id="promotion-sort" type="number" step={1} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
-              <p className="form-hint">작을수록 앞에 나옵니다.</p>
-            </div>
           </div>
         </div>
 
@@ -372,7 +409,7 @@ export default function PromotionFormPage() {
           <h2 className="form-heading">배너</h2>
           <div className="form-field">
             <label htmlFor="promotion-image">배너 이미지 URL</label>
-            <input id="promotion-image" type="url" placeholder="https://" value={bannerImageUrl} onChange={(e) => setBannerImageUrl(e.target.value)} />
+            <input id="promotion-image" className="input-lg" type="url" placeholder="https://" value={bannerImageUrl} onChange={(e) => setBannerImageUrl(e.target.value)} />
           </div>
           <div className="form-field">
             <label htmlFor="promotion-color">배너 색</label>
@@ -384,8 +421,21 @@ export default function PromotionFormPage() {
                 value={HEX_COLOR.test(trimmedColor) ? trimmedColor.toLowerCase() : DEFAULT_BANNER_COLOR.toLowerCase()}
                 onChange={(e) => setBannerColor(e.target.value.toUpperCase())}
               />
-              <input id="promotion-color" placeholder={`비우면 ${DEFAULT_BANNER_COLOR}`} maxLength={7} value={bannerColor} onChange={(e) => setBannerColor(e.target.value)} />
+              <input id="promotion-color" className="input-sm" placeholder={DEFAULT_BANNER_COLOR} maxLength={7} value={bannerColor} onChange={(e) => setBannerColor(e.target.value)} />
+              <span className="palette" role="group" aria-label="자주 쓰는 색">
+                {BANNER_PALETTE.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={trimmedColor.toUpperCase() === c ? 'palette-swatch palette-swatch--on' : 'palette-swatch'}
+                    style={{ background: c }}
+                    aria-label={`배너 색 ${c}`}
+                    onClick={() => setBannerColor(c)}
+                  />
+                ))}
+              </span>
             </div>
+            <p className="form-hint">비우면 기본 색({DEFAULT_BANNER_COLOR})을 씁니다.</p>
           </div>
           <BannerPreview imageUrl={bannerImageUrl.trim()} color={trimmedColor} title={title.trim()} subtitle={subtitle.trim()} />
         </div>
@@ -468,40 +518,66 @@ export default function PromotionFormPage() {
                 ))}
               </ul>
             )}
+            <h3 className="form-subheading">기획전 쿠폰 ({coupons.length})</h3>
+            <p className="form-hint">선택 사항입니다. 0~{MAX_PROMOTION_COUPONS}개. 앱 기획전 화면에서 받기 버튼으로 보여 줍니다.</p>
+            <CouponPicker label="기획전 쿠폰" selected={coupons} onChange={setCoupons} max={MAX_PROMOTION_COUPONS} />
           </div>
         ) : (
           <div className="form-section">
             <h2 className="form-heading">이벤트</h2>
-            <div className="form-field">
-              <span className="form-label">이벤트 종류</span>
-              <span>출석 체크 — 기간 동안 하루 한 번 출석하면 보상 포인트를 줍니다.</span>
-            </div>
-            <div className="form-field">
-              <label htmlFor="promotion-rule">보상 포인트 규칙</label>
-              <select id="promotion-rule" value={pointRuleCode} onChange={(e) => setPointRuleCode(e.target.value)}>
-                <option value="">보상 없음</option>
-                {rules.map((r) => (
-                  <option key={r.code} value={r.code}>
-                    {ruleOptionLabel(r)}
-                  </option>
-                ))}
-                {pointRuleCode !== '' && !selectedRule && (
-                  <option value={pointRuleCode}>
-                    {pointRuleCode}
-                    {savedRewardPoints != null ? ` · ${formatPoints(savedRewardPoints)}` : ''}
-                  </option>
+            <fieldset className="form-field promotion-type">
+              <legend>이벤트 종류</legend>
+              <label className="form-check">
+                <input type="radio" name="event-kind" value="ATTENDANCE" checked={eventKind === 'ATTENDANCE'} disabled={editing} onChange={() => setEventKind('ATTENDANCE')} />
+                출석 체크
+              </label>
+              <label className="form-check">
+                <input type="radio" name="event-kind" value="COUPON" checked={eventKind === 'COUPON'} disabled={editing} onChange={() => setEventKind('COUPON')} />
+                쿠폰 받기
+              </label>
+              <p className="form-hint">
+                {eventKind === 'ATTENDANCE'
+                  ? '출석 체크 — 기간 동안 하루 한 번 출석하면 보상 포인트를 줍니다.'
+                  : '쿠폰 받기 — 기간 동안 버튼 한 번으로 이벤트 쿠폰을 모두 받습니다.'}
+                {editing && ' 이벤트 종류는 만든 뒤 바꿀 수 없습니다.'}
+              </p>
+            </fieldset>
+            {eventKind === 'COUPON' ? (
+              <div className="form-field">
+                <span className="form-label">이벤트 쿠폰 ({coupons.length})</span>
+                <p className="form-hint">
+                  1~{MAX_PROMOTION_COUPONS}개. 받기 노출과 상관없이 주지만, 쿠폰의 발급 기간·수량·활성은 지킵니다.
+                </p>
+                <CouponPicker label="이벤트 쿠폰" selected={coupons} onChange={setCoupons} max={MAX_PROMOTION_COUPONS} />
+              </div>
+            ) : (
+              <div className="form-field">
+                <label htmlFor="promotion-rule">보상 포인트 규칙</label>
+                <select id="promotion-rule" value={pointRuleCode} onChange={(e) => setPointRuleCode(e.target.value)}>
+                  <option value="">보상 없음</option>
+                  {rules.map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {ruleOptionLabel(r)}
+                    </option>
+                  ))}
+                  {pointRuleCode !== '' && !selectedRule && (
+                    <option value={pointRuleCode}>
+                      {pointRuleCode}
+                      {savedRewardPoints != null ? ` · ${formatPoints(savedRewardPoints)}` : ''}
+                    </option>
+                  )}
+                </select>
+                {rulesError && <p className="error-text">포인트 규칙을 불러오지 못했습니다</p>}
+                {missingRule && <p className="form-warning">이 규칙은 포인트 규칙 목록에 없습니다. 적립이 되지 않을 수 있습니다.</p>}
+                {selectedRule && !selectedRule.enabled && (
+                  <p className="form-warning">꺼진 규칙입니다. 켜기 전까지는 출석해도 포인트가 적립되지 않습니다.</p>
                 )}
-              </select>
-              {rulesError && <p className="error-text">포인트 규칙을 불러오지 못했습니다</p>}
-              {missingRule && <p className="form-warning">이 규칙은 포인트 규칙 목록에 없습니다. 적립이 되지 않을 수 있습니다.</p>}
-              {selectedRule && !selectedRule.enabled && (
-                <p className="form-warning">꺼진 규칙입니다. 켜기 전까지는 출석해도 포인트가 적립되지 않습니다.</p>
-              )}
-              {selectedRule && selectedRule.dailyLimit == null && (
-                <p className="form-warning">하루 한도가 없는 규칙입니다. 같은 규칙을 쓰는 다른 곳에서 하루에 여러 번 적립될 수 있습니다.</p>
-              )}
-              <p className="form-hint">규칙의 점수가 출석 1회 보상으로 저장됩니다. 점수·한도는 포인트 &gt; 적립 규칙에서 바꿉니다.</p>
-            </div>
+                {selectedRule && selectedRule.dailyLimit == null && (
+                  <p className="form-warning">하루 한도가 없는 규칙입니다. 같은 규칙을 쓰는 다른 곳에서 하루에 여러 번 적립될 수 있습니다.</p>
+                )}
+                <p className="form-hint">규칙의 점수가 출석 1회 보상으로 저장됩니다. 점수·한도는 포인트 &gt; 적립 규칙에서 바꿉니다.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -531,7 +607,7 @@ export default function PromotionFormPage() {
       {message && <p className="result-text">{message}</p>}
       {error && <p className="error-text">{error}</p>}
 
-      {editing && id && type === 'EVENT' && <AttendanceSection id={id} />}
+      {editing && id && type === 'EVENT' && eventKind === 'ATTENDANCE' && <AttendanceSection id={id} />}
     </div>
   )
 }

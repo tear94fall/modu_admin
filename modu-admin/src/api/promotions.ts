@@ -1,15 +1,28 @@
 import { api, PAGE_SIZE } from './client'
+import type { CouponSummary } from './coupons'
 import type { Page } from './members'
 import { formatPoints, type PointRule } from './points'
 import type { ProductStatus } from './products'
 
-/** 기획전(상품 묶음) · 이벤트(지금은 출석 체크 하나). */
+/** 기획전(상품 묶음) · 이벤트(출석 체크 또는 쿠폰 받기). */
 export type PromotionType = 'EXHIBITION' | 'EVENT'
+
+/** 이벤트 종류. 만든 뒤에는 바꿀 수 없다. 기획전은 null. */
+export type EventKind = 'ATTENDANCE' | 'COUPON'
+
+export const EVENT_KIND_LABELS: Record<EventKind, string> = { ATTENDANCE: '출석 체크', COUPON: '쿠폰 받기' }
+
+/** 이벤트·기획전에 걸 수 있는 쿠폰 수. 쿠폰 받기 이벤트는 1개 이상. */
+export const MAX_PROMOTION_COUPONS = 10
 
 /** 오늘(Asia/Seoul) 기준으로 서버가 매긴다. 시작 전 · 기간 안 · 종료 후. */
 export type PromotionStatus = 'UPCOMING' | 'ONGOING' | 'ENDED'
 
 export const TYPE_LABELS: Record<PromotionType, string> = { EXHIBITION: '기획전', EVENT: '이벤트' }
+
+/** 목록의 종류 글자. 이벤트는 종류까지 붙인다: "이벤트 · 출석" | "이벤트 · 쿠폰". */
+export const promotionKindLabel = (p: { type: PromotionType; eventKind?: EventKind | null }) =>
+  p.type === 'EVENT' && p.eventKind ? `이벤트 · ${p.eventKind === 'COUPON' ? '쿠폰' : '출석'}` : TYPE_LABELS[p.type]
 
 export const PROMOTION_STATUS_LABELS: Record<PromotionStatus, string> = { UPCOMING: '예정', ONGOING: '진행 중', ENDED: '종료' }
 
@@ -23,6 +36,8 @@ export const DEFAULT_BANNER_COLOR = '#E11D48'
 export interface PromotionSummary {
   id: number
   type: PromotionType
+  /** 이벤트만. 기획전은 null. */
+  eventKind: EventKind | null
   title: string
   startDate: string
   endDate: string
@@ -31,6 +46,8 @@ export interface PromotionSummary {
   sortOrder: number
   productCount: number
   attendanceCount: number
+  /** 기획전 쿠폰 또는 쿠폰 받기 이벤트의 쿠폰 수 */
+  couponCount: number
   bannerImageUrl: string | null
   bannerColor: string | null
   createdAt: string | null
@@ -56,9 +73,14 @@ export interface PromotionDetail extends PromotionSummary {
   pointRuleCode: string | null
   rewardPoints: number | null
   products: PromotionProduct[]
+  /** 기획전 쿠폰(0..10) 또는 쿠폰 받기 이벤트의 쿠폰(1..10). */
+  coupons: CouponSummary[]
 }
 
-/** 등록·수정 본문. productIds 는 기획전만, pointRuleCode·rewardPoints 는 이벤트만 쓴다. */
+/**
+ * 등록·수정 본문. productIds 는 기획전만, eventKind 는 이벤트만(만든 뒤 못 바꿈),
+ * pointRuleCode·rewardPoints 는 출석 체크만, couponIds 는 기획전(0..10)과 쿠폰 받기(1..10)만 쓴다.
+ */
 export interface PromotionInput {
   type: PromotionType
   title: string
@@ -71,8 +93,10 @@ export interface PromotionInput {
   visible: boolean
   sortOrder: number
   productIds?: number[]
+  eventKind?: EventKind
   pointRuleCode?: string | null
   rewardPoints?: number | null
+  couponIds?: number[]
 }
 
 /** 출석 한 건. checkDate 는 KST 날짜, createdAt 은 UTC 시각. */
@@ -132,6 +156,12 @@ export function validatePromotion(input: PromotionInput): string | null {
     const count = input.productIds?.length ?? 0
     if (count === 0) return '기획전에는 상품을 1개 이상 넣어야 합니다'
     if (count > 100) return '기획전 상품은 100개까지입니다'
+    if ((input.couponIds?.length ?? 0) > MAX_PROMOTION_COUPONS) return `기획전 쿠폰은 ${MAX_PROMOTION_COUPONS}개까지입니다`
+  }
+  if (input.type === 'EVENT' && input.eventKind === 'COUPON') {
+    const count = input.couponIds?.length ?? 0
+    if (count === 0) return '쿠폰 받기 이벤트에는 쿠폰을 1개 이상 넣어야 합니다'
+    if (count > MAX_PROMOTION_COUPONS) return `이벤트 쿠폰은 ${MAX_PROMOTION_COUPONS}개까지입니다`
   }
   return null
 }
