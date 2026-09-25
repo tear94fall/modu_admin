@@ -12,3 +12,23 @@
 .route-table td { vertical-align: top; white-space: normal; word-break: break-all; }
 .route-detail td { background: #f8fafc; }
 .route-card { cursor: default; }
+/* Config 설정: 왼쪽 파일 목록 + 오른쪽 키/값 표. 폰에서는 파일 목록이 선택 상자로 바뀐다. */
+.config-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start; }
+.config-files { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px; }
+.config-group { display: flex; flex-direction: column; gap: 2px; }
+.config-group-title { font-size: 12px; font-weight: 600; color: var(--color-muted); letter-spacing: 0.04em; margin: 0 0 4px 8px; }
+.config-file { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; color: #374151; text-align: left; cursor: pointer; }
+.config-file:hover { background: #f1f5f9; }
+.config-file--on { background: #e8effd; color: var(--color-accent); font-weight: 600; }
+.config-file:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.config-file-meta { font-size: 12px; color: var(--color-muted); font-weight: 400; white-space: nowrap; }
+.config-content { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.config-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.config-head h2 { margin: 0; font-size: 16px; }
+.config-doc { display: flex; flex-direction: column; gap: 8px; }
+.config-doc-title { font-size: 13px; font-weight: 600; color: #374151; padding-top: 4px; }
+.config-table td { vertical-align: top; white-space: normal; word-break: break-all; }
+.config-table td.config-line { white-space: nowrap; word-break: normal; font-variant-numeric: tabular-nums; }
+.config-file .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.config-file-select { width: 100%; height: 38px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
+.layout--mobile .config-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }

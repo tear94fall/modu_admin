@@ -13,6 +13,7 @@ export default defineConfig({
     proxy: {
       '/auth-service': { target: GATEWAY, changeOrigin: true },
       '/gateway-service': { target: GATEWAY, changeOrigin: true },
+      '/config-service': { target: GATEWAY, changeOrigin: true },
     },
   },
   test: { environment: 'jsdom', setupFiles: './src/test-setup.ts', globals: true },

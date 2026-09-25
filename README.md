@@ -5,7 +5,7 @@
 | 디렉터리 | 이름 | 하는 일 | 개발 서버 | 도커 |
 |---|---|---|---|---|
 | `modu-admin/` | 모두의 어드민 | 기존 백오피스. 회원, 채팅방, 푸시, 앱 설정, 포인트, 상품, 주문, 리뷰 운영 | 5173 | 8081 |
-| `modu-system/` | 모두 시스템 | 시스템 운영. 지금은 게이트웨이 라우트 설정 조회 | 5176 | 8084 |
+| `modu-system/` | 모두 시스템 | 시스템 운영. 게이트웨이 라우트, 설정 서버(config-repo) 조회 | 5176 | 8084 |
 | `modu-internal/` | 모두 인터널 | 사내 업무. 지금은 회원 조회(직원 여부 설정 예정) | 5177 | 8085 |
 | `packages/console-core/` | 공통 기반 | 관리자 로그인, 게이트웨이 API 클라이언트, 레이아웃, 스타일, 시간대 표시 | - | - |
 
@@ -20,6 +20,7 @@
 
 - [modu_infra](https://github.com/tear94fall/modu_infra), [modu_platform](https://github.com/tear94fall/modu_platform)(config·discovery·gateway), [modu_chat](https://github.com/tear94fall/modu_chat) `backend/`(auth, member 등)
 - modu-system 의 게이트웨이 설정 조회는 게이트웨이의 `GET /gateway-service/api-admin/config`(관리자 토큰)를 쓴다.
+- modu-system 의 Config 설정 조회는 `GET /config-service/api-admin/config-repo/files`, `/file?path=` 를 쓴다. 게이트웨이가 관리자 토큰을 보고 config-service 로 넘기며, 비밀값은 config-service 가 가려서 준다.
 
 ## 개발
 
