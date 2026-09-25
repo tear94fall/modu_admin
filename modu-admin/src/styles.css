@@ -1632,3 +1632,29 @@ input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; marg
 input, textarea, select { font-family: inherit; }
 /* 검색 줄(상품·쿠폰·회원 찾기)도 한 줄 입력이라 폭을 줄인다. */
 .form-card .inline-form, .coupon-section .inline-form { max-width: 560px; }
+
+/* ── 카테고리 아이콘 ── */
+.category-tile {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1; box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.06); user-select: none;
+}
+.category-tile--letter { font-weight: 700; color: #4b5563; }
+.category-editor { flex: 1; max-width: 640px; margin: 4px 0; }
+.category-editor-head { display: flex; align-items: center; gap: 16px; }
+.category-emoji-input { font-size: 18px; text-align: center; }
+.inline-form input.input-xs { flex: 0 0 auto; width: 64px; }
+.emoji-groups { display: grid; gap: 6px; margin-top: 6px; }
+.emoji-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.emoji-group-label { width: 76px; flex: none; font-size: 12px; color: var(--color-muted); }
+.emoji-grid { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.emoji-option {
+  width: 34px; height: 34px; padding: 0; border: 1px solid transparent; border-radius: 8px;
+  background: #f9fafb; color: inherit; font-size: 18px; line-height: 1;
+}
+.emoji-option:hover { background: #f3f4f6; border-color: #e5e7eb; }
+.emoji-option--on, .emoji-option--on:hover { background: #eff6ff; border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+.text-button { padding: 2px 4px; border: 0; background: transparent; color: var(--color-accent); font-size: 13px; text-decoration: underline; }
+.palette-swatch--default { background: repeating-linear-gradient(45deg, #fff 0 4px, #f3f4f6 4px 8px); }
+
+/* 카테고리 추가 줄도 한 줄 입력이라 폭을 줄인다. */
+.category-add { max-width: 560px; }
