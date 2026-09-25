@@ -13,6 +13,8 @@ import OrdersPage from './pages/OrdersPage'
 import PointAccountPage from './pages/PointAccountPage'
 import PointsPage from './pages/PointsPage'
 import ProductsPage from './pages/ProductsPage'
+import PromotionFormPage from './pages/PromotionFormPage'
+import PromotionsPage from './pages/PromotionsPage'
 import PushPage from './pages/PushPage'
 import ReviewDetailPage from './pages/ReviewDetailPage'
 import ReviewsPage from './pages/ReviewsPage'
@@ -44,6 +46,9 @@ export default function App() {
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/reviews/:id" element={<ReviewDetailPage />} />
+          <Route path="/promotions" element={<PromotionsPage />} />
+          <Route path="/promotions/new" element={<PromotionFormPage />} />
+          <Route path="/promotions/:id" element={<PromotionFormPage />} />
           <Route path="/push" element={<PushPage />} />
           <Route path="/points" element={<PointsPage />} />
           <Route path="/points/:userId" element={<PointAccountPage />} />

@@ -26,6 +26,7 @@ const SECTIONS = [
       { to: '/products', label: '상품' },
       { to: '/orders', label: '주문' },
       { to: '/reviews', label: '리뷰' },
+      { to: '/promotions', label: '기획전·이벤트' },
     ],
   },
 ]
