@@ -17,6 +17,9 @@ import PointsPage from './pages/PointsPage'
 import ProductsPage from './pages/ProductsPage'
 import PromotionFormPage from './pages/PromotionFormPage'
 import PromotionsPage from './pages/PromotionsPage'
+import PushCampaignDetailPage from './pages/PushCampaignDetailPage'
+import PushCampaignFormPage from './pages/PushCampaignFormPage'
+import PushCampaignsPage from './pages/PushCampaignsPage'
 import PushPage from './pages/PushPage'
 import ReviewDetailPage from './pages/ReviewDetailPage'
 import ReviewsPage from './pages/ReviewsPage'
@@ -52,6 +55,9 @@ export default function App() {
           <Route path="/promotions/new" element={<PromotionFormPage />} />
           <Route path="/promotions/:id" element={<PromotionFormPage />} />
           <Route path="/push" element={<PushPage />} />
+          <Route path="/push-campaigns" element={<PushCampaignsPage />} />
+          <Route path="/push-campaigns/new" element={<PushCampaignFormPage />} />
+          <Route path="/push-campaigns/:id" element={<PushCampaignDetailPage />} />
           <Route path="/points" element={<PointsPage />} />
           <Route path="/points/:userId" element={<PointAccountPage />} />
           <Route path="/coupons" element={<CouponsPage />} />

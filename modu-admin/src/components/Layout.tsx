@@ -30,6 +30,7 @@ const SECTIONS = [
       { to: '/orders', label: '주문' },
       { to: '/reviews', label: '리뷰' },
       { to: '/promotions', label: '기획전·이벤트' },
+      { to: '/push-campaigns', label: '푸시 캠페인' },
     ],
   },
 ]
