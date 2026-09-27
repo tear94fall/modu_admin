@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PAGE_SIZE } from '../api/client'
+import * as customers from '../api/customers'
 import { clearImageCache } from '../api/imageCache'
 import * as members from '../api/members'
 import * as storage from '../api/storage'
@@ -14,6 +15,7 @@ const emptyPage = { content: [], totalElements: 0, totalPages: 0, number: 0, siz
 describe('MembersPage', () => {
   beforeEach(() => {
     clearImageCache()
+    vi.spyOn(customers, 'lookupCustomers').mockResolvedValue(new Map())
   })
 
   it('renders columns in order (번호, 이름, 이메일, 사용자 ID, 직원, 가입일) with formatted createdDate', async () => {
@@ -50,6 +52,7 @@ describe('MembersPage', () => {
       '이메일',
       '사용자 ID',
       '직원',
+      '커머스',
       '가입일',
     ])
 
@@ -300,5 +303,83 @@ describe('MembersPage', () => {
     } finally {
       restore()
     }
+  })
+
+  describe('커머스 badge', () => {
+    const member = (id: number, userId: string, username: string) => ({ id, userId, email: `${userId}@b.c`, username, role: 'ROLE_MEMBER' })
+    const gold = { code: 'GOLD', name: '골드', color: '#D97706', earnRate: 3, minAmount: 300000 }
+    const page = {
+      content: [member(1, 'u-gold', '골드회원'), member(2, 'u-new', '동의전회원'), member(3, 'u-chat', '채팅회원')],
+      totalElements: 3,
+      totalPages: 1,
+      number: 0,
+      size: PAGE_SIZE,
+    }
+    const rowOf = (name: string) => screen.getByText(name).closest('tr') as HTMLTableRowElement
+
+    it('looks up the page in one batch and shows the tier in its color, 동의 전 muted, nothing for non-customers', async () => {
+      vi.spyOn(members, 'searchMembers').mockResolvedValue(page)
+      const lookup = vi.spyOn(customers, 'lookupCustomers').mockResolvedValue(
+        new Map([
+          ['u-gold', { userId: 'u-gold', status: 'ACTIVE' as const, tier: gold, agreed: true }],
+          ['u-new', { userId: 'u-new', status: 'ACTIVE' as const, tier: { ...gold, code: 'WELCOME', name: '웰컴' }, agreed: false }],
+        ]),
+      )
+
+      render(
+        <MemoryRouter>
+          <MembersPage />
+        </MemoryRouter>,
+      )
+
+      const badge = await screen.findByText('커머스 · 골드')
+      expect(lookup).toHaveBeenCalledTimes(1)
+      expect(lookup).toHaveBeenCalledWith(['u-gold', 'u-new', 'u-chat'])
+      expect(badge).toHaveStyle({ color: '#D97706' })
+      expect(rowOf('골드회원')).toContainElement(badge)
+
+      const muted = screen.getByText('커머스 · 동의 전')
+      expect(muted).toHaveClass('tier-badge--muted')
+      expect(rowOf('동의전회원')).toContainElement(muted)
+      // 동의 전이면 등급 이름을 보이지 않는다.
+      expect(screen.queryByText(/웰컴/)).toBeNull()
+
+      expect(rowOf('채팅회원').textContent).not.toContain('커머스')
+    })
+
+    it('still lists members when the lookup fails', async () => {
+      vi.spyOn(members, 'searchMembers').mockResolvedValue(page)
+      vi.spyOn(customers, 'lookupCustomers').mockRejectedValue(new Error('commerce down'))
+
+      render(
+        <MemoryRouter>
+          <MembersPage />
+        </MemoryRouter>,
+      )
+
+      expect(await screen.findByText('골드회원')).toBeInTheDocument()
+      expect(screen.getByText('채팅회원')).toBeInTheDocument()
+      await waitFor(() => expect(customers.lookupCustomers).toHaveBeenCalled())
+      expect(screen.queryByText(/커머스 ·/)).toBeNull()
+      expect(screen.queryByText('회원 목록을 불러오지 못했습니다')).toBeNull()
+    })
+
+    it('shows the badge on phone cards too', async () => {
+      const restore = mockViewport(true)
+      try {
+        vi.spyOn(members, 'searchMembers').mockResolvedValue(page)
+        vi.spyOn(customers, 'lookupCustomers').mockResolvedValue(
+          new Map([['u-gold', { userId: 'u-gold', status: 'ACTIVE' as const, tier: gold, agreed: true }]]),
+        )
+        render(
+          <MemoryRouter>
+            <MembersPage />
+          </MemoryRouter>,
+        )
+        expect(await screen.findByRole('button', { name: /골드회원/ })).toHaveTextContent('커머스 · 골드')
+      } finally {
+        restore()
+      }
+    })
   })
 })

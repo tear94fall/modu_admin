@@ -10,6 +10,8 @@ import ProductFormPage from './pages/ProductFormPage'
 import CategoriesPage from './pages/CategoriesPage'
 import CouponFormPage from './pages/CouponFormPage'
 import CouponsPage from './pages/CouponsPage'
+import CustomerDetailPage from './pages/CustomerDetailPage'
+import CustomersPage from './pages/CustomersPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import OrdersPage from './pages/OrdersPage'
 import PointAccountPage from './pages/PointAccountPage'
@@ -25,6 +27,7 @@ import ReviewDetailPage from './pages/ReviewDetailPage'
 import ReviewsPage from './pages/ReviewsPage'
 import RoomDetailPage from './pages/RoomDetailPage'
 import RoomsPage from './pages/RoomsPage'
+import TiersPage from './pages/TiersPage'
 
 export default function App() {
   return (
@@ -49,6 +52,9 @@ export default function App() {
           <Route path="/products/:id" element={<ProductFormPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/customers/:userId" element={<CustomerDetailPage />} />
+          <Route path="/tiers" element={<TiersPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/reviews/:id" element={<ReviewDetailPage />} />
           <Route path="/promotions" element={<PromotionsPage />} />

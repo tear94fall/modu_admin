@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getMember, type Member } from '../api/members'
 import MemberCard from '../components/MemberCard'
+import MemberCommerceSection from '../components/MemberCommerceSection'
 import MemberMiniCard from '../components/MemberMiniCard'
 import RemoteImage from '../components/RemoteImage'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -59,7 +60,10 @@ export default function MemberDetailPage() {
 
       {/* 회원 정보와 친구 목록을 나란히 둔다. 좁은 화면에서는 CSS 가 한 줄로 접는다. */}
       <div className="member-columns">
-        <MemberCard member={member} friendCount={friendCount} createdDate={createdDate} staffPermissions={staffPermissions} />
+        <div className="member-main">
+          <MemberCard member={member} friendCount={friendCount} createdDate={createdDate} staffPermissions={staffPermissions} />
+          <MemberCommerceSection userId={member.userId} />
+        </div>
 
         <div>
           <h2>친구 {friendCount}명</h2>

@@ -28,6 +28,8 @@ const SECTIONS = [
       { to: '/categories', label: '카테고리' },
       { to: '/products', label: '상품' },
       { to: '/orders', label: '주문' },
+      { to: '/customers', label: '고객' },
+      { to: '/tiers', label: '회원 등급' },
       { to: '/reviews', label: '리뷰' },
       { to: '/promotions', label: '기획전·이벤트' },
       { to: '/push-campaigns', label: '푸시 캠페인' },
