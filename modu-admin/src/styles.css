@@ -1752,3 +1752,54 @@ input, textarea, select { font-family: inherit; }
 .funnel-step-rate { display: flex; align-items: baseline; gap: 6px; font-size: 13px; font-weight: 700; color: #334155; font-variant-numeric: tabular-nums; }
 .funnel-step-rate small { font-size: 11px; font-weight: 400; color: var(--color-muted); }
 @media (max-width: 640px) { .funnel-step { grid-template-columns: 48px 1fr 56px; } .funnel-step-rate { grid-column: 2 / -1; } }
+
+/* ── 커머스 고객 · 회원 등급 ── */
+/* 등급 배지. 색은 등급마다 달라 인라인 style 로 칠한다(글자=등급 색, 바탕=옅게). */
+.tier-badge {
+  display: inline-block; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px;
+  font-size: 12px; font-weight: 700; line-height: 1.4; white-space: nowrap; vertical-align: middle;
+}
+.tier-badge--muted { background: #f3f4f6; border-color: #e5e7eb; color: #9ca3af; font-weight: 600; }
+.card-meta .tier-badge { margin-left: 4px; }
+.tier-change { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.amount-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.filter-chip-rows { display: grid; gap: 0; }
+.customer-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tier-history-table { min-width: 560px; }
+
+/* 회원 상세: 프로필 카드 아래 커머스 칸 */
+.member-main { display: grid; gap: 16px; min-width: 0; }
+.commerce-card { margin-bottom: 0; }
+.commerce-card-title { margin: 0 0 10px; font-size: 16px; }
+.commerce-card-subtitle { margin: 4px 0 8px; font-size: 14px; }
+.commerce-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; font-size: 13px; }
+.commerce-card .detail-grid { grid-template-columns: 120px 1fr; }
+
+/* 회원 등급 편집 표 */
+.tier-rule { max-width: 880px; }
+.tier-editor { max-width: 1180px; margin-bottom: 24px; padding: 16px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; }
+.tier-table { min-width: 980px; }
+.tier-table td { vertical-align: top; }
+.tier-code { margin-top: 4px; font-size: 11px; }
+.tier-table input.tier-name-input { width: 110px; }
+.tier-color { display: inline-flex; align-items: center; gap: 6px; }
+.tier-color .color-input { width: 36px; height: 34px; padding: 2px; flex: none; }
+.tier-table input.tier-hex-input { width: 92px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.tier-unit-input { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; color: var(--color-muted); }
+.tier-unit-input input { width: 110px; text-align: right; }
+.tier-unit-input--rate input { width: 64px; }
+.tier-coupons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 340px; }
+.tier-coupon-chip { display: inline-flex; align-items: center; gap: 2px; padding: 3px 4px 3px 10px; border: 1px solid #c7d2fe; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; }
+/* 전역 button 은 흰 글자·강조 바탕이다. 칩 안의 ×는 칩 색을 따르게 되돌린다. */
+.tier-coupon-remove { padding: 0 6px; border: 0; background: transparent; color: #4338ca; font-size: 14px; line-height: 1; }
+.tier-coupon-remove:hover { color: var(--color-danger); }
+.tier-coupon-search { display: grid; gap: 8px; max-width: 640px; }
+.tier-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.tier-actions .error-text { margin: 0 auto 0 0; }
+.tier-actions .result-text { margin-right: auto; }
+.tier-runs-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 8px; }
+.tier-runs-head h2 { margin: 0; }
+.tier-runs-head .confirm-inline { margin-right: 0; }
+.tier-runs-table { min-width: 900px; }
+.tier-runs-table td { white-space: nowrap; }
+.tier-run-message { margin: 4px 0 0; white-space: normal; font-size: 12px; }

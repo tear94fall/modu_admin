@@ -1,10 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '../api/client'
+import * as customers from '../api/customers'
 import { clearImageCache } from '../api/imageCache'
 import * as members from '../api/members'
 import * as storage from '../api/storage'
+import * as tiers from '../api/tiers'
 import { mockViewport } from '../test/viewport'
 import MemberDetailPage from './MemberDetailPage'
 
@@ -20,6 +23,8 @@ const renderPage = (id = '1') =>
 describe('MemberDetailPage', () => {
   beforeEach(() => {
     clearImageCache()
+    vi.spyOn(customers, 'getCustomer').mockRejectedValue(new ApiError(404, '{"message":"not found"}'))
+    vi.spyOn(tiers, 'getTiers').mockResolvedValue([])
   })
 
   it('shows the profile image via a blob object URL when profileImage is set', async () => {
@@ -160,5 +165,62 @@ describe('MemberDetailPage', () => {
     } finally {
       restore()
     }
+  })
+
+  describe('커머스 section', () => {
+    const detail = () => ({ member: { id: 1, userId: 'u1', email: 'a@b.c', username: '민수', role: 'ROLE_MEMBER' }, friendCount: 0, friends: [] })
+    const tier = (code: string, name: string, color: string) => ({ code, name, color, earnRate: 3, minAmount: 0 })
+
+    it('shows joined/agreed dates, amounts, tier history and a link to the customer page', async () => {
+      vi.spyOn(members, 'getMember').mockResolvedValue(detail())
+      const getCustomer = vi.spyOn(customers, 'getCustomer').mockResolvedValue({
+        userId: 'u1',
+        name: '민수',
+        email: 'a@b.c',
+        status: 'ACTIVE',
+        tier: tier('GOLD', '골드', '#D97706'),
+        basisAmount: 320000,
+        rollingAmount: 184000,
+        joinedAt: '2026-09-01T00:00:00',
+        termsAgreedAt: '2026-09-27T03:00:00',
+        privacyAgreedAt: '2026-09-27T03:00:00',
+        migrated: true,
+        tierHistory: [
+          { fromCode: 'SILVER', toCode: 'GOLD', basisAmount: 320000, periodLabel: '2026.03 ~ 2026.08', changedAt: '2026-08-31T15:10:00', reason: 'MONTHLY' },
+        ],
+      })
+      vi.spyOn(tiers, 'getTiers').mockResolvedValue([
+        { ...tier('SILVER', '실버', '#94A3B8'), sortOrder: 1, coupons: [], customerCount: 0 },
+        { ...tier('GOLD', '골드', '#D97706'), sortOrder: 2, coupons: [], customerCount: 0 },
+      ])
+
+      renderPage()
+
+      const section = await screen.findByRole('region', { name: '커머스' })
+      expect(await within(section).findByText('커머스 · 골드')).toBeInTheDocument()
+      expect(getCustomer).toHaveBeenCalledWith('u1')
+      expect(section).toHaveTextContent('2026-09-27 12:00') // 약관 동의(KST)
+      expect(section).toHaveTextContent('320,000원')
+      expect(section).toHaveTextContent('184,000원')
+      expect(section).toHaveTextContent('이전 이용 기록으로 등록')
+      expect(await within(section).findByText('실버')).toBeInTheDocument()
+      expect(section).toHaveTextContent('2026-09-01 00:10') // 이력 시각(KST)
+      expect(section).toHaveTextContent('정기 산정')
+      expect(within(section).getByRole('link', { name: /고객 화면/ })).toHaveAttribute('href', '/customers/u1')
+    })
+
+    it('says the member is not a customer on 404 and keeps the page on other errors', async () => {
+      vi.spyOn(members, 'getMember').mockResolvedValue(detail())
+      renderPage()
+      expect(await screen.findByText('커머스 고객이 아닙니다')).toBeInTheDocument()
+    })
+
+    it('keeps the member page when the commerce lookup fails', async () => {
+      vi.spyOn(members, 'getMember').mockResolvedValue(detail())
+      vi.spyOn(customers, 'getCustomer').mockRejectedValue(new ApiError(503, 'down'))
+      renderPage()
+      expect(await screen.findByText('커머스 정보를 불러오지 못했습니다')).toBeInTheDocument()
+      expect(screen.getByText('친구 0명')).toBeInTheDocument()
+    })
   })
 })

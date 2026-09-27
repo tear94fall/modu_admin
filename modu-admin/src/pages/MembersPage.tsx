@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PAGE_SIZE } from '../api/client'
+import { type CustomerLookup, lookupCustomers } from '../api/customers'
 import { DEFAULT_MEMBER_SORT, searchMembers, type Member, type MemberSort } from '../api/members'
 import Pager from '../components/Pager'
 import RemoteImage from '../components/RemoteImage'
@@ -8,6 +9,7 @@ import SortChips, { type SortOption } from '../components/SortChips'
 import SortableHeader from '../components/SortableHeader'
 import { useIsMobile } from '../hooks/useIsMobile'
 import StaffBadges from '../components/StaffBadges'
+import { CommerceBadge } from '../components/TierBadge'
 import { formatDateTime } from '../util/format'
 
 /** 폰 카드 목록의 정렬 기준. 표 머리글과 같은 열·같은 기본 방향이다. */
@@ -30,6 +32,8 @@ export default function MembersPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /** 이 페이지 회원들의 커머스 고객 정보(userId → 등급). 못 읽으면 비워 두고 배지만 빠진다. */
+  const [customers, setCustomers] = useState<Map<string, CustomerLookup>>(new Map())
 
   useEffect(() => {
     let cancelled = false
@@ -41,6 +45,13 @@ export default function MembersPage() {
         setMembers(result.content)
         setPageNumber(result.number)
         setTotalPages(result.totalPages)
+        setCustomers(new Map())
+        // 배지는 곁들이 정보다. 커머스가 꺼져 있거나 실패해도 회원 목록은 그대로 보여 준다.
+        lookupCustomers(result.content.map((m) => m.userId))
+          .then((found) => {
+            if (!cancelled) setCustomers(found)
+          })
+          .catch(() => {})
       })
       .catch(() => {
         if (!cancelled) setError('회원 목록을 불러오지 못했습니다')
@@ -100,6 +111,7 @@ export default function MembersPage() {
                     <span className="card-line card-muted">{m.userId}</span>
                     <span className="card-meta">
                       <StaffBadges permissions={m.staffPermissions} empty={null} />
+                      <CommerceBadge customer={customers.get(m.userId)} />
                       <span className="card-muted">{formatDateTime(m.createdDate)}</span>
                     </span>
                   </span>
@@ -117,12 +129,13 @@ export default function MembersPage() {
             {/* 열 너비를 비율로 못 박는다. 안 그러면 페이지마다 내용 길이를 따라 열이 들썩인다. */}
             <colgroup>
               <col style={{ width: '6%' }} />
-              <col style={{ width: '8%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '22%' }} />
               <col style={{ width: '16%' }} />
-              <col style={{ width: '26%' }} />
-              <col style={{ width: '18%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '16%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '13%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -139,6 +152,8 @@ export default function MembersPage() {
                 />
                 {/* 직원 권한은 모두 인터널에서 정한다. 회원 테이블의 옛 role 은 콘솔 권한과 상관없어 보여 주지 않는다. */}
                 <th>직원</th>
+                {/* 커머스 고객이면 등급 배지. 커머스를 안 쓰는 회원은 비어 있다. */}
+                <th>커머스</th>
                 <SortableHeader
                   label="가입일"
                   field="createdDate"
@@ -173,6 +188,9 @@ export default function MembersPage() {
                   <td title={m.userId}>{m.userId}</td>
                   <td>
                     <StaffBadges permissions={m.staffPermissions} />
+                  </td>
+                  <td>
+                    <CommerceBadge customer={customers.get(m.userId)} />
                   </td>
                   <td title={formatDateTime(m.createdDate)}>{formatDateTime(m.createdDate)}</td>
                 </tr>
