@@ -14,13 +14,15 @@ interface TierBadgeProps {
   prefix?: string
   /** tier 가 없을 때 보일 글자(예: 코드). */
   fallback?: string
+  /** 'lg' 는 회원 상세 등급 카드의 큰 배지. */
+  size?: 'lg'
 }
 
-export default function TierBadge({ tier, prefix, fallback }: TierBadgeProps) {
+export default function TierBadge({ tier, prefix, fallback, size }: TierBadgeProps) {
   const name = tier?.name ?? fallback
   if (!name) return null
   return (
-    <span className="tier-badge" style={tierBadgeStyle(tier?.color)}>
+    <span className={size === 'lg' ? 'tier-badge tier-badge--lg' : 'tier-badge'} style={tierBadgeStyle(tier?.color)}>
       {prefix ? `${prefix} · ${name}` : name}
     </span>
   )

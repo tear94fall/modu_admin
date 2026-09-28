@@ -1,5 +1,6 @@
+import { formatUtcDateTime } from '../util/timeZone'
 import type { Member } from '../api/members'
-import { formatDateTime, type StaffPermission } from '../util/format'
+import { type StaffPermission } from '../util/format'
 import RemoteImage from './RemoteImage'
 import StaffBadges from './StaffBadges'
 
@@ -47,7 +48,7 @@ export default function MemberCard({ member, friendCount, createdDate, staffPerm
         <dt>사용자 ID</dt>
         <dd>{member.userId}</dd>
         <dt>가입일</dt>
-        <dd>{formatDateTime(createdDate ?? member.createdDate)}</dd>
+        <dd>{formatUtcDateTime(createdDate ?? member.createdDate)}</dd>
         <dt>직원 권한</dt>
         <dd>
           <StaffBadges permissions={staffPermissions} empty="직원 아님" />

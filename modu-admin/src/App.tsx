@@ -10,8 +10,7 @@ import ProductFormPage from './pages/ProductFormPage'
 import CategoriesPage from './pages/CategoriesPage'
 import CouponFormPage from './pages/CouponFormPage'
 import CouponsPage from './pages/CouponsPage'
-import CustomerDetailPage from './pages/CustomerDetailPage'
-import CustomersPage from './pages/CustomersPage'
+import { CustomerDetailRedirect, CustomersRedirect } from './pages/CustomerRedirect'
 import OrderDetailPage from './pages/OrderDetailPage'
 import OrdersPage from './pages/OrdersPage'
 import PointAccountPage from './pages/PointAccountPage'
@@ -52,8 +51,9 @@ export default function App() {
           <Route path="/products/:id" element={<ProductFormPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/customers/:userId" element={<CustomerDetailPage />} />
+          {/* 커머스 > 고객은 회원 화면으로 합쳤다. 옛 주소는 회원 목록(커머스)·회원 상세(커머스 탭)로 보낸다. */}
+          <Route path="/customers" element={<CustomersRedirect />} />
+          <Route path="/customers/:userId" element={<CustomerDetailRedirect />} />
           <Route path="/tiers" element={<TiersPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/reviews/:id" element={<ReviewDetailPage />} />

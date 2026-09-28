@@ -81,5 +81,37 @@ export async function lookupCustomers(userIds: string[]): Promise<Map<string, Cu
   return result
 }
 
+export type CustomerOrderStatus = 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED'
+
+/** 회원 상세 커머스 탭의 최근 주문 한 줄. createdAt 은 UTC. itemSummary 는 "모두 다이어리 2027 외 1건". */
+export interface CustomerRecentOrder {
+  id: number
+  orderNo: string
+  status: CustomerOrderStatus
+  paymentAmount: number
+  createdAt: string | null
+  itemSummary: string
+}
+
+/**
+ * 회원 한 명의 커머스 요약. 고객이 아니어도 200 이고 숫자는 0, customer 는 null.
+ * 포인트는 커머스가 아니라 point-service 것이라 늘 null 로 온다.
+ */
+export interface CustomerSummary {
+  customer: AdminCustomer | null
+  orderCounts: Record<CustomerOrderStatus, number>
+  /** 배송 완료 주문의 결제 금액 합(전체 기간). */
+  deliveredAmountTotal: number
+  lastOrderAt: string | null
+  /** 최신순 5건. */
+  recentOrders: CustomerRecentOrder[]
+  coupons: { available: number; used: number; expired: number }
+  wishlistCount: number
+  reviewCount: number
+  points: null
+}
+
+export const getCustomerSummary = (userId: string) => api<CustomerSummary>(`${BASE}/${encodeURIComponent(userId)}/summary`)
+
 /** 약관·개인정보 둘 다 동의했는지. */
 export const isAgreed = (c: Pick<AdminCustomer, 'termsAgreedAt' | 'privacyAgreedAt'>) => !!c.termsAgreedAt && !!c.privacyAgreedAt

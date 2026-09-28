@@ -12,12 +12,12 @@ interface Props {
 
 /** 등급 변경 이력(최신순). 시각은 한국 시간. */
 export default function TierHistoryTable({ history, tiers }: Props) {
-  if (history.length === 0) return <p className="card-muted">등급 변경 이력이 없습니다</p>
+  if (history.length === 0) return <p className="card-muted sub-card-empty">등급 변경 이력이 없어요</p>
   const byCode = new Map(tiers.map((t) => [t.code, t]))
   const badge = (code: string | null) => (code ? <TierBadge tier={byCode.get(code)} fallback={code} /> : <span className="card-muted">-</span>)
   return (
     <div className="table-scroll">
-      <table className="tier-history-table">
+      <table className="tier-history-table sub-card-table">
         <thead>
           <tr>
             <th>바뀐 시각</th>
