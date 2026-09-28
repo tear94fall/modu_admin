@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getCustomer, isAgreed, lookupCustomers, searchCustomers } from './customers'
+import { getCustomer, getCustomerSummary, isAgreed, lookupCustomers, searchCustomers } from './customers'
 
 const tier = { code: 'GOLD', name: '골드', color: '#D97706', earnRate: 3, minAmount: 300000 }
 const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
@@ -19,6 +19,12 @@ describe('customer api', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => json({ userId: 'a b' }))
     await getCustomer('a b')
     expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/customers\/a%20b$/)
+  })
+
+  it('reads the member commerce summary by encoded userId', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => json({ customer: null }))
+    await getCustomerSummary('a b')
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/commerce-service\/api-admin\/v1\/customers\/a%20b\/summary$/)
   })
 
   it('does not call the server for an empty page', async () => {

@@ -160,3 +160,20 @@ export const toTierInputs = (drafts: TierDraft[]): TierInput[] =>
     earnRate: Number(d.earnRate.trim()),
     couponIds: d.coupons.map((c) => c.id),
   }))
+
+/** 다음 등급까지. 등급 목록을 못 읽었거나 지금 등급이 목록에 없으면 null(진행 막대를 숨긴다). */
+export type NextTierProgress =
+  | { kind: 'top' }
+  | { kind: 'next'; next: TierSummary; remaining: number; ratio: number }
+
+/** 등급 목록(기준 금액 오름차순으로 다시 정렬)과 최근 6개월 금액으로 다음 등급까지 남은 금액을 구한다. */
+export function nextTierProgress(tiers: TierSummary[], currentCode: string, rollingAmount: number): NextTierProgress | null {
+  const sorted = [...tiers].sort((a, b) => a.minAmount - b.minAmount)
+  const index = sorted.findIndex((t) => t.code === currentCode)
+  if (index < 0) return null
+  const next = sorted.slice(index + 1).find((t) => t.minAmount > sorted[index].minAmount)
+  if (!next) return { kind: 'top' }
+  const remaining = Math.max(0, next.minAmount - rollingAmount)
+  const ratio = next.minAmount > 0 ? Math.min(1, Math.max(0, rollingAmount / next.minAmount)) : 1
+  return { kind: 'next', next, remaining, ratio }
+}

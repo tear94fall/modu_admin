@@ -1,16 +1,42 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PAGE_SIZE } from '../api/client'
 import * as customers from '../api/customers'
 import { clearImageCache } from '../api/imageCache'
 import * as members from '../api/members'
 import * as storage from '../api/storage'
+import * as tiers from '../api/tiers'
 import { mockViewport } from '../test/viewport'
 import MembersPage from './MembersPage'
 
 const emptyPage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 }
+
+/** 지금 주소(경로+쿼리)를 보여 준다. URL 필터를 확인하는 데 쓴다. */
+function LocationProbe() {
+  const location = useLocation()
+  return <p data-testid="location">{location.pathname + location.search}</p>
+}
+
+const renderAt = (url = '/members') =>
+  render(
+    <MemoryRouter initialEntries={[url]}>
+      <Routes>
+        <Route
+          path="/members"
+          element={
+            <>
+              <MembersPage />
+              <LocationProbe />
+            </>
+          }
+        />
+        <Route path="/members/:id" element={<LocationProbe />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+const location = () => screen.getByTestId('location').textContent
 
 describe('MembersPage', () => {
   beforeEach(() => {
@@ -18,7 +44,7 @@ describe('MembersPage', () => {
     vi.spyOn(customers, 'lookupCustomers').mockResolvedValue(new Map())
   })
 
-  it('renders columns in order (번호, 이름, 이메일, 사용자 ID, 직원, 가입일) with formatted createdDate', async () => {
+  it('renders columns in order (번호, 이름, 이메일, 사용자 ID, 직원, 이용 서비스, 가입일) with formatted createdDate', async () => {
     vi.spyOn(members, 'searchMembers').mockResolvedValue({
       content: [
         {
@@ -52,14 +78,14 @@ describe('MembersPage', () => {
       '이메일',
       '사용자 ID',
       '직원',
-      '커머스',
+      '이용 서비스',
       '가입일',
     ])
 
     // 옛 role(ROLE_MEMBER) 대신 직원 권한을 보여 준다.
     expect(await screen.findByText('최상위')).toBeInTheDocument()
     expect(screen.queryByText('일반 회원')).toBeNull()
-    expect(await screen.findByText('2026-09-04 12:34')).toBeInTheDocument()
+    expect(await screen.findByText('2026-09-04 21:34')).toBeInTheDocument()
   })
 
   it('shows the profile image via a blob object URL when profileImage is set', async () => {
@@ -254,7 +280,7 @@ describe('MembersPage', () => {
       </MemoryRouter>,
     )
 
-    for (const value of [username, email, userId, '2026-09-04 12:34']) {
+    for (const value of [username, email, userId, '2026-09-04 21:34']) {
       expect(await screen.findByText(value)).toHaveAttribute('title', value)
     }
   })
@@ -380,6 +406,149 @@ describe('MembersPage', () => {
       } finally {
         restore()
       }
+    })
+  })
+  describe('이용 서비스', () => {
+    const gold = { code: 'GOLD', name: '골드', color: '#D97706', earnRate: 3, minAmount: 300000 }
+    const m = (id: number, userId: string, username: string, services: ('CHAT' | 'COMMERCE')[]) => ({
+      id,
+      userId,
+      email: `${userId}@b.c`,
+      username,
+      role: 'ROLE_MEMBER',
+      services,
+    })
+    const rowOf = (name: string) => screen.getByText(name).closest('tr') as HTMLTableRowElement
+
+    it('shows a neutral 채팅 badge, the tier badge for customers, a plain 커머스 badge without lookup and - for none', async () => {
+      vi.spyOn(members, 'searchMembers').mockResolvedValue({
+        content: [
+          m(1, 'u-both', '둘다회원', ['CHAT', 'COMMERCE']),
+          m(2, 'u-chat', '채팅회원', ['CHAT']),
+          m(3, 'u-com', '커머스회원', ['COMMERCE']),
+          m(4, 'u-none', '미이용회원', []),
+        ],
+        totalElements: 4,
+        totalPages: 1,
+        number: 0,
+        size: PAGE_SIZE,
+      })
+      vi.spyOn(customers, 'lookupCustomers').mockResolvedValue(
+        new Map([['u-both', { userId: 'u-both', status: 'ACTIVE' as const, tier: gold, agreed: true }]]),
+      )
+      renderAt()
+
+      expect(await screen.findByText('커머스 · 골드')).toBeInTheDocument()
+      const both = rowOf('둘다회원')
+      expect(both).toHaveTextContent('채팅')
+      expect(both).toHaveTextContent('커머스 · 골드')
+      expect(rowOf('채팅회원').querySelector('.service-badge')).toHaveTextContent('채팅')
+      expect(rowOf('채팅회원').textContent).not.toContain('커머스')
+      // 이용 기록은 있는데 커머스 조회에 안 나오면 회색 "커머스".
+      expect(rowOf('커머스회원').querySelector('.service-badge')).toHaveTextContent('커머스')
+      expect(rowOf('미이용회원').querySelectorAll('.tier-badge')).toHaveLength(0)
+    })
+
+    it('service chips put service in the URL and ask the member list with it', async () => {
+      const search = vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+      const user = userEvent.setup()
+      renderAt()
+      await waitFor(() => expect(search).toHaveBeenLastCalledWith('', 0, 'name,asc'))
+      const group = screen.getByRole('group', { name: '이용 서비스' })
+
+      for (const [label, value] of [
+        ['채팅', 'CHAT'],
+        ['커머스', 'COMMERCE'],
+        ['둘 다', 'BOTH'],
+      ] as const) {
+        await user.click(within(group).getByRole('button', { name: label }))
+        await waitFor(() => expect(search).toHaveBeenLastCalledWith('', 0, 'name,asc', value))
+        expect(location()).toBe(`/members?service=${value}`)
+        expect(within(group).getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true')
+      }
+
+      await user.click(within(group).getByRole('button', { name: '전체' }))
+      await waitFor(() => expect(search).toHaveBeenLastCalledWith('', 0, 'name,asc'))
+      expect(location()).toBe('/members')
+    })
+
+    it('reads service and keyword from the URL', async () => {
+      const search = vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+      renderAt('/members?service=BOTH&keyword=demo')
+      await waitFor(() => expect(search).toHaveBeenLastCalledWith('demo', 0, 'name,asc', 'BOTH'))
+      expect(screen.getByLabelText('회원 검색')).toHaveValue('demo')
+    })
+
+    it('shows tier/agreement chips only under 커머스', async () => {
+      vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+      const getTiers = vi.spyOn(tiers, 'getTiers').mockResolvedValue([{ ...gold, sortOrder: 2, coupons: [], customerCount: 1 }])
+      getTiers.mockClear()
+      renderAt('/members?service=CHAT')
+      await screen.findByRole('group', { name: '이용 서비스' })
+      expect(screen.queryByRole('group', { name: '등급' })).toBeNull()
+      expect(screen.queryByRole('group', { name: '약관 동의' })).toBeNull()
+      expect(getTiers).not.toHaveBeenCalled()
+    })
+
+    it('a commerce sub-filter switches the list to commerce customers, and a row opens the member commerce tab', async () => {
+      const search = vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+      const find = vi.spyOn(members, 'findMemberByUserId').mockResolvedValue({ id: 42, userId: 'u-gold', email: 'g@b.c', username: '골드회원', role: 'ROLE_MEMBER' })
+      vi.spyOn(tiers, 'getTiers').mockResolvedValue([{ ...gold, sortOrder: 2, coupons: [], customerCount: 1 }])
+      const searchCustomers = vi.spyOn(customers, 'searchCustomers').mockResolvedValue({
+        content: [
+          {
+            userId: 'u-gold',
+            name: '골드회원',
+            email: 'g@b.c',
+            status: 'ACTIVE',
+            tier: gold,
+            basisAmount: 320000,
+            rollingAmount: 1184000,
+            joinedAt: '2026-09-01T00:00:00',
+            termsAgreedAt: '2026-09-01T00:00:00',
+            privacyAgreedAt: '2026-09-01T00:00:00',
+            migrated: false,
+          },
+        ],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: PAGE_SIZE,
+      })
+      searchCustomers.mockClear()
+      const user = userEvent.setup()
+      renderAt('/members?service=COMMERCE')
+
+      // 필터가 없으면 아직 회원 목록(service=COMMERCE)이다.
+      await waitFor(() => expect(search).toHaveBeenLastCalledWith('', 0, 'name,asc', 'COMMERCE'))
+      expect(searchCustomers).not.toHaveBeenCalled()
+
+      await user.click(await screen.findByRole('button', { name: '골드' }))
+      await waitFor(() => expect(searchCustomers).toHaveBeenLastCalledWith('', 0, { tier: 'GOLD', agreed: null }))
+      expect(location()).toBe('/members?service=COMMERCE&tier=GOLD')
+      expect(await screen.findByText('320,000원')).toBeInTheDocument()
+      expect(screen.getByText('1,184,000원')).toBeInTheDocument()
+      expect(rowOf('골드회원')).toHaveTextContent('커머스 · 골드')
+
+      await user.click(within(screen.getByRole('group', { name: '약관 동의' })).getByRole('button', { name: '동의 전' }))
+      await waitFor(() => expect(searchCustomers).toHaveBeenLastCalledWith('', 0, { tier: 'GOLD', agreed: false }))
+      expect(location()).toBe('/members?service=COMMERCE&tier=GOLD&agreed=false')
+
+      await user.click(rowOf('골드회원'))
+      await waitFor(() => expect(location()).toBe('/members/42?tab=commerce'))
+      expect(find).toHaveBeenCalledWith('u-gold')
+    })
+
+    it('leaving 커머스 drops the commerce sub-filters', async () => {
+      vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+      vi.spyOn(tiers, 'getTiers').mockResolvedValue([])
+      vi.spyOn(customers, 'searchCustomers').mockResolvedValue(emptyPage)
+      const user = userEvent.setup()
+      renderAt('/members?service=COMMERCE&agreed=true')
+      await waitFor(() => expect(customers.searchCustomers).toHaveBeenLastCalledWith('', 0, { tier: null, agreed: true }))
+      await user.click(within(screen.getByRole('group', { name: '이용 서비스' })).getByRole('button', { name: '채팅' }))
+      expect(location()).toBe('/members?service=CHAT')
+      await waitFor(() => expect(members.searchMembers).toHaveBeenLastCalledWith('', 0, 'name,asc', 'CHAT'))
     })
   })
 })

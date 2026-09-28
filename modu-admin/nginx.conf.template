@@ -42,7 +42,9 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
+    # index.html 은 매번 새로 확인한다(해시 붙은 assets 만 오래 캐시). 안 그러면 배포 뒤에도 브라우저가 옛 화면을 띄운다.
     location / {
+        add_header Cache-Control "no-cache" always;
         try_files $uri $uri/ /index.html;
     }
 }
