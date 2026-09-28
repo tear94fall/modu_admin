@@ -1,0 +1,96 @@
+/*
+ * API 문서 화면. 이 파일과 swagger-ui.css 는 이 화면 청크에만 실린다(React.lazy).
+ * swagger-ui.css 의 규칙은 모두 .swagger-ui(와 html.dark-mode .swagger-ui) 아래라 콘솔 다른 곳을 건드리지 않는다.
+ * 여기서는 Swagger UI 를 .api-docs-swagger 안에 가두고 글꼴만 콘솔 글꼴로 맞춘다.
+ */
+.api-docs-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
+.api-docs-service { height: 36px; min-width: 220px; max-width: 100%; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
+.api-docs-chips { margin: 0; }
+.api-docs-count { font-variant-numeric: tabular-nums; color: var(--color-muted); font-weight: 400; }
+.access-chip--on .api-docs-count { color: inherit; }
+.api-docs-note { margin: 0 0 12px; padding: 10px 12px; border-radius: 6px; background: #fef9c3; color: #713f12; font-size: 13px; }
+.api-docs-error { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 16px; }
+.api-docs-error .error-text { margin: 0; }
+
+.api-docs-swagger { min-width: 0; }
+/* 화면 여백은 콘솔이 준다. Swagger UI 자체 좌우 여백은 없앤다. */
+.api-docs-swagger .swagger-ui .wrapper { padding: 0; max-width: none; }
+/* Swagger UI 는 sans-serif 를 곳곳에 직접 적는다. 코드·경로·모델처럼 고정폭이어야 하는 곳만 빼고 콘솔 글꼴을 물려받게 한다. */
+.api-docs-swagger .swagger-ui { font-family: inherit; color: #111827; }
+.api-docs-swagger .swagger-ui *:not(code, code *, pre, pre *, .microlight, .microlight *, .opblock-summary-path, .opblock-summary-path *, .opblock-summary-path__deprecated, .model, .model *, .prop-type, .prop-format, .parameter__type, .parameter__in, .parameter__deprecated, textarea, .response-col_status) {
+  font-family: inherit !important;
+}
+/* 문서 제목·설명: 콘솔 카드처럼 테두리 안에 여백을 둔다. */
+.api-docs-swagger .swagger-ui .information-container { margin: 4px 0 12px; padding: 18px 22px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; }
+.api-docs-swagger .swagger-ui .information-container .info { margin: 0; }
+.api-docs-swagger .swagger-ui .info .title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: 20px; }
+.api-docs-swagger .swagger-ui .info .title > span { display: inline-flex; align-items: center; gap: 6px; }
+.api-docs-swagger .swagger-ui .info .title > span > small { display: inline-flex; }
+.api-docs-swagger .swagger-ui .info .title small { top: 0; margin: 0; }
+.api-docs-swagger .swagger-ui .info .title small pre { padding: 2px 6px; }
+.api-docs-swagger .swagger-ui .info .description p { margin: 8px 0 0; font-size: 14px; color: #4b5563; }
+.api-docs-swagger .swagger-ui .info hgroup.main { margin: 0; }
+
+/* Servers·Authorize 줄: 가장자리에 붙지 않게 카드 안쪽 여백. 좁으면 아래로 내려간다. */
+.api-docs-swagger .swagger-ui .scheme-container { margin: 0 0 16px; padding: 14px 22px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; box-shadow: none; }
+.api-docs-swagger .swagger-ui .scheme-container .schemes { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 16px; }
+.api-docs-swagger .swagger-ui .scheme-container .schemes > div { min-width: 0; }
+.api-docs-swagger .swagger-ui .scheme-container .schemes-server-container { display: flex; flex-direction: column; gap: 6px; }
+.api-docs-swagger .swagger-ui .scheme-container .servers-title { margin: 0; font-size: 12px; font-weight: 600; color: var(--color-muted); }
+.api-docs-swagger .swagger-ui .scheme-container .servers > label { margin: 0; }
+.api-docs-swagger .swagger-ui .scheme-container .servers select { min-width: 260px; max-width: 100%; margin: 0; padding: 7px 32px 7px 10px; border: 1px solid var(--color-border); border-radius: 6px; box-shadow: none; font-size: 13px; font-weight: 500; }
+.api-docs-swagger .swagger-ui .auth-wrapper { margin: 0; padding: 0; }
+.api-docs-swagger .swagger-ui .btn.authorize { margin: 0; padding: 7px 14px; border-radius: 6px; font-size: 13px; line-height: 1.2; }
+
+/* 태그로 거르기: 한 줄 입력이라 넓을 필요가 없다. */
+.api-docs-swagger .swagger-ui .filter-container { margin: 0 0 8px; }
+.api-docs-swagger .swagger-ui .filter-container .filter { padding: 0; }
+.api-docs-swagger .swagger-ui .filter-container .operation-filter-input { width: 100%; max-width: 360px; margin: 0; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 13px; }
+
+/* 태그 머리글·작업 블록 */
+.api-docs-swagger .swagger-ui .opblock-tag { padding: 12px 4px; font-size: 18px; }
+.api-docs-swagger .swagger-ui .opblock-tag-section { margin-bottom: 8px; }
+.api-docs-swagger .swagger-ui .opblock { margin: 0 0 10px; border-radius: 8px; box-shadow: none; overflow: hidden; }
+.api-docs-swagger .swagger-ui .opblock .opblock-summary { padding: 6px 10px; }
+.api-docs-swagger .swagger-ui .opblock .opblock-summary-method { border-radius: 5px; }
+/* 펼친 경로에 굵은 검은 테두리(기본 포커스)가 생기던 것 → 키보드 포커스에만 옅은 파란 테두리 */
+.api-docs-swagger .swagger-ui .opblock-summary-control:focus { outline: none; }
+.api-docs-swagger .swagger-ui .opblock-summary-control:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; border-radius: 4px; }
+.api-docs-swagger .swagger-ui .opblock .opblock-section-header { padding: 10px 20px; box-shadow: none; }
+.api-docs-swagger .swagger-ui .opblock-body pre.microlight, .api-docs-swagger .swagger-ui .highlight-code > .microlight { border-radius: 6px; }
+.api-docs-swagger .swagger-ui .responses-inner { padding: 16px 20px; }
+.api-docs-swagger .swagger-ui .btn { border-radius: 6px; box-shadow: none; }
+
+/* 콘솔 공통 표 스타일(흰 배경·클릭 커서·글자 크기)이 Swagger 표에 스며들던 것 되돌리고, 칸 안쪽 여백을 준다. */
+.api-docs-swagger .swagger-ui table { margin: 0; background: transparent; }
+.api-docs-swagger .swagger-ui tbody tr { cursor: default; }
+.api-docs-swagger .swagger-ui table th,
+.api-docs-swagger .swagger-ui table td { font-size: 13px; }
+.api-docs-swagger .swagger-ui .table-container { padding: 16px 20px; }
+.api-docs-swagger .swagger-ui table.parameters,
+.api-docs-swagger .swagger-ui table.responses-table { border: 1px solid var(--color-border); border-radius: 8px; border-collapse: separate; border-spacing: 0; background: #fff; overflow: hidden; }
+.api-docs-swagger .swagger-ui table.parameters th,
+.api-docs-swagger .swagger-ui table.parameters td,
+.api-docs-swagger .swagger-ui table.responses-table th,
+.api-docs-swagger .swagger-ui table.responses-table td { padding: 12px 16px; border-bottom: 1px solid #eef0f3; vertical-align: top; }
+.api-docs-swagger .swagger-ui table.parameters tr:last-child td,
+.api-docs-swagger .swagger-ui table.responses-table tr:last-child td { border-bottom: 0; }
+.api-docs-swagger .swagger-ui table thead tr th,
+.api-docs-swagger .swagger-ui table thead tr td { background: #f9fafb; color: #4b5563; font-size: 12px; font-weight: 600; }
+.api-docs-swagger .swagger-ui .parameters-col_name { width: 200px; }
+.api-docs-swagger .swagger-ui .response-col_status { width: 80px; }
+.api-docs-swagger .swagger-ui .response-col_links { width: 96px; white-space: nowrap; }
+.api-docs-swagger .swagger-ui .parameters-col_description input,
+.api-docs-swagger .swagger-ui .parameters-col_description select { max-width: 360px; border-radius: 6px; }
+.api-docs-swagger .swagger-ui .opblock-section-request-body > div:not(.opblock-section-header) { padding: 0 20px; }
+.api-docs-swagger .swagger-ui .opblock-body .execute-wrapper { padding: 16px 20px; }
+.api-docs-swagger .swagger-ui .body-param__text { border-radius: 6px; }
+/* 모델(Schemas) 표 */
+.api-docs-swagger .swagger-ui .model-box { padding: 10px 12px; border-radius: 6px; }
+.api-docs-swagger .swagger-ui table.model td { padding: 4px 8px; border-bottom: 0; }
+
+@media (max-width: 700px) {
+  .api-docs-swagger .swagger-ui .information-container, .api-docs-swagger .swagger-ui .scheme-container { padding: 14px 16px; }
+  .api-docs-swagger .swagger-ui .scheme-container .servers select { min-width: 0; width: 100%; }
+  .api-docs-swagger .swagger-ui .scheme-container .schemes > div { width: 100%; }
+}

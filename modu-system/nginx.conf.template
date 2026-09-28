@@ -15,8 +15,9 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # 이 콘솔이 부르는 게이트웨이 경로만 넘긴다. 나머지는 SPA 라우팅.
-    location ~ ^/(auth-service|gateway-service|config-service)/ {
+    # 게이트웨이 라우트 prefix 만 넘긴다. 나머지는 SPA 라우팅.
+    # gateway-service·config-service 는 이 콘솔 화면이, 나머지 서비스는 API 문서 화면의 Try it out 이 부른다(modu-admin 과 같은 방식).
+    location ~ ^/(auth-service|gateway-service|config-service|member-service|chat-service|chat-store-service|ws-service|push-service|storage-service|profile-service|point-service|schedule-service|commerce-service)/ {
         proxy_pass http://gateway;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
