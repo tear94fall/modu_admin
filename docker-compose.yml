@@ -9,6 +9,14 @@ services:
       - "${ADMIN_PORT:-8081}:80"
     networks:
       - modu-infra
+    # nginx 가 정적 파일을 내주는지만 본다(게이트웨이 상태와 무관). nginx:1.27-alpine 에 curl 이 있다.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 30s
     restart: unless-stopped
 
   # 시스템 운영 콘솔(게이트웨이 설정 조회 등). 공통 패키지를 쓰므로 레포 루트가 컨텍스트다.
@@ -21,6 +29,14 @@ services:
       - "${SYSTEM_PORT:-8084}:80"
     networks:
       - modu-infra
+    # nginx 가 정적 파일을 내주는지만 본다(게이트웨이 상태와 무관). nginx:1.27-alpine 에 curl 이 있다.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 30s
     restart: unless-stopped
 
   # 사내 업무 콘솔(회원 조회, 직원 관리 예정).
@@ -33,6 +49,14 @@ services:
       - "${INTERNAL_PORT:-8085}:80"
     networks:
       - modu-infra
+    # nginx 가 정적 파일을 내주는지만 본다(게이트웨이 상태와 무관). nginx:1.27-alpine 에 curl 이 있다.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 30s
     restart: unless-stopped
 
 networks:
