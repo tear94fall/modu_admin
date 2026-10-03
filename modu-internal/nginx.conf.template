@@ -6,7 +6,8 @@ resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
 
 upstream gateway {
     zone gateway 64k;
-    server gateway-service:8000 resolve;
+    # GATEWAY_HOST: nginx 의 resolver 는 /etc/resolv.conf 의 search 도메인을 안 쓴다. k8s 에선 FQDN(gateway-service.modu.svc.cluster.local)을 env 로 준다. 기본값(Dockerfile)은 gateway-service.
+    server ${GATEWAY_HOST}:8000 resolve;
 }
 
 server {
