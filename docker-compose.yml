@@ -1,10 +1,19 @@
 # 모두의 콘솔 세 개를 도커로 띄운다. 게이트웨이와 같은 external 네트워크(modu-infra)에 붙어 컨테이너 이름으로 프록시한다.
 # 먼저 modu_infra, modu_platform(gateway-service) 이 떠 있어야 한다(떠 있지 않아도 nginx 는 기동하고, 게이트웨이가 뜨면 붙는다).
+# 모든 컨테이너 로그 줄에 compose 서비스·프로젝트 이름을 붙인다(json-file attrs). OTel Collector 가 container 필드와 앱/인프라 인덱스 구분에 쓴다(modu_infra monitoring).
+x-logging: &logging
+  driver: json-file
+  options:
+    labels: com.docker.compose.service,com.docker.compose.project
+    max-size: "50m"
+    max-file: "3"
+
 services:
   # 기존 백오피스(회원·채팅·그로스·커머스 운영). 독립 패키지라 자기 디렉터리가 컨텍스트다.
   modu-admin:
     build: ./modu-admin
     container_name: modu-admin
+    logging: *logging
     ports:
       - "${ADMIN_PORT:-8081}:80"
     networks:
@@ -25,6 +34,7 @@ services:
       context: .
       dockerfile: modu-system/Dockerfile
     container_name: modu-system
+    logging: *logging
     ports:
       - "${SYSTEM_PORT:-8084}:80"
     networks:
@@ -45,6 +55,7 @@ services:
       context: .
       dockerfile: modu-internal/Dockerfile
     container_name: modu-internal
+    logging: *logging
     ports:
       - "${INTERNAL_PORT:-8085}:80"
     networks:
