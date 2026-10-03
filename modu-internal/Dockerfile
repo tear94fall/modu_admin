@@ -14,6 +14,8 @@ RUN npm run build -w modu-internal
 # 2단계: nginx 가 정적 파일을 서빙하고 게이트웨이 경로를 넘긴다. upstream resolve 는 nginx 1.27.3 이상이 필요하다.
 FROM nginx:1.27-alpine
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
+# 게이트웨이 호스트 이름. k8s 는 GATEWAY_HOST=gateway-service.modu.svc.cluster.local 로 덮어쓴다(nginx resolver 는 search 도메인을 안 쓴다).
+ENV GATEWAY_HOST=gateway-service
 COPY modu-internal/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/modu-internal/dist /usr/share/nginx/html
 EXPOSE 80
