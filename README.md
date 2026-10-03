@@ -82,3 +82,24 @@ docker compose up -d --build modu-system      # 하나만
 ```
 
 nginx 는 게이트웨이를 이름으로만 알고 10초마다 다시 조회한다. 게이트웨이를 다시 배포하거나 콘솔을 먼저 띄워도 다시 시작할 필요가 없다.
+
+## 이미지와 배포
+
+공식 이미지는 GitHub Actions(`.github/workflows/images.yml`)가 만들어 GHCR 에 올린다. 로컬 `--build` 와 같은 Dockerfile 이라 어디서 빌드해도 같은 이미지다.
+
+| 콘솔 | 이미지 |
+|---|---|
+| modu-admin | `ghcr.io/tear94fall/modu-admin/modu-admin` |
+| modu-system | `ghcr.io/tear94fall/modu-admin/modu-system` |
+| modu-internal | `ghcr.io/tear94fall/modu-admin/modu-internal` |
+
+- 태그: `develop` 푸시 → `develop-<sha7>`, `develop`. `master` 푸시 → `master-<sha7>`, `latest`. PR 은 바뀐 콘솔만 테스트·빌드하고 푸시하지 않는다.
+- 바뀐 디렉터리의 콘솔만 빌드한다. `packages/` 나 루트 `package.json`/`package-lock.json` 이 바뀌면 modu-system·modu-internal 둘 다 빌드한다.
+
+```bash
+docker compose pull && docker compose up -d        # CI 이미지(기본 태그 develop)
+IMAGE_TAG=develop-ab12cd3 docker compose up -d     # 특정 커밋 이미지
+docker compose up -d --build                       # 로컬 빌드(이미지 이름은 같다)
+```
+
+GHCR 패키지는 **첫 푸시 때 private 으로 만들어진다.** 콘솔마다 한 번씩 GitHub 의 Packages → 패키지 → Package settings → Change visibility 에서 public 으로 바꿔야 로그인 없이 `pull` 된다.

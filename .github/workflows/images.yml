@@ -1,0 +1,136 @@
+# 콘솔 세 개의 도커 이미지를 만든다.
+#
+# 흐름
+#   PR(develop·master 대상)      : 바뀐 콘솔만 테스트 + 이미지 빌드(푸시 안 함). 빌드가 깨지면 PR 에서 바로 보인다.
+#   develop/master 에 푸시(머지) : 바뀐 콘솔만 테스트 + 빌드 + GHCR 푸시.
+#       develop → ghcr.io/tear94fall/modu-admin/<console>:develop-<sha7>, :develop
+#       master  → ghcr.io/tear94fall/modu-admin/<console>:master-<sha7>,  :latest
+#   수동 실행(workflow_dispatch) : 세 콘솔 모두 빌드한다(현재 브랜치가 develop/master 면 푸시도 한다).
+#
+# 어떤 콘솔이 바뀌었는지는 디렉터리로 판단한다(changes 잡). modu-system·modu-internal 은 공통 패키지(packages/)와
+# 루트 package.json·package-lock.json 에도 걸리고, modu-admin 은 독립 패키지라 자기 디렉터리만 본다.
+# Dockerfile 은 docker-compose.yml 의 build 와 같은 것이라 로컬 `docker compose up -d --build` 와 같은 이미지가 나온다.
+name: images
+
+on:
+  pull_request:
+    branches: [develop, master]
+  push:
+    branches: [develop, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/tear94fall/modu-admin
+
+jobs:
+  # 1. 바뀐 콘솔 목록을 만든다. 수동 실행이면 전부.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      consoles: ${{ steps.list.outputs.consoles }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            modu-admin:
+              - 'modu-admin/**'
+            modu-system:
+              - 'modu-system/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'package-lock.json'
+            modu-internal:
+              - 'modu-internal/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'package-lock.json'
+      - name: 콘솔 목록
+        id: list
+        env:
+          CHANGED: ${{ steps.filter.outputs.changes }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo 'consoles=["modu-admin","modu-system","modu-internal"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "consoles=$CHANGED" >> "$GITHUB_OUTPUT"
+          fi
+          echo "consoles: $(tail -n1 "$GITHUB_OUTPUT")"
+
+  # 2. 콘솔마다 테스트 → 이미지 빌드 → (develop/master 푸시일 때만) GHCR 푸시.
+  build:
+    needs: changes
+    if: needs.changes.outputs.consoles != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        console: ${{ fromJSON(needs.changes.outputs.consoles) }}
+    concurrency:
+      group: images-${{ github.ref }}-${{ matrix.console }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          # modu-admin 은 자기 lock 파일, 나머지는 루트 워크스페이스 lock 파일로 캐시한다
+          cache-dependency-path: ${{ matrix.console == 'modu-admin' && 'modu-admin/package-lock.json' || 'package-lock.json' }}
+
+      # modu-admin 은 독립 패키지(자기 디렉터리에서 npm ci).
+      - name: 테스트 (modu-admin)
+        if: matrix.console == 'modu-admin'
+        working-directory: modu-admin
+        run: |
+          npm ci
+          npm test -- --run
+
+      # modu-system·modu-internal 은 루트 워크스페이스. 공통 패키지(console-core)의 테스트도 같이 돈다.
+      - name: 테스트 (워크스페이스)
+        if: matrix.console != 'modu-admin'
+        run: |
+          npm ci
+          npm test -w packages/console-core -w ${{ matrix.console }} -- --run
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: GHCR 로그인
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 태그: develop → develop-<sha7> + develop, master → master-<sha7> + latest. PR 은 pr-<번호>(푸시 안 함).
+      - name: 이미지 태그
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.console }}
+          tags: |
+            type=sha,prefix=${{ github.ref_name }}-,format=short,enable=${{ github.event_name != 'pull_request' }}
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=ref,event=pr
+
+      - name: 빌드·푸시
+        uses: docker/build-push-action@v6
+        with:
+          # modu-admin 은 자기 디렉터리, 나머지는 레포 루트가 컨텍스트(docker-compose.yml 과 같다)
+          context: ${{ matrix.console == 'modu-admin' && 'modu-admin' || '.' }}
+          file: ${{ matrix.console }}/Dockerfile
+          platforms: linux/amd64
+          push: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.console }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.console }}
