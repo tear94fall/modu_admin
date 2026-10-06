@@ -2,15 +2,25 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ConsoleLayout, LoginPage, RequireAuth, type NavSection } from '@modu/console-core'
 import ConfigRepoPage from './pages/ConfigRepoPage'
+import DeployHistoryPage from './pages/DeployHistoryPage'
+import DeployPage from './pages/DeployPage'
+import DeployServicePage from './pages/DeployServicePage'
 import GatewayRoutesPage from './pages/GatewayRoutesPage'
 
 // Swagger UI 는 크다. 이 화면을 열 때만 받도록 따로 떼어 낸다(다른 화면은 swagger 를 싣지 않는다).
 const ApiDocsPage = lazy(() => import('./pages/ApiDocsPage'))
 
-/** 시스템 운영 콘솔. 게이트웨이 라우트, 설정 서버(config-repo), 서비스별 API 문서 조회. */
+/** 시스템 운영 콘솔. 게이트웨이 라우트, 설정 서버(config-repo), 서비스 배포(deploy-service), 서비스별 API 문서 조회. */
 const SECTIONS: NavSection[] = [
   { title: '게이트웨이', links: [{ to: '/gateway/routes', label: '라우트' }] },
   { title: '설정 서버', links: [{ to: '/config/files', label: 'Config 설정' }] },
+  {
+    title: '배포',
+    links: [
+      { to: '/deploy', label: '서비스 배포' },
+      { to: '/deploy/history', label: '배포 이력' },
+    ],
+  },
   { title: '개발', links: [{ to: '/api-docs', label: 'API 문서' }] },
 ]
 
@@ -29,6 +39,9 @@ export default function App() {
           <Route path="/" element={<Navigate to="/gateway/routes" replace />} />
           <Route path="/gateway/routes" element={<GatewayRoutesPage />} />
           <Route path="/config/files" element={<ConfigRepoPage />} />
+          <Route path="/deploy" element={<DeployPage />} />
+          <Route path="/deploy/history" element={<DeployHistoryPage />} />
+          <Route path="/deploy/:name" element={<DeployServicePage />} />
           <Route
             path="/api-docs"
             element={

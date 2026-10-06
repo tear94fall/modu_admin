@@ -32,3 +32,84 @@
 .config-file .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .config-file-select { width: 100%; height: 38px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
 .layout--mobile .config-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+/* 서비스 배포: 콘솔 기본 글꼴만 쓴다(모노스페이스 없음). 숫자만 tabular-nums. 표 아래 인라인 패널(태그 고르기 → 진행). 폰에서는 카드 안에 그대로 들어간다. */
+.deploy-num { font-variant-numeric: tabular-nums; }
+.deploy-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.deploy-count { font-size: 13px; white-space: nowrap; }
+.deploy-service-select { width: auto; min-width: 200px; max-width: 100%; }
+/* 공통 .list-table 은 셀을 한 줄로 두고 넘치면 말줄임한다(overflow hidden · nowrap · ellipsis). 배포 표는 값이 길어도 줄을 바꾼다. */
+.deploy-table td { vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+.deploy-table td.deploy-actions-cell { white-space: nowrap; }
+.deploy-ready { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+/* 배포자: 이메일·숫자 sub 가 길어도 자기 칸 안에서 말줄임한다(표를 넓히지 않는다). 전체 값은 title. */
+.deploy-by { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+/* 표 안에 들어가는 패널(태그 목록·진행·펼친 이력)은 셀의 한 줄·말줄임 규칙을 물려받으면 안 된다. 내용은 자기 폭 안에서 줄을 바꾼다. */
+.deploy-table .deploy-panel-row > td { white-space: normal; overflow: visible; text-overflow: clip; }
+.deploy-panel, .deploy-detail { white-space: normal; min-width: 0; }
+.deploy-pods th, .deploy-pods td { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; vertical-align: top; }
+.deploy-actions { display: inline-flex; gap: 6px; }
+.deploy-tag--diff { color: #b45309; font-weight: 600; }
+.deploy-hint { font-weight: 400; }
+.deploy-last { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.deploy-last-line { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.deploy-last-meta { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deploy-panel-row td { background: #f8fafc; cursor: default; }
+.deploy-row-error { margin: 0; }
+.deploy-card { cursor: default; }
+.deploy-card .card-body { gap: 4px; }
+.deploy-card .card-line { white-space: normal; }
+.deploy-card-link { color: inherit; text-decoration: none; }
+.deploy-card-link:hover { color: var(--color-accent); }
+.deploy-card-toggle { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.deploy-card .deploy-detail { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); }
+.deploy-service-card { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.deploy-service-card .detail-grid { margin: 0; }
+.deploy-panel { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
+.deploy-service-card .deploy-panel, .layout--mobile .deploy-panel { padding-top: 12px; border-top: 1px solid var(--color-border); }
+.deploy-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.deploy-panel-head .btn { flex-shrink: 0; }
+.deploy-panel-head strong { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.deploy-prev { font-weight: 400; font-size: 13px; }
+.deploy-panel-actions { display: flex; justify-content: flex-end; }
+.deploy-panel .error-text, .deploy-panel .result-text, .deploy-panel .page-note { margin: 0; }
+.deploy-tag-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+.deploy-tag { display: flex; align-items: flex-start; gap: 10px; padding: 7px 10px; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; cursor: pointer; }
+/* 공통 스타일이 input 을 width: 100% 로 둔다. 라디오·체크박스는 제 크기여야 한다. */
+.deploy-tag input[type='radio'] { width: auto; flex: 0 0 auto; margin: 3px 0 0; }
+.deploy-panel .form-check input { width: auto; flex: 0 0 auto; }
+.deploy-tag--on { border-color: var(--color-accent); background: #e8effd; }
+.deploy-tag-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.deploy-tag-current { margin-left: 8px; }
+.deploy-tag-meta { font-size: 13px; overflow-wrap: anywhere; }
+/* 단계 표시: 커밋 → Argo 동기화 → 롤아웃. */
+.deploy-stepper { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.deploy-step { display: flex; align-items: flex-start; gap: 8px; color: var(--color-muted); }
+.deploy-step-dot { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--color-border); background: #fff; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+.deploy-step-body { display: flex; flex-direction: column; gap: 1px; }
+.deploy-step-name { font-weight: 600; }
+.deploy-step-msg { font-size: 13px; overflow-wrap: anywhere; }
+.deploy-step--running { color: var(--color-accent); }
+.deploy-step--running .deploy-step-dot { border-color: var(--color-accent); color: var(--color-accent); }
+.deploy-step--succeeded { color: #1f7a33; }
+.deploy-step--succeeded .deploy-step-dot { border-color: #1f7a33; background: #1f7a33; color: #fff; }
+.deploy-step--failed { color: var(--color-danger); }
+.deploy-step--failed .deploy-step-dot { border-color: var(--color-danger); background: var(--color-danger); color: #fff; }
+.deploy-progress { display: flex; align-items: center; gap: 10px; }
+.deploy-progress-bar { flex: 1; height: 10px; border-radius: 5px; background: #e5e7eb; overflow: hidden; }
+.deploy-progress-fill { height: 100%; background: var(--color-accent); transition: width 0.4s ease; }
+.deploy-progress-fill--failed { background: var(--color-danger); }
+.deploy-progress-text { min-width: 3.5ch; text-align: right; }
+.deploy-status { margin: 0; overflow-wrap: anywhere; }
+.deploy-commit { margin: 0; }
+.deploy-pods td { white-space: normal; word-break: break-word; }
+/* 이력: 펼친 행의 단계·커밋·오류. */
+.deploy-detail { display: flex; flex-direction: column; gap: 6px; padding: 2px 0; white-space: normal; }
+.deploy-detail-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.deploy-detail-step { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--color-muted); }
+.deploy-detail-line { margin: 0; white-space: normal; }
+.deploy-history { margin-top: 28px; }
+.deploy-history-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.deploy-history-head h2 { font-size: 16px; margin: 0; }
+
+/* 저장소·태그 셀은 한 단어라 줄바꿈 대신 말줄임(열 폭은 colgroup 이 정한다). */
+.deploy-table td.deploy-nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

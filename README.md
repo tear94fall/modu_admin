@@ -5,7 +5,7 @@
 | 디렉터리 | 이름 | 하는 일 | 개발 서버 | 도커 |
 |---|---|---|---|---|
 | `modu-admin/` | 모두의 어드민 | 기존 백오피스. 회원, 채팅방, 푸시, 앱 설정, 포인트·쿠폰, 상품, 주문, 리뷰, 기획전·이벤트 운영 (어드민 권한) | 5173 | 8081 |
-| `modu-system/` | 모두 시스템 | 시스템 운영. 게이트웨이 라우트, 설정 서버(config-repo) 조회 (시스템 권한) | 5176 | 8084 |
+| `modu-system/` | 모두 시스템 | 시스템 운영. 게이트웨이 라우트, 설정 서버(config-repo) 조회, 서비스 배포 (시스템 권한) | 5176 | 8084 |
 | `modu-internal/` | 모두 인터널 | 사내 업무. 회원 조회, 직원 지정·권한 관리(최상위만) (인터널 권한) | 5177 | 8085 |
 | `packages/console-core/` | 공통 기반 | 직원 Google 로그인·권한 확인, 게이트웨이 API 클라이언트, 레이아웃, 스타일, 시간대 표시 | - | - |
 
@@ -59,6 +59,7 @@ Google 웹 클라이언트 ID 는 커머스 웹과 같은 것을 쓴다(비밀 �
 - [modu_infra](https://github.com/tear94fall/modu_infra), [modu_platform](https://github.com/tear94fall/modu_platform)(config·discovery·gateway), [modu_chat](https://github.com/tear94fall/modu_chat) `backend/`(auth, member 등)
 - modu-system 의 게이트웨이 설정 조회는 게이트웨이의 `GET /gateway-service/api-admin/config`(`ROLE_SYSTEM`)를 쓴다.
 - modu-system 의 Config 설정 조회는 `GET /config-service/api-admin/config-repo/files`, `/file?path=` 를 쓴다. 게이트웨이가 `ROLE_SYSTEM` 토큰을 보고 config-service 로 넘기며, 비밀값은 config-service 가 가려서 준다.
+- modu-system 의 배포 탭(`/deploy`, 메뉴 배포 → 서비스 배포)은 deploy-service(modu_chat `backend/`, 게이트웨이 `/deploy-service/api-system/deploy/...`, `ROLE_SYSTEM`)를 쓴다. 서비스마다 실행 중 태그·modu_infra kustomization 의 Git 태그·준비 상태를 보여 주고, GHCR 태그(`develop-*`·`master-*`)를 골라 배포하면 deploy-service 가 kustomization 을 커밋 → Argo CD 동기화 → 롤아웃을 차례로 진행한다. 화면은 2초마다 `GET /deployments/{id}` 를 읽어 단계(커밋 → Argo 동기화 → 롤아웃)·진행률·파드 상태를 보여 주고, 롤백은 마지막 성공 배포의 이전 태그로 다시 배포한다. 서비스 상세(`/deploy/{name}`)는 그 서비스의 태그·준비 상태·배포 이력을, 배포 이력(`/deploy/history`)은 최근 50건을 서비스·상태로 걸러 보여 준다(행을 펼치면 단계·커밋·오류). 이력은 deploy-service 메모리에만 있어 다시 뜨면 비워진다(dev). nginx·Vite proxy 에 `deploy-service` 경로가 들어 있다.
 - modu-internal 은 member-service 직원 API 를 쓴다. 회원 조회 `GET /member-service/api-staff/member`, `/member/{id}`(`ROLE_INTERNAL`), 직원 목록·지정·해제 `GET /member-service/api-super/staff`, `PUT|DELETE /member-service/api-super/staff/{memberId}`(`ROLE_SUPER`). 둘 다 `/member-service/` 아래라 Vite proxy·nginx 설정은 그대로다.
 
 ## 개발

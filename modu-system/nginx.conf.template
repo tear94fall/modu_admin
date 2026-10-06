@@ -17,8 +17,8 @@ server {
     index index.html;
 
     # 게이트웨이 라우트 prefix 만 넘긴다. 나머지는 SPA 라우팅.
-    # gateway-service·config-service 는 이 콘솔 화면이, 나머지 서비스는 API 문서 화면의 Try it out 이 부른다(modu-admin 과 같은 방식).
-    location ~ ^/(auth-service|gateway-service|config-service|member-service|chat-service|chat-store-service|ws-service|push-service|storage-service|profile-service|point-service|schedule-service|commerce-service)/ {
+    # gateway-service·config-service·deploy-service 는 이 콘솔 화면이, 나머지 서비스는 API 문서 화면의 Try it out 이 부른다(modu-admin 과 같은 방식).
+    location ~ ^/(auth-service|gateway-service|config-service|member-service|chat-service|chat-store-service|ws-service|push-service|storage-service|profile-service|point-service|schedule-service|commerce-service|deploy-service)/ {
         proxy_pass http://gateway;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
