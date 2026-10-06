@@ -14,7 +14,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       // nginx.conf.template 의 게이트웨이 경로와 같다. 서비스 경로는 API 문서 화면의 Try it out 용이다.
-      '^/(auth-service|gateway-service|config-service|member-service|chat-service|chat-store-service|ws-service|push-service|storage-service|profile-service|point-service|schedule-service|commerce-service)/':
+      '^/(auth-service|gateway-service|config-service|member-service|chat-service|chat-store-service|ws-service|push-service|storage-service|profile-service|point-service|schedule-service|commerce-service|deploy-service)/':
         { target: GATEWAY, changeOrigin: true },
     },
   },

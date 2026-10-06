@@ -5,7 +5,7 @@ export { hasRole, STAFF_PERMISSION_LABELS, STAFF_PERMISSIONS, tokenAccount, toke
 export { clearToken, getRefreshToken, getToken, setRefreshToken, setToken } from './auth/token'
 export { default as LoginPage } from './auth/LoginPage'
 export { default as RequireAuth } from './auth/RequireAuth'
-export { default as ConsoleLayout, type NavSection } from './layout/ConsoleLayout'
+export { default as ConsoleLayout, activeLink, type NavSection } from './layout/ConsoleLayout'
 export { default as Pager } from './components/Pager'
 export { useIsMobile, MOBILE_QUERY } from './hooks/useIsMobile'
 export { browserTimeZone, formatUtcDateTime, getDisplayTimeZone, setDisplayTimeZone, timeZoneLabel, useDisplayTimeZone } from './util/timeZone'
