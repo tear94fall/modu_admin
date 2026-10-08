@@ -1,6 +1,4 @@
-/* 사내 업무 콘솔 전용. 공통 모양은 @modu/console-core/styles.css. */
-.mono { font-family: inherit; font-size: 12.5px; word-break: break-all; }
-.result-count { align-self: center; margin-left: 12px; font-size: 13px; color: var(--color-muted); }
+/* 사내 업무 콘솔 전용. 공통 모양은 @modu/console-core/styles.css(.page-head·.stat-card·.section-card·.card-table·.kv-grid·.detail-layout). */
 
 /* 직원 권한 배지 */
 .perm-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
@@ -17,24 +15,123 @@
 .perm-badge--super { background: #fef3c7; color: #92400e; }
 .withdrawn-badge { background: #f3f4f6; color: var(--color-muted); }
 
-/* 목록 위 "직원만" 체크 */
-.filter-row .form-check { margin-left: 4px; }
+/* ── 카드형 디자인 (2026-10-09) ── */
 
-/* 회원 상세의 직원 권한 */
-.staff-card { margin-top: 16px; }
-.staff-card h2 { font-size: 1.05rem; margin: 0 0 12px; }
-.perm-options { display: grid; gap: 8px; margin: 16px 0 8px; padding: 0; border: 0; min-width: 0; }
-.perm-option-hint { margin: 0 0 0 26px; font-size: 12px; color: var(--color-muted); }
-.staff-card .form-actions { flex-wrap: wrap; }
-.confirm-box {
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  border-radius: 8px;
-  display: grid;
-  gap: 8px;
+/* 이름 첫 글자 동그라미. 색은 회원 번호로 고정. */
+.int-avatar { display: inline-grid; place-items: center; flex: none; border-radius: 50%; font-weight: 700; line-height: 1; }
+.int-avatar--sm { width: 28px; height: 28px; font-size: 13px; }
+.int-avatar--lg { width: 72px; height: 72px; margin-top: -36px; border: 3px solid #fff; font-size: 28px; position: relative; }
+.int-avatar--c0 { background: #dbeafe; color: #1d4ed8; }
+.int-avatar--c1 { background: #ede9fe; color: #6d28d9; }
+.int-avatar--c2 { background: #dcfce7; color: #15803d; }
+.int-avatar--c3 { background: #fef3c7; color: #b45309; }
+.int-avatar--c4 { background: #fce7f3; color: #be185d; }
+.int-avatar--c5 { background: #e0f2fe; color: #0369a1; }
+
+/* 표의 이름 칸: 동그라미 + 이름(넘치면 말줄임) + 탈퇴 */
+.int-person { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.int-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: #111827; }
+.card-table td.int-wrap-cell { white-space: normal; }
+
+/* 목록 카드의 도구줄: 검색(왼쪽) + 정렬·직원만(오른쪽). 모두 36px 한 줄. 좁으면 아래로 쌓인다. */
+.int-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 16px; }
+.int-search { flex: 0 1 420px; min-width: 0; }
+.int-search input { min-width: 0; }
+.int-search .btn, .int-btn { height: 36px; padding: 0 16px; font-size: 14px; }
+.int-toolbar-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* 직원만: 진짜 체크박스를 품은 칩 */
+.int-check-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; margin: 0; cursor: pointer; }
+.int-check-chip input { width: 16px; height: 16px; margin: 0; accent-color: var(--color-accent); cursor: pointer; }
+.int-check-chip:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.int-card-note { margin: 0; padding: 4px 0; }
+/* 카드 아래 페이저 줄 */
+.int-card-foot { margin: 0 -20px -20px; padding: 12px 20px; border-top: 1px solid #eef0f3; }
+.int-card-foot .pager { margin: 0; }
+
+/* 폰 목록: 줄 하나가 버튼 하나(동그라미 + 쌓인 줄). 글자를 줄이지 않고 줄을 바꾼다. */
+.card-rows > li.int-row-item { padding: 0; }
+.int-row { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px 20px; border: 0; border-radius: 0; background: transparent; color: inherit; font-size: 14px; text-align: left; }
+.int-row:hover { background: #f8fafc; }
+.int-row:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.int-row-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.int-row-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.int-row-title .int-name { white-space: normal; overflow-wrap: anywhere; }
+.int-row-num { color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.int-row-line { overflow-wrap: anywhere; }
+
+/* 작은 상태 알약 */
+.int-pill { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+.int-pill--good { background: #dcfce7; color: #15803d; }
+.int-pill--muted { background: #f3f4f6; color: #4b5563; }
+
+/* 회원 상세 왼쪽 요약 카드(모두의 어드민 회원 상세와 같은 모양) */
+.int-profile { min-width: 0; overflow: hidden; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.int-profile-cover { height: 88px; background: linear-gradient(135deg, #dbeafe, #ede9fe); }
+.int-profile-head { padding: 0 20px 16px; }
+.int-profile-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.int-profile-name h1 { margin: 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.int-profile-email { margin: 2px 0 0; color: var(--color-muted); font-size: 14px; overflow-wrap: anywhere; }
+.int-profile-badges { margin-top: 10px; }
+.int-profile-facts { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px 12px; margin: 0; padding: 16px 20px; border-top: 1px solid #eef0f3; font-size: 14px; }
+.int-profile-facts dt { color: var(--color-muted); font-size: 13px; line-height: 22px; white-space: nowrap; }
+.int-profile-facts dd { margin: 0; min-width: 0; line-height: 22px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.int-profile-id { display: flex; align-items: flex-start; gap: 6px; }
+.int-profile-id > span { flex: 1; min-width: 0; word-break: break-all; }
+.int-zone { display: block; font-size: 13px; }
+.int-copy { display: inline-grid; place-items: center; flex: none; min-width: 24px; height: 24px; padding: 0 4px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; color: #6b7280; font-size: 12px; line-height: 1; }
+.int-copy:hover { background: #f3f4f6; color: #374151; }
+.int-copy--done { color: #15803d; }
+
+/* 직원 권한 카드: 고르는 권한은 카드(이름·코드·설명·상태). 진짜 체크박스는 그대로 둔다. */
+.staff-card .kv-grid { margin-bottom: 4px; }
+.perm-choices { min-width: 0; margin: 20px 0 8px; padding: 16px 0 0; border: 0; border-top: 1px solid #eef0f3; }
+.int-choices-title { float: left; width: 100%; margin: 0 0 10px; padding: 0; font-size: 13px; font-weight: 600; color: #374151; }
+.perm-choice-grid { clear: both; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.perm-choice { display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; font-weight: 400; cursor: pointer; transition: border-color 0.12s, background-color 0.12s; }
+.perm-choice:hover { border-color: #cbd5e1; background: #f8fafc; }
+.perm-choice input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--color-accent); cursor: pointer; }
+.perm-choice:focus-within { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.perm-choice--on, .perm-choice--on:hover { border-color: #bfdbfe; background: #eff6ff; }
+.perm-choice--add, .perm-choice--add:hover { border-color: #86efac; background: #f0fdf4; }
+.perm-choice--remove, .perm-choice--remove:hover { border-color: #fca5a5; background: #fef2f2; }
+.perm-choices:disabled .perm-choice { cursor: not-allowed; opacity: 0.7; }
+.perm-choice-body { display: grid; gap: 4px; min-width: 0; }
+.perm-choice-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.perm-choice-name { font-size: 14px; font-weight: 700; color: #111827; }
+.perm-choice-code { font-size: 12px; color: var(--color-muted); letter-spacing: 0.02em; }
+.perm-choice-tag { padding: 0 8px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 12px; font-weight: 600; line-height: 20px; }
+.perm-choice--add .perm-choice-tag { background: #dcfce7; color: #15803d; }
+.perm-choice--remove .perm-choice-tag { background: #fee2e2; color: #b91c1c; }
+.perm-choice-hint { font-size: 13px; line-height: 1.45; color: var(--color-muted); }
+
+/* 동작 줄: 왼쪽 "변경 사항 있음", 오른쪽 버튼. 좁으면 버튼이 아래로. */
+.int-action-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef0f3; }
+.int-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.int-dirty { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #b45309; }
+.int-dirty::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+.int-banner { margin: 16px 0 0; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+.int-banner--ok { border: 1px solid #bbf7d0; background: #f0fdf4; color: #15803d; }
+.int-banner--error { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; }
+.staff-card .int-banner { margin: 16px 0 0; }
+
+/* 확인 대화상자 안 */
+.int-confirm-facts { grid-template-columns: 84px minmax(0, 1fr); gap: 8px 12px; }
+.int-perm-pill { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+.int-perm-pill--plain { background: #e0e7ff; color: #3730a3; }
+.int-perm-pill--add { background: #dcfce7; color: #15803d; }
+.int-perm-pill--remove { background: #fee2e2; color: #b91c1c; }
+.int-confirm-warn { padding: 10px 12px; border: 1px solid #fde68a; border-radius: 8px; background: #fffbeb; color: #92400e; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .int-row { padding: 12px 16px; }
+  .int-card-foot { margin: 0 -16px -16px; padding: 12px 16px; }
+  .int-search { flex: 1 1 100%; }
+  .int-toolbar-filters { width: 100%; }
+  .int-profile-cover { height: 72px; }
+  .int-profile-head, .int-profile-facts { padding-left: 16px; padding-right: 16px; }
+  .int-action-buttons { width: 100%; }
+  .perm-choice-grid { grid-template-columns: minmax(0, 1fr); }
+  /* 확인 창의 라벨은 짧아 폰에서도 두 칸 그대로(값은 알약이라 좁아도 줄을 바꾼다). */
+  .int-confirm-facts { grid-template-columns: 84px minmax(0, 1fr); gap: 8px 12px; }
+  .int-confirm-facts dd + dt { margin-top: 0; }
 }
-.confirm-box p { margin: 0; }
-.confirm-box .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
