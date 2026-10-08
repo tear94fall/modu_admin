@@ -672,12 +672,6 @@ textarea:focus {
   margin: 0 0 8px;
 }
 
-.room-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .avatar-cell {
   width: 1%;
   white-space: nowrap;
@@ -731,9 +725,7 @@ textarea:focus {
   max-width: 480px;
 }
 
-/* 채팅방 상세: 2단 레이아웃 */
 /* 상세 화면의 2단 배치. 좁아지면 아래 미디어쿼리에서 한 줄로 접힌다. */
-.room-columns,
 .member-columns {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) 2fr;
@@ -742,23 +734,9 @@ textarea:focus {
 }
 
 @media (max-width: 900px) {
-  .room-columns,
   .member-columns {
     grid-template-columns: 1fr;
   }
-}
-
-.chat-table {
-  table-layout: fixed;
-}
-
-.chat-table .message-cell {
-  white-space: normal;
-  word-break: break-word;
-}
-
-.chat-table .nowrap-cell {
-  white-space: nowrap;
 }
 
 /* 클릭 가능한 표 행 */
@@ -1032,8 +1010,7 @@ a.btn {
     justify-content: center;
   }
 
-  .layout--mobile .member-columns,
-  .layout--mobile .room-columns {
+  .layout--mobile .member-columns {
     grid-template-columns: 1fr;
   }
 
@@ -1073,7 +1050,6 @@ a.btn {
     padding: 16px 16px 8px;
   }
 
-  .layout--mobile .room-header h1,
   .layout--mobile .profile-username {
     font-size: 1.2rem;
     overflow-wrap: anywhere;
@@ -1085,43 +1061,6 @@ a.btn {
     overflow-x: auto;
     max-width: 100%;
   }
-}
-
-/* 채팅방 상세: 폰의 메시지 목록 */
-.message-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.message-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: #fff;
-}
-
-.message-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.message-sender {
-  font-weight: 600;
-}
-
-.message-body {
-  font-size: 14px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 /* 카탈로그(카테고리·상품 폼) */
@@ -2094,3 +2033,28 @@ select:disabled { background-color: #f3f4f6; cursor: not-allowed; }
 code, pre, kbd, samp { font-family: inherit; }
 /* 버튼·입력칸은 브라우저가 화면 글꼴을 물려주지 않아 Arial 로 그려졌다 — 모두 화면 글꼴로. */
 button, input, select, textarea, optgroup { font-family: inherit; }
+
+/* 채팅방 상세 (2026-10-08) — 회원 상세(.member-hub·.member-profile·.member-tabs·.sub-card)를 그대로 쓰고, 방에만 있는 것만 더한다. */
+.room-profile .member-profile-facts { grid-template-columns: 64px minmax(0, 1fr); }
+.room-profile-chips { margin-top: 10px; }
+.room-profile-tz { grid-column: 1 / -1; font-size: 12px; line-height: 18px; }
+.room-profile-last { margin: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-messages { list-style: none; margin: 0 -16px; padding: 0; }
+.room-message { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 16px; border-bottom: 1px solid #eef0f3; }
+.room-message:first-child { padding-top: 0; }
+.room-message-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.room-message-sender { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-message-text { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.room-message-time { font-size: 12px; line-height: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.room-message-attachment { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; max-width: 100%; font-size: 13px; color: #374151; }
+.room-message-attachment--file, .room-message-attachment--audio { padding: 4px 10px 4px 8px; border: 1px solid var(--color-border); border-radius: 8px; background: #fafafb; }
+.room-message-thumb { display: block; flex: none; width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: #eef0f3; }
+.room-message-icon { display: inline-grid; place-items: center; color: #6b7280; }
+.room-message-kind { font-weight: 600; }
+.room-members-table td { vertical-align: middle; }
+.room-member-link { color: inherit; text-decoration: none; font-weight: 600; }
+.room-member-link:hover span { text-decoration: underline; }
+@media (max-width: 700px) {
+  .room-message { grid-template-columns: 28px minmax(0, 1fr); }
+  .room-message-time { grid-column: 2; line-height: 16px; }
+}
