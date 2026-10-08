@@ -19,6 +19,12 @@ const tree: categories.Category[] = [
   { id: 2, name: '문구', sortOrder: 1, productCount: 0, children: [] },
 ]
 
+/** 왼쪽 상위 목록에서 [name] 을 골라 오른쪽에 연다. */
+async function openRoot(name: string) {
+  const nav = await screen.findByRole('navigation', { name: '상위 카테고리' })
+  await userEvent.click(within(nav).getByRole('button', { name: new RegExp(`^.?${name}`) }))
+}
+
 describe('CategoriesPage', () => {
   beforeEach(() => vi.restoreAllMocks())
 
@@ -26,7 +32,12 @@ describe('CategoriesPage', () => {
     vi.spyOn(categories, 'getCategories').mockResolvedValue(tree)
     render(<CategoriesPage />)
 
-    expect(await screen.findByText('패션')).toBeInTheDocument()
+    const nav = await screen.findByRole('navigation', { name: '상위 카테고리' })
+    expect(within(nav).getByText('패션')).toBeInTheDocument()
+    expect(within(nav).getByText('하위 2 · 상품 4')).toBeInTheDocument()
+    expect(within(nav).getByText('문구')).toBeInTheDocument()
+    // 첫 상위(패션)가 기본으로 열리고, 그 하위가 오른쪽에 보인다
+    expect(screen.getByRole('region', { name: '패션 상세' })).toBeInTheDocument()
     const clothes = screen.getByText('의류').closest('.tree-row') as HTMLElement
     expect(within(clothes).getByText('상품 2')).toBeInTheDocument()
     expect(screen.getByLabelText('패션 하위 추가')).toBeInTheDocument()
@@ -36,7 +47,7 @@ describe('CategoriesPage', () => {
     const get = vi.spyOn(categories, 'getCategories').mockResolvedValue(tree)
     const create = vi.spyOn(categories, 'createCategory').mockResolvedValue({ id: 13, name: '모자', parentId: 1, sortOrder: 2 })
     render(<CategoriesPage />)
-    await screen.findByText('패션')
+    await screen.findByRole('region', { name: '패션 상세' })
 
     await userEvent.type(screen.getByLabelText('패션 하위 추가'), '모자')
     await userEvent.click(within(screen.getByLabelText('패션 하위 추가').closest('form') as HTMLElement).getByRole('button', { name: '추가' }))
@@ -68,20 +79,23 @@ describe('CategoriesPage', () => {
     const bagTile = within(bag).getByTestId('category-tile')
     expect(bagTile).toHaveTextContent('👜')
     expect(bagTile.style.background).toBe('rgb(252, 231, 243)')
-    expect(bagTile.style.width).toBe('28px')
+    expect(bagTile.style.width).toBe('36px')
 
-    const stationery = screen.getByText('문구').closest('.tree-row') as HTMLElement
+    await openRoot('문구')
+    const stationery = within(screen.getByRole('region', { name: '문구 상세' })).getByText('문구').closest('.tree-row') as HTMLElement
     const letterTile = within(stationery).getByTestId('category-tile')
     expect(letterTile).toHaveTextContent('문')
     expect(letterTile.style.background).toBe('rgb(243, 244, 246)')
-    expect(screen.getAllByTestId('category-tile')).toHaveLength(4)
+    // 왼쪽 목록 2개 + 오른쪽 머리 1개(문구는 하위 없음)
+    expect(screen.getAllByTestId('category-tile')).toHaveLength(3)
   })
 
   it('picks an emoji and a pastel colour, previews them and sends them on save', async () => {
     vi.spyOn(categories, 'getCategories').mockResolvedValue(tree)
     const update = vi.spyOn(categories, 'updateCategory').mockResolvedValue({ id: 2, name: '문구', parentId: null, sortOrder: 1 })
     render(<CategoriesPage />)
-    const row = (await screen.findByText('문구')).closest('.tree-row') as HTMLElement
+    await openRoot('문구')
+    const row = within(screen.getByRole('region', { name: '문구 상세' })).getByText('문구').closest('.tree-row') as HTMLElement
     await userEvent.click(within(row).getByRole('button', { name: '편집' }))
     const form = screen.getByRole('form', { name: '문구 편집' })
     const preview = within(form).getAllByTestId('category-tile')[0]
@@ -127,7 +141,8 @@ describe('CategoriesPage', () => {
     vi.spyOn(categories, 'getCategories').mockResolvedValue(tree)
     vi.spyOn(categories, 'updateCategory').mockRejectedValue(new ApiError(400, '{"message":"아이콘 색은 #RRGGBB 형식으로 입력하세요."}'))
     render(<CategoriesPage />)
-    const row = (await screen.findByText('문구')).closest('.tree-row') as HTMLElement
+    await openRoot('문구')
+    const row = within(screen.getByRole('region', { name: '문구 상세' })).getByText('문구').closest('.tree-row') as HTMLElement
     await userEvent.click(within(row).getByRole('button', { name: '편집' }))
     const form = screen.getByRole('form', { name: '문구 편집' })
 
