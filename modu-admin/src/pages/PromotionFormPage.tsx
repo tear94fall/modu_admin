@@ -93,7 +93,7 @@ function AttendanceSection({ id }: { id: string }) {
   }, [id, page])
 
   return (
-    <section className="promotion-attendance" aria-label="출석 현황">
+    <section className="section-card promotion-attendance" aria-label="출석 현황">
       <h2 className="form-heading">출석 현황{!loading && !error && ` (${total}회)`}</h2>
       <p className="time-zone-note">시각은 {timeZoneLabel(timeZone)} 기준, 출석일은 한국 날짜입니다.</p>
       {loading && <p>불러오는 중...</p>}
@@ -101,8 +101,8 @@ function AttendanceSection({ id }: { id: string }) {
       {!loading && !error && rows.length === 0 && <p>아직 출석한 사람이 없습니다</p>}
       {!loading && !error && rows.length > 0 && (
         <>
-          <div className="table-scroll">
-            <table className="list-table">
+          <div className="card-table-wrap">
+            <table className="list-table card-table">
               <thead>
                 <tr>
                   <th>사용자 ID</th>
@@ -338,278 +338,315 @@ export default function PromotionFormPage() {
   return (
     <div>
       {backLink}
-      <h1>
-        {editing ? '기획전·이벤트 수정' : '기획전·이벤트 만들기'}{' '}
-        {status && <span className={promotionStatusClass(status)}>{PROMOTION_STATUS_LABELS[status]}</span>}
-      </h1>
-      <form className="form-card form-card--wide" onSubmit={onSubmit} noValidate>
-        <div className="form-section">
-          <h2 className="form-heading">기본 정보</h2>
-          <fieldset className="form-field promotion-type">
-            <legend>종류</legend>
-            <label className="form-check">
-              <input type="radio" name="promotion-type" value="EXHIBITION" checked={type === 'EXHIBITION'} disabled={editing} onChange={() => setType('EXHIBITION')} />
-              기획전
-            </label>
-            <label className="form-check">
-              <input type="radio" name="promotion-type" value="EVENT" checked={type === 'EVENT'} disabled={editing} onChange={() => setType('EVENT')} />
-              이벤트
-            </label>
-            {editing && <p className="form-hint">종류는 만든 뒤 바꿀 수 없습니다.</p>}
-          </fieldset>
-          <div className="form-field">
-            <label htmlFor="promotion-title">제목</label>
-            <input id="promotion-title" className="input-lg" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} />
+      <div className="page-head">
+        <div className="page-head-main">
+          <div className="page-head-title">
+            <h1>{editing ? '기획전·이벤트 수정' : '기획전·이벤트 만들기'}</h1>
+            {status && <span className={promotionStatusClass(status)}>{PROMOTION_STATUS_LABELS[status]}</span>}
           </div>
-          <div className="form-field">
-            <label htmlFor="promotion-subtitle">부제</label>
-            <input id="promotion-subtitle" className="input-lg" value={subtitle} maxLength={100} onChange={(e) => setSubtitle(e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="promotion-description">설명</label>
-            <textarea id="promotion-description" rows={4} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="date-range">
-            <div className="form-field">
-              <label htmlFor="promotion-start">시작일</label>
-              <DateField id="promotion-start" value={startDate} onChange={setStartDate} rangeStart={startDate} rangeEnd={endDate} presets={START_PRESETS} />
-            </div>
-            <span className="date-range-sep" aria-hidden="true">
-              ~
-            </span>
-            <div className="form-field">
-              <label htmlFor="promotion-end">종료일</label>
-              <DateField
-                id="promotion-end"
-                value={endDate}
-                onChange={setEndDate}
-                min={startDate || undefined}
-                rangeStart={startDate}
-                rangeEnd={endDate}
-                presets={PERIOD_PRESETS}
-                presetBase={startDate}
-              />
-            </div>
-            {startDate && endDate && endDate >= startDate && <span className="date-range-days">{daysBetween(startDate, endDate)}일간</span>}
-          </div>
-          <p className="form-hint">기간은 한국 날짜 기준이며 시작일·종료일을 포함합니다.</p>
-          <div className="form-row">
-            <div className="form-field">
-              <label htmlFor="promotion-sort">순서</label>
-              <input id="promotion-sort" className="input-xs" type="number" step={1} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
-              <p className="form-hint">작을수록 앞에 나옵니다.</p>
-            </div>
-            <label className="form-check form-check--toggle" htmlFor="promotion-visible">
-              <input id="promotion-visible" type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
-              앱에 노출
-            </label>
-          </div>
+          {editing && savedTitle && <p className="page-head-sub">{savedTitle}</p>}
         </div>
-
-        <div className="form-section">
-          <h2 className="form-heading">배너</h2>
-          <div className="form-field">
-            <label htmlFor="promotion-image">배너 이미지 URL</label>
-            <input id="promotion-image" className="input-lg" type="url" placeholder="https://" value={bannerImageUrl} onChange={(e) => setBannerImageUrl(e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="promotion-color">배너 색</label>
-            <div className="inline-form">
-              <input
-                type="color"
-                aria-label="배너 색 고르기"
-                className="color-input"
-                value={HEX_COLOR.test(trimmedColor) ? trimmedColor.toLowerCase() : DEFAULT_BANNER_COLOR.toLowerCase()}
-                onChange={(e) => setBannerColor(e.target.value.toUpperCase())}
-              />
-              <input id="promotion-color" className="input-sm" placeholder={DEFAULT_BANNER_COLOR} maxLength={7} value={bannerColor} onChange={(e) => setBannerColor(e.target.value)} />
-              <span className="palette" role="group" aria-label="자주 쓰는 색">
-                {BANNER_PALETTE.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    className={trimmedColor.toUpperCase() === c ? 'palette-swatch palette-swatch--on' : 'palette-swatch'}
-                    style={{ background: c }}
-                    aria-label={`배너 색 ${c}`}
-                    onClick={() => setBannerColor(c)}
-                  />
-                ))}
-              </span>
-            </div>
-            <p className="form-hint">비우면 기본 색({DEFAULT_BANNER_COLOR})을 씁니다.</p>
-          </div>
-          <BannerPreview imageUrl={bannerImageUrl.trim()} color={trimmedColor} title={title.trim()} subtitle={subtitle.trim()} />
-        </div>
-
-        {type === 'EXHIBITION' ? (
-          <div className="form-section">
-            <h2 className="form-heading">상품 ({products.length})</h2>
-            <p className="form-hint">위에서부터 앱에 보이는 순서입니다. 1~{MAX_PRODUCTS}개. 숨김 상품은 앱에서 빠집니다.</p>
-            {products.length > 0 && (
-              <ul className="image-list">
-                {products.map((p, i) => (
-                  <li key={p.id} className="image-item">
-                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="product-thumb" /> : <span className="product-thumb image-placeholder" />}
-                    <span className="image-url" title={p.name}>
-                      {p.name} · {formatPrice(p.price)}{' '}
-                      <span className={p.status === 'SELLING' ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'}>
-                        {STATUS_LABELS[p.status] ?? p.status}
-                      </span>
-                    </span>
-                    <span className="image-actions">
-                      <button type="button" className="btn btn--secondary btn--sm" aria-label={`${p.name} 위로`} onClick={() => moveProduct(i, -1)} disabled={i === 0}>
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--sm"
-                        aria-label={`${p.name} 아래로`}
-                        onClick={() => moveProduct(i, 1)}
-                        disabled={i === products.length - 1}
-                      >
-                        ↓
-                      </button>
-                      <button type="button" className="btn btn--danger btn--sm" aria-label={`${p.name} 빼기`} onClick={() => setProducts(products.filter((x) => x.id !== p.id))}>
-                        빼기
-                      </button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="inline-form">
-              <input
-                type="text"
-                aria-label="상품 검색"
-                placeholder="상품 이름으로 찾기"
-                value={productKeyword}
-                onChange={(e) => setProductKeyword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    void onProductSearch()
-                  }
-                }}
-              />
-              <button type="button" className="btn btn--secondary btn--sm" onClick={onProductSearch} disabled={productSearching}>
-                상품 찾기
-              </button>
-            </div>
-            {productSearchError && <p className="error-text">{productSearchError}</p>}
-            {productResults && productResults.length === 0 && <p className="form-hint">찾은 상품이 없습니다</p>}
-            {productResults && productResults.length > 0 && (
-              <ul className="image-list promotion-search-results" aria-label="상품 검색 결과">
-                {productResults.map((p) => (
-                  <li key={p.id} className="image-item">
-                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="product-thumb" /> : <span className="product-thumb image-placeholder" />}
-                    <span className="image-url" title={p.name}>
-                      {p.name} · {formatPrice(p.price)}
-                      {p.status !== 'SELLING' && <span className="status-badge status-badge--cancelled"> {STATUS_LABELS[p.status] ?? p.status}</span>}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
-                      aria-label={`${p.name} 추가`}
-                      onClick={() => addProduct(p)}
-                      disabled={addedIds.has(p.id) || products.length >= MAX_PRODUCTS}
-                    >
-                      {addedIds.has(p.id) ? '추가됨' : '추가'}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <h3 className="form-subheading">기획전 쿠폰 ({coupons.length})</h3>
-            <p className="form-hint">선택 사항입니다. 0~{MAX_PROMOTION_COUPONS}개. 앱 기획전 화면에서 받기 버튼으로 보여 줍니다.</p>
-            <CouponPicker label="기획전 쿠폰" selected={coupons} onChange={setCoupons} max={MAX_PROMOTION_COUPONS} />
-          </div>
-        ) : (
-          <div className="form-section">
-            <h2 className="form-heading">이벤트</h2>
-            <fieldset className="form-field promotion-type">
-              <legend>이벤트 종류</legend>
-              <label className="form-check">
-                <input type="radio" name="event-kind" value="ATTENDANCE" checked={eventKind === 'ATTENDANCE'} disabled={editing} onChange={() => setEventKind('ATTENDANCE')} />
-                출석 체크
-              </label>
-              <label className="form-check">
-                <input type="radio" name="event-kind" value="COUPON" checked={eventKind === 'COUPON'} disabled={editing} onChange={() => setEventKind('COUPON')} />
-                쿠폰 받기
-              </label>
-              <p className="form-hint">
-                {eventKind === 'ATTENDANCE'
-                  ? '출석 체크 — 기간 동안 하루 한 번 출석하면 보상 포인트를 줍니다.'
-                  : '쿠폰 받기 — 기간 동안 버튼 한 번으로 이벤트 쿠폰을 모두 받습니다.'}
-                {editing && ' 이벤트 종류는 만든 뒤 바꿀 수 없습니다.'}
-              </p>
-            </fieldset>
-            {eventKind === 'COUPON' ? (
+      </div>
+      <div className="detail-layout detail-layout--aside-right">
+        <div className="detail-main">
+          <form className="form-card form-stack" onSubmit={onSubmit} noValidate>
+            <div className="form-section">
+              <h2 className="form-heading">기본 정보</h2>
+              <fieldset className="form-field promotion-type">
+                <legend>종류</legend>
+                <label className="form-check">
+                  <input type="radio" name="promotion-type" value="EXHIBITION" checked={type === 'EXHIBITION'} disabled={editing} onChange={() => setType('EXHIBITION')} />
+                  기획전
+                </label>
+                <label className="form-check">
+                  <input type="radio" name="promotion-type" value="EVENT" checked={type === 'EVENT'} disabled={editing} onChange={() => setType('EVENT')} />
+                  이벤트
+                </label>
+                {editing && <p className="form-hint">종류는 만든 뒤 바꿀 수 없습니다.</p>}
+              </fieldset>
               <div className="form-field">
-                <span className="form-label">이벤트 쿠폰 ({coupons.length})</span>
-                <p className="form-hint">
-                  1~{MAX_PROMOTION_COUPONS}개. 받기 노출과 상관없이 주지만, 쿠폰의 발급 기간·수량·활성은 지킵니다.
-                </p>
-                <CouponPicker label="이벤트 쿠폰" selected={coupons} onChange={setCoupons} max={MAX_PROMOTION_COUPONS} />
+                <label htmlFor="promotion-title">제목</label>
+                <input id="promotion-title" className="input-lg" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="promotion-subtitle">부제</label>
+                <input id="promotion-subtitle" className="input-lg" value={subtitle} maxLength={100} onChange={(e) => setSubtitle(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="promotion-description">설명</label>
+                <textarea id="promotion-description" rows={4} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} />
+              </div>
+              <div className="date-range">
+                <div className="form-field">
+                  <label htmlFor="promotion-start">시작일</label>
+                  <DateField id="promotion-start" value={startDate} onChange={setStartDate} rangeStart={startDate} rangeEnd={endDate} presets={START_PRESETS} />
+                </div>
+                <span className="date-range-sep" aria-hidden="true">
+                  ~
+                </span>
+                <div className="form-field">
+                  <label htmlFor="promotion-end">종료일</label>
+                  <DateField
+                    id="promotion-end"
+                    value={endDate}
+                    onChange={setEndDate}
+                    min={startDate || undefined}
+                    rangeStart={startDate}
+                    rangeEnd={endDate}
+                    presets={PERIOD_PRESETS}
+                    presetBase={startDate}
+                  />
+                </div>
+                {startDate && endDate && endDate >= startDate && <span className="date-range-days">{daysBetween(startDate, endDate)}일간</span>}
+              </div>
+              <p className="form-hint">기간은 한국 날짜 기준이며 시작일·종료일을 포함합니다.</p>
+              <div className="form-row">
+                <div className="form-field">
+                  <label htmlFor="promotion-sort">순서</label>
+                  <input id="promotion-sort" className="input-xs" type="number" step={1} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+                  <p className="form-hint">작을수록 앞에 나옵니다.</p>
+                </div>
+                <label className="form-check form-check--toggle" htmlFor="promotion-visible">
+                  <input id="promotion-visible" type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
+                  앱에 노출
+                </label>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2 className="form-heading">배너</h2>
+              <div className="form-field">
+                <label htmlFor="promotion-image">배너 이미지 URL</label>
+                <input id="promotion-image" className="input-lg" type="url" placeholder="https://" value={bannerImageUrl} onChange={(e) => setBannerImageUrl(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="promotion-color">배너 색</label>
+                <div className="inline-form">
+                  <input
+                    type="color"
+                    aria-label="배너 색 고르기"
+                    className="color-input"
+                    value={HEX_COLOR.test(trimmedColor) ? trimmedColor.toLowerCase() : DEFAULT_BANNER_COLOR.toLowerCase()}
+                    onChange={(e) => setBannerColor(e.target.value.toUpperCase())}
+                  />
+                  <input id="promotion-color" className="input-sm" placeholder={DEFAULT_BANNER_COLOR} maxLength={7} value={bannerColor} onChange={(e) => setBannerColor(e.target.value)} />
+                  <span className="palette" role="group" aria-label="자주 쓰는 색">
+                    {BANNER_PALETTE.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        className={trimmedColor.toUpperCase() === c ? 'palette-swatch palette-swatch--on' : 'palette-swatch'}
+                        style={{ background: c }}
+                        aria-label={`배너 색 ${c}`}
+                        onClick={() => setBannerColor(c)}
+                      />
+                    ))}
+                  </span>
+                </div>
+                <p className="form-hint">비우면 기본 색({DEFAULT_BANNER_COLOR})을 씁니다.</p>
+              </div>
+            </div>
+
+            {type === 'EXHIBITION' ? (
+              <div className="form-section">
+                <h2 className="form-heading">상품 ({products.length})</h2>
+                <p className="form-hint">위에서부터 앱에 보이는 순서입니다. 1~{MAX_PRODUCTS}개. 숨김 상품은 앱에서 빠집니다.</p>
+                {products.length > 0 && (
+                  <ul className="image-list">
+                    {products.map((p, i) => (
+                      <li key={p.id} className="image-item">
+                        {p.imageUrl ? <img src={p.imageUrl} alt="" className="product-thumb" /> : <span className="product-thumb image-placeholder" />}
+                        <span className="image-url" title={p.name}>
+                          {p.name} · {formatPrice(p.price)}{' '}
+                          <span className={p.status === 'SELLING' ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'}>
+                            {STATUS_LABELS[p.status] ?? p.status}
+                          </span>
+                        </span>
+                        <span className="image-actions">
+                          <button type="button" className="btn btn--secondary btn--sm" aria-label={`${p.name} 위로`} onClick={() => moveProduct(i, -1)} disabled={i === 0}>
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            aria-label={`${p.name} 아래로`}
+                            onClick={() => moveProduct(i, 1)}
+                            disabled={i === products.length - 1}
+                          >
+                            ↓
+                          </button>
+                          <button type="button" className="btn btn--danger btn--sm" aria-label={`${p.name} 빼기`} onClick={() => setProducts(products.filter((x) => x.id !== p.id))}>
+                            빼기
+                          </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="inline-form">
+                  <input
+                    type="text"
+                    aria-label="상품 검색"
+                    placeholder="상품 이름으로 찾기"
+                    value={productKeyword}
+                    onChange={(e) => setProductKeyword(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void onProductSearch()
+                      }
+                    }}
+                  />
+                  <button type="button" className="btn btn--secondary btn--sm" onClick={onProductSearch} disabled={productSearching}>
+                    상품 찾기
+                  </button>
+                </div>
+                {productSearchError && <p className="error-text">{productSearchError}</p>}
+                {productResults && productResults.length === 0 && <p className="form-hint">찾은 상품이 없습니다</p>}
+                {productResults && productResults.length > 0 && (
+                  <ul className="image-list promotion-search-results" aria-label="상품 검색 결과">
+                    {productResults.map((p) => (
+                      <li key={p.id} className="image-item">
+                        {p.imageUrl ? <img src={p.imageUrl} alt="" className="product-thumb" /> : <span className="product-thumb image-placeholder" />}
+                        <span className="image-url" title={p.name}>
+                          {p.name} · {formatPrice(p.price)}
+                          {p.status !== 'SELLING' && <span className="status-badge status-badge--cancelled"> {STATUS_LABELS[p.status] ?? p.status}</span>}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn--secondary btn--sm"
+                          aria-label={`${p.name} 추가`}
+                          onClick={() => addProduct(p)}
+                          disabled={addedIds.has(p.id) || products.length >= MAX_PRODUCTS}
+                        >
+                          {addedIds.has(p.id) ? '추가됨' : '추가'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <h3 className="form-subheading">기획전 쿠폰 ({coupons.length})</h3>
+                <p className="form-hint">선택 사항입니다. 0~{MAX_PROMOTION_COUPONS}개. 앱 기획전 화면에서 받기 버튼으로 보여 줍니다.</p>
+                <CouponPicker label="기획전 쿠폰" selected={coupons} onChange={setCoupons} max={MAX_PROMOTION_COUPONS} />
               </div>
             ) : (
-              <div className="form-field">
-                <label htmlFor="promotion-rule">보상 포인트 규칙</label>
-                <Select
-                  id="promotion-rule"
-                  value={pointRuleCode}
-                  onChange={setPointRuleCode}
-                  options={[
-                    { value: '', label: '보상 없음' },
-                    ...rules.map((r) => ({ value: r.code, label: ruleOptionLabel(r) })),
-                    ...(pointRuleCode !== '' && !selectedRule
-                      ? [
-                          {
-                            value: pointRuleCode,
-                            label: `${pointRuleCode}${savedRewardPoints != null ? ` · ${formatPoints(savedRewardPoints)}` : ''}`,
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-                {rulesError && <p className="error-text">포인트 규칙을 불러오지 못했습니다</p>}
-                {missingRule && <p className="form-warning">이 규칙은 포인트 규칙 목록에 없습니다. 적립이 되지 않을 수 있습니다.</p>}
-                {selectedRule && !selectedRule.enabled && (
-                  <p className="form-warning">꺼진 규칙입니다. 켜기 전까지는 출석해도 포인트가 적립되지 않습니다.</p>
+              <div className="form-section">
+                <h2 className="form-heading">이벤트</h2>
+                <fieldset className="form-field promotion-type">
+                  <legend>이벤트 종류</legend>
+                  <label className="form-check">
+                    <input type="radio" name="event-kind" value="ATTENDANCE" checked={eventKind === 'ATTENDANCE'} disabled={editing} onChange={() => setEventKind('ATTENDANCE')} />
+                    출석 체크
+                  </label>
+                  <label className="form-check">
+                    <input type="radio" name="event-kind" value="COUPON" checked={eventKind === 'COUPON'} disabled={editing} onChange={() => setEventKind('COUPON')} />
+                    쿠폰 받기
+                  </label>
+                  <p className="form-hint">
+                    {eventKind === 'ATTENDANCE'
+                      ? '출석 체크 — 기간 동안 하루 한 번 출석하면 보상 포인트를 줍니다.'
+                      : '쿠폰 받기 — 기간 동안 버튼 한 번으로 이벤트 쿠폰을 모두 받습니다.'}
+                    {editing && ' 이벤트 종류는 만든 뒤 바꿀 수 없습니다.'}
+                  </p>
+                </fieldset>
+                {eventKind === 'COUPON' ? (
+                  <div className="form-field">
+                    <span className="form-label">이벤트 쿠폰 ({coupons.length})</span>
+                    <p className="form-hint">
+                      1~{MAX_PROMOTION_COUPONS}개. 받기 노출과 상관없이 주지만, 쿠폰의 발급 기간·수량·활성은 지킵니다.
+                    </p>
+                    <CouponPicker label="이벤트 쿠폰" selected={coupons} onChange={setCoupons} max={MAX_PROMOTION_COUPONS} />
+                  </div>
+                ) : (
+                  <div className="form-field">
+                    <label htmlFor="promotion-rule">보상 포인트 규칙</label>
+                    <Select
+                      id="promotion-rule"
+                      value={pointRuleCode}
+                      onChange={setPointRuleCode}
+                      options={[
+                        { value: '', label: '보상 없음' },
+                        ...rules.map((r) => ({ value: r.code, label: ruleOptionLabel(r) })),
+                        ...(pointRuleCode !== '' && !selectedRule
+                          ? [
+                              {
+                                value: pointRuleCode,
+                                label: `${pointRuleCode}${savedRewardPoints != null ? ` · ${formatPoints(savedRewardPoints)}` : ''}`,
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                    {rulesError && <p className="error-text">포인트 규칙을 불러오지 못했습니다</p>}
+                    {missingRule && <p className="form-warning">이 규칙은 포인트 규칙 목록에 없습니다. 적립이 되지 않을 수 있습니다.</p>}
+                    {selectedRule && !selectedRule.enabled && (
+                      <p className="form-warning">꺼진 규칙입니다. 켜기 전까지는 출석해도 포인트가 적립되지 않습니다.</p>
+                    )}
+                    {selectedRule && selectedRule.dailyLimit == null && (
+                      <p className="form-warning">하루 한도가 없는 규칙입니다. 같은 규칙을 쓰는 다른 곳에서 하루에 여러 번 적립될 수 있습니다.</p>
+                    )}
+                    <p className="form-hint">규칙의 점수가 출석 1회 보상으로 저장됩니다. 점수·한도는 포인트 &gt; 적립 규칙에서 바꿉니다.</p>
+                  </div>
                 )}
-                {selectedRule && selectedRule.dailyLimit == null && (
-                  <p className="form-warning">하루 한도가 없는 규칙입니다. 같은 규칙을 쓰는 다른 곳에서 하루에 여러 번 적립될 수 있습니다.</p>
-                )}
-                <p className="form-hint">규칙의 점수가 출석 1회 보상으로 저장됩니다. 점수·한도는 포인트 &gt; 적립 규칙에서 바꿉니다.</p>
               </div>
             )}
-          </div>
-        )}
 
-        <div className="form-actions">
-          {editing && !confirmingDelete && (
-            <button type="button" className="btn btn--danger" onClick={() => setConfirmingDelete(true)} disabled={submitting}>
-              삭제
-            </button>
-          )}
-          {editing && confirmingDelete && (
-            <span className="confirm-inline" role="group" aria-label="삭제 확인">
-              <span>'{savedTitle}' 을(를) 삭제할까요?</span>
-              <button type="button" className="btn btn--danger" onClick={onDelete} disabled={submitting}>
-                삭제 확인
+            <div className="form-actions">
+              {editing && !confirmingDelete && (
+                <button type="button" className="btn btn--danger" onClick={() => setConfirmingDelete(true)} disabled={submitting}>
+                  삭제
+                </button>
+              )}
+              {editing && confirmingDelete && (
+                <span className="confirm-inline" role="group" aria-label="삭제 확인">
+                  <span>'{savedTitle}' 을(를) 삭제할까요?</span>
+                  <button type="button" className="btn btn--danger" onClick={onDelete} disabled={submitting}>
+                    삭제 확인
+                  </button>
+                  <button type="button" className="btn btn--ghost" onClick={() => setConfirmingDelete(false)} disabled={submitting}>
+                    취소
+                  </button>
+                </span>
+              )}
+              <button type="submit" className="btn btn--primary" disabled={submitting}>
+                {editing ? '저장' : '등록'}
               </button>
-              <button type="button" className="btn btn--ghost" onClick={() => setConfirmingDelete(false)} disabled={submitting}>
-                취소
-              </button>
-            </span>
-          )}
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
-            {editing ? '저장' : '등록'}
-          </button>
+            </div>
+          </form>
+
+          {message && <p className="result-text">{message}</p>}
+          {error && <p className="error-text">{error}</p>}
         </div>
-      </form>
 
-      {message && <p className="result-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+        <aside className="detail-aside detail-aside--sticky detail-aside--first" aria-label="배너 미리보기">
+          <section className="section-card">
+            <div className="section-card-head">
+              <h2 className="section-card-title">미리보기</h2>
+              <span className={visible ? 'status-badge status-badge--done' : 'status-badge'}>{visible ? '노출 중' : '노출 안 함'}</span>
+            </div>
+            <BannerPreview imageUrl={bannerImageUrl.trim()} color={trimmedColor} title={title.trim()} subtitle={subtitle.trim()} />
+            <dl className="kv-grid aside-kv">
+              <dt>종류</dt>
+              <dd>{type === 'EXHIBITION' ? '기획전' : '이벤트'}</dd>
+              <dt>기간</dt>
+              <dd>
+                {startDate && endDate ? `${formatPromotionDate(startDate)} ~ ${formatPromotionDate(endDate)}` : '-'}
+                {startDate && endDate && endDate >= startDate && <span className="card-muted"> · {daysBetween(startDate, endDate)}일</span>}
+              </dd>
+              <dt>순서</dt>
+              <dd>{sortOrder.trim() === '' ? '-' : sortOrder}</dd>
+              {type === 'EXHIBITION' && (
+                <>
+                  <dt>상품</dt>
+                  <dd>{products.length}개</dd>
+                </>
+              )}
+              <dt>쿠폰</dt>
+              <dd>{coupons.length}개</dd>
+            </dl>
+          </section>
+        </aside>
+      </div>
 
       {editing && id && type === 'EVENT' && eventKind === 'ATTENDANCE' && <AttendanceSection id={id} />}
     </div>

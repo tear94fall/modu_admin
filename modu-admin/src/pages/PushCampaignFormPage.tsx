@@ -50,7 +50,7 @@ interface PickedPromotion {
 type SendMode = 'NOW' | 'SCHEDULED'
 
 /** 앱이 받는 알림 모양. 제목·내용에 서버가 붙이는 광고 표시·수신거부 안내까지 넣어 보여 준다. */
-function NotificationPreview({ title, body, imageUrl }: { title: string; body: string; imageUrl: string }) {
+export function NotificationPreview({ title, body, imageUrl }: { title: string; body: string; imageUrl: string }) {
   const [failed, setFailed] = useState<string | null>(null)
   return (
     <div className="push-phone" data-testid="push-preview" aria-label="알림 미리보기">

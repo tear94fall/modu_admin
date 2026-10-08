@@ -81,7 +81,7 @@ function IssuesSection({ id, reloadKey }: { id: string; reloadKey: number }) {
   }, [id, page, status, reloadKey])
 
   return (
-    <section className="coupon-section" aria-label="발급 현황">
+    <section className="section-card coupon-section" aria-label="발급 현황">
       <h2 className="form-heading">발급 현황{!loading && !error && ` (${total}장)`}</h2>
       <p className="time-zone-note">시각은 {timeZoneLabel(timeZone)} 기준, 만료일은 한국 날짜입니다.</p>
       <div className="sort-chips" role="group" aria-label="발급 상태">
@@ -105,8 +105,8 @@ function IssuesSection({ id, reloadKey }: { id: string; reloadKey: number }) {
       {!loading && !error && rows.length === 0 && <p>{status ? '해당 상태의 쿠폰이 없습니다' : '아직 발급된 쿠폰이 없습니다'}</p>}
       {!loading && !error && rows.length > 0 && (
         <>
-          <div className="table-scroll">
-            <table className="list-table coupon-issues-table">
+          <div className="card-table-wrap">
+            <table className="list-table card-table coupon-issues-table">
               <thead>
                 <tr>
                   <th>사용자 ID</th>
@@ -193,7 +193,7 @@ function GrantSection({ id, onGranted }: { id: string; onGranted: () => void }) 
   }
 
   return (
-    <section className="coupon-section" aria-label="회원에게 지급">
+    <section className="section-card coupon-section" aria-label="회원에게 지급">
       <h2 className="form-heading">회원에게 지급</h2>
       <p className="form-hint">받기 노출·발급 기간과 상관없이 바로 줍니다. 총 수량과 1인 1장은 지킵니다. 한 번에 {MAX_GRANT}명까지.</p>
       <div className="inline-form">
@@ -497,315 +497,358 @@ export default function CouponFormPage() {
   return (
     <div>
       {backLink}
-      <h1>
-        {editing ? '쿠폰 수정' : '새 쿠폰'}{' '}
-        {saved && (
-          <span className={saved.active ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'}>{saved.active ? '활성' : '비활성'}</span>
-        )}
-      </h1>
-      {saved && <p className="coupon-stats">발급 {quantityLabel(saved)}</p>}
-      <form className="form-card form-card--wide" onSubmit={onSubmit} noValidate>
-        <div className="form-section">
-          <h2 className="form-heading">기본 정보</h2>
-          <div className="form-field">
-            <label htmlFor="coupon-name">쿠폰 이름</label>
-            <input id="coupon-name" className="input-lg" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="coupon-description">설명</label>
-            <textarea id="coupon-description" rows={2} maxLength={200} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="form-section">
-          <h2 className="form-heading">할인</h2>
-          <fieldset className="form-field promotion-type">
-            <legend>할인 방식</legend>
-            <label className="form-check">
-              <input type="radio" name="discount-type" value="FIXED" checked={discountType === 'FIXED'} onChange={() => setDiscountType('FIXED')} />
-              정액
-            </label>
-            <label className="form-check">
-              <input type="radio" name="discount-type" value="PERCENT" checked={discountType === 'PERCENT'} onChange={() => setDiscountType('PERCENT')} />
-              정률
-            </label>
-            {editing && saved && saved.issuedCount > 0 && <p className="form-hint">이미 발급된 쿠폰도 있습니다. 할인·범위를 바꾸면 앞으로의 주문부터 적용됩니다.</p>}
-          </fieldset>
-          <div className="form-row">
-            <div className="form-field">
-              <label htmlFor="coupon-value">{discountType === 'FIXED' ? '할인 금액' : '할인율'}</label>
-              <span className="input-unit">
-                <input
-                  id="coupon-value"
-                  className={discountType === 'FIXED' ? 'input-sm' : 'input-xs'}
-                  type="number"
-                  min={1}
-                  max={discountType === 'PERCENT' ? 90 : undefined}
-                  step={1}
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
-                />
-                <span>{discountType === 'FIXED' ? '원' : '%'}</span>
-              </span>
-              {discountType === 'PERCENT' && <p className="form-hint">1~90%</p>}
-            </div>
-            {discountType === 'PERCENT' && (
-              <div className="form-field">
-                <label htmlFor="coupon-max">최대 할인</label>
-                <span className="input-unit">
-                  <input id="coupon-max" className="input-sm" type="number" min={1} step={1} placeholder="상한 없음" value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)} />
-                  <span>원</span>
-                </span>
-              </div>
+      <div className="page-head">
+        <div className="page-head-main">
+          <div className="page-head-title">
+            <h1>{editing ? '쿠폰 수정' : '새 쿠폰'}</h1>
+            {saved && (
+              <span className={saved.active ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'}>{saved.active ? '활성' : '비활성'}</span>
             )}
-            <div className="form-field">
-              <label htmlFor="coupon-min-order">최소 주문 금액</label>
-              <span className="input-unit">
-                <input id="coupon-min-order" className="input-sm" type="number" min={0} step={1} value={minOrderAmount} onChange={(e) => setMinOrderAmount(e.target.value)} />
-                <span>원</span>
-              </span>
-              <p className="form-hint">주문 상품 합계와 비교합니다. 0 이면 조건 없음.</p>
-            </div>
           </div>
+          {saved && <p className="page-head-sub">발급 {quantityLabel(saved)}</p>}
         </div>
-
-        <div className="form-section">
-          <h2 className="form-heading">적용 범위</h2>
-          <fieldset className="form-field promotion-type">
-            <legend>범위</legend>
-            <label className="form-check">
-              <input type="radio" name="coupon-scope" value="ALL" checked={scope === 'ALL'} onChange={() => setScope('ALL')} />
-              전체 상품
-            </label>
-            <label className="form-check">
-              <input type="radio" name="coupon-scope" value="CATEGORY" checked={scope === 'CATEGORY'} onChange={() => setScope('CATEGORY')} />
-              카테고리
-            </label>
-            <label className="form-check">
-              <input type="radio" name="coupon-scope" value="PRODUCT" checked={scope === 'PRODUCT'} onChange={() => setScope('PRODUCT')} />
-              지정 상품
-            </label>
-          </fieldset>
-
-          {scope === 'CATEGORY' && (
-            <div className="form-field">
-              <span className="form-label">카테고리 ({categoryIds.length})</span>
-              <p className="form-hint">상위 카테고리를 고르면 하위 카테고리 상품에도 적용됩니다.</p>
-              {categoriesError && <p className="error-text">카테고리를 불러오지 못했습니다</p>}
-              {!categoriesError && flat.length === 0 && orphanCategories.length === 0 && <p className="form-hint">등록된 카테고리가 없습니다</p>}
-              <ul className="coupon-category-list" aria-label="카테고리 고르기">
-                {flat.map((c) => (
-                  <li key={c.id} className={c.parentId === null ? 'coupon-category' : 'coupon-category coupon-category--child'}>
-                    <label className="form-check">
-                      <input type="checkbox" checked={categoryIds.includes(c.id)} onChange={(e) => toggleCategory(c.id, e.target.checked)} />
-                      {c.label}
-                    </label>
-                  </li>
-                ))}
-                {orphanCategories.map((t) => (
-                  <li key={t.id} className="coupon-category">
-                    <label className="form-check">
-                      <input type="checkbox" checked onChange={(e) => toggleCategory(t.id, e.target.checked)} />
-                      {t.name} <span className="form-warning">(목록에 없는 카테고리)</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {scope === 'PRODUCT' && (
-            <div className="form-field">
-              <span className="form-label">지정 상품 ({scopeProducts.length})</span>
-              {scopeProducts.length > 0 && (
-                <ul className="image-list" aria-label="지정 상품 목록">
-                  {scopeProducts.map((p) => (
-                    <li key={p.id} className="image-item">
-                      <span className="image-url" title={p.name}>
-                        {p.name}
-                      </span>
-                      <span className="image-actions">
-                        <button
-                          type="button"
-                          className="btn btn--danger btn--sm"
-                          aria-label={`${p.name} 빼기`}
-                          onClick={() => setScopeProducts(scopeProducts.filter((x) => x.id !== p.id))}
-                        >
-                          빼기
-                        </button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="inline-form">
-                <input
-                  type="text"
-                  aria-label="상품 검색"
-                  placeholder="상품 이름으로 찾기"
-                  value={productKeyword}
-                  onChange={(e) => setProductKeyword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      void onProductSearch()
-                    }
-                  }}
-                />
-                <button type="button" className="btn btn--secondary btn--sm" onClick={onProductSearch} disabled={productSearching}>
-                  상품 찾기
-                </button>
-              </div>
-              {productSearchError && <p className="error-text">{productSearchError}</p>}
-              {productResults && productResults.length === 0 && <p className="form-hint">찾은 상품이 없습니다</p>}
-              {productResults && productResults.length > 0 && (
-                <ul className="image-list promotion-search-results" aria-label="상품 검색 결과">
-                  {productResults.map((p) => (
-                    <li key={p.id} className="image-item">
-                      <span className="image-url" title={p.name}>
-                        {p.name} · {formatPrice(p.price)}
-                        {p.status !== 'SELLING' && <span className="status-badge status-badge--cancelled"> {STATUS_LABELS[p.status] ?? p.status}</span>}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--sm"
-                        aria-label={`${p.name} 추가`}
-                        onClick={() => addProduct(p)}
-                        disabled={addedProductIds.has(p.id) || scopeProducts.length >= MAX_SCOPE_PRODUCTS}
-                      >
-                        {addedProductIds.has(p.id) ? '추가됨' : '추가'}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="form-section">
-          <h2 className="form-heading">기간 · 수량</h2>
-          <div className="date-range">
-            <div className="form-field">
-              <label htmlFor="coupon-issue-start">발급 시작일</label>
-              <DateField id="coupon-issue-start" value={issueStart} onChange={setIssueStart} rangeStart={issueStart} rangeEnd={issueEnd} presets={START_PRESETS} />
-            </div>
-            <span className="date-range-sep" aria-hidden="true">
-              ~
+      </div>
+      {saved && (
+        <section className="stat-grid coupon-stat-grid" aria-label="발급 요약">
+          <div className="stat-card">
+            <span className="stat-card-label">발급</span>
+            <span className="stat-card-value">
+              {saved.issuedCount.toLocaleString('ko-KR')}
+              <span className="stat-card-unit">장</span>
             </span>
-            <div className="form-field">
-              <label htmlFor="coupon-issue-end">발급 종료일</label>
-              <DateField
-                id="coupon-issue-end"
-                value={issueEnd}
-                onChange={setIssueEnd}
-                min={issueStart || undefined}
-                rangeStart={issueStart}
-                rangeEnd={issueEnd}
-                presets={PERIOD_PRESETS}
-                presetBase={issueStart}
-              />
-            </div>
+            <span className="stat-card-sub">{saved.totalQuantity != null ? `총 ${saved.totalQuantity.toLocaleString('ko-KR')}장 중` : '수량 무제한'}</span>
           </div>
-          <p className="form-hint">받기·코드·이벤트로 받을 수 있는 기간입니다. 한국 날짜 기준, 시작일·종료일 포함.</p>
-          <fieldset className="form-field promotion-type">
-            <legend>사용 기한</legend>
-            <label className="form-check">
-              <input type="radio" name="coupon-validity" value="UNTIL" checked={validity === 'UNTIL'} onChange={() => setValidity('UNTIL')} />
-              날짜까지
-            </label>
-            <label className="form-check">
-              <input type="radio" name="coupon-validity" value="DAYS" checked={validity === 'DAYS'} onChange={() => setValidity('DAYS')} />
-              받은 날부터 N일
-            </label>
-          </fieldset>
-          {validity === 'UNTIL' ? (
-            <div className="form-field">
-              <label htmlFor="coupon-valid-until">사용 기한 날짜</label>
-              <DateField id="coupon-valid-until" value={validUntil} onChange={setValidUntil} min={issueStart || undefined} presets={PERIOD_PRESETS} presetBase={issueStart || undefined} />
-              <p className="form-hint">이 날(한국 날짜)까지 쓸 수 있습니다.</p>
-            </div>
-          ) : (
-            <div className="form-field">
-              <label htmlFor="coupon-valid-days">사용 기한 일수</label>
-              <span className="input-unit">
-                <input id="coupon-valid-days" className="input-xs" type="number" min={1} step={1} value={validDays} onChange={(e) => setValidDays(e.target.value)} />
-                <span>일</span>
-              </span>
-              <p className="form-hint">받은 날을 1일째로 셉니다. 7이면 받은 날부터 7일째까지.</p>
-            </div>
-          )}
-          <div className="form-row">
-            <div className="form-field">
-              <label htmlFor="coupon-quantity">총 수량</label>
-              <span className="input-unit">
-                <input id="coupon-quantity" className="input-sm" type="number" min={1} step={1} placeholder="무제한" value={totalQuantity} onChange={(e) => setTotalQuantity(e.target.value)} />
-                <span>장</span>
-              </span>
-              <p className="form-hint">비우면 무제한</p>
-            </div>
-            <div className="form-field">
-              <label htmlFor="coupon-code">쿠폰 코드</label>
-              <input
-                id="coupon-code"
-                className="input-md input-code"
-                value={code}
-                maxLength={20}
-                placeholder="예: WELCOME2026"
-                autoCapitalize="characters"
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
-              />
-              <p className="form-hint">입력하면 앱에서 코드로 받을 수 있어요. 영문 대문자·숫자 4~20자.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section">
-          <h2 className="form-heading">노출</h2>
-          <label className="form-check" htmlFor="coupon-downloadable">
-            <input id="coupon-downloadable" type="checkbox" checked={downloadable} onChange={(e) => setDownloadable(e.target.checked)} />
-            앱에서 받기 노출
-          </label>
-          <p className="form-hint">켜면 앱의 쿠폰 받기 목록·상품 화면에 보입니다. 꺼도 코드·이벤트·관리자 지급으로는 받을 수 있습니다.</p>
-          <label className="form-check" htmlFor="coupon-active">
-            <input id="coupon-active" type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-            활성
-          </label>
-          <p className="form-hint">끄면 새로 받을 수 없습니다.</p>
-        </div>
-
-        <div className="form-actions">
-          {editing && !confirmingDelete && (
-            <button type="button" className="btn btn--danger" onClick={() => setConfirmingDelete(true)} disabled={submitting}>
-              삭제
-            </button>
-          )}
-          {editing && confirmingDelete && (
-            <span className="confirm-inline" role="group" aria-label="삭제 확인">
-              <span>'{saved?.name}' 쿠폰을 삭제할까요? 이미 받은 쿠폰은 기한까지 쓸 수 있습니다.</span>
-              <button type="button" className="btn btn--danger" onClick={onDelete} disabled={submitting}>
-                삭제 확인
-              </button>
-              <button type="button" className="btn btn--ghost" onClick={() => setConfirmingDelete(false)} disabled={submitting}>
-                취소
-              </button>
+          <div className="stat-card">
+            <span className="stat-card-label">사용</span>
+            <span className="stat-card-value">
+              {saved.usedCount.toLocaleString('ko-KR')}
+              <span className="stat-card-unit">장</span>
             </span>
-          )}
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
-            {editing ? '저장' : '등록'}
-          </button>
-        </div>
-      </form>
-
-      {message && <p className="result-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
-
-      {editing && id && (
-        <>
-          <GrantSection id={id} onGranted={refreshCounts} />
-          <IssuesSection id={id} reloadKey={issuesKey} />
-        </>
+            <span className="stat-card-sub">{saved.issuedCount > 0 ? `사용률 ${Math.round((saved.usedCount / saved.issuedCount) * 100)}%` : '아직 발급 없음'}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card-label">남은 수량</span>
+            <span className="stat-card-value">
+              {saved.totalQuantity != null ? (
+                <>
+                  {Math.max(0, saved.totalQuantity - saved.issuedCount).toLocaleString('ko-KR')}
+                  <span className="stat-card-unit">장</span>
+                </>
+              ) : (
+                '무제한'
+              )}
+            </span>
+            <span className="stat-card-sub">1인 1장</span>
+          </div>
+        </section>
       )}
+      <div className={editing && id ? 'detail-layout detail-layout--aside-right' : undefined}>
+        <div className="detail-main">
+          <form className="form-card form-stack" onSubmit={onSubmit} noValidate>
+            <div className="form-section">
+              <h2 className="form-heading">기본 정보</h2>
+              <div className="form-field">
+                <label htmlFor="coupon-name">쿠폰 이름</label>
+                <input id="coupon-name" className="input-lg" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="coupon-description">설명</label>
+                <textarea id="coupon-description" rows={2} maxLength={200} value={description} onChange={(e) => setDescription(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2 className="form-heading">할인</h2>
+              <fieldset className="form-field promotion-type">
+                <legend>할인 방식</legend>
+                <label className="form-check">
+                  <input type="radio" name="discount-type" value="FIXED" checked={discountType === 'FIXED'} onChange={() => setDiscountType('FIXED')} />
+                  정액
+                </label>
+                <label className="form-check">
+                  <input type="radio" name="discount-type" value="PERCENT" checked={discountType === 'PERCENT'} onChange={() => setDiscountType('PERCENT')} />
+                  정률
+                </label>
+                {editing && saved && saved.issuedCount > 0 && <p className="form-hint">이미 발급된 쿠폰도 있습니다. 할인·범위를 바꾸면 앞으로의 주문부터 적용됩니다.</p>}
+              </fieldset>
+              <div className="form-row">
+                <div className="form-field">
+                  <label htmlFor="coupon-value">{discountType === 'FIXED' ? '할인 금액' : '할인율'}</label>
+                  <span className="input-unit">
+                    <input
+                      id="coupon-value"
+                      className={discountType === 'FIXED' ? 'input-sm' : 'input-xs'}
+                      type="number"
+                      min={1}
+                      max={discountType === 'PERCENT' ? 90 : undefined}
+                      step={1}
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                    />
+                    <span>{discountType === 'FIXED' ? '원' : '%'}</span>
+                  </span>
+                  {discountType === 'PERCENT' && <p className="form-hint">1~90%</p>}
+                </div>
+                {discountType === 'PERCENT' && (
+                  <div className="form-field">
+                    <label htmlFor="coupon-max">최대 할인</label>
+                    <span className="input-unit">
+                      <input id="coupon-max" className="input-sm" type="number" min={1} step={1} placeholder="상한 없음" value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)} />
+                      <span>원</span>
+                    </span>
+                  </div>
+                )}
+                <div className="form-field">
+                  <label htmlFor="coupon-min-order">최소 주문 금액</label>
+                  <span className="input-unit">
+                    <input id="coupon-min-order" className="input-sm" type="number" min={0} step={1} value={minOrderAmount} onChange={(e) => setMinOrderAmount(e.target.value)} />
+                    <span>원</span>
+                  </span>
+                  <p className="form-hint">주문 상품 합계와 비교합니다. 0 이면 조건 없음.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2 className="form-heading">적용 범위</h2>
+              <fieldset className="form-field promotion-type">
+                <legend>범위</legend>
+                <label className="form-check">
+                  <input type="radio" name="coupon-scope" value="ALL" checked={scope === 'ALL'} onChange={() => setScope('ALL')} />
+                  전체 상품
+                </label>
+                <label className="form-check">
+                  <input type="radio" name="coupon-scope" value="CATEGORY" checked={scope === 'CATEGORY'} onChange={() => setScope('CATEGORY')} />
+                  카테고리
+                </label>
+                <label className="form-check">
+                  <input type="radio" name="coupon-scope" value="PRODUCT" checked={scope === 'PRODUCT'} onChange={() => setScope('PRODUCT')} />
+                  지정 상품
+                </label>
+              </fieldset>
+
+              {scope === 'CATEGORY' && (
+                <div className="form-field">
+                  <span className="form-label">카테고리 ({categoryIds.length})</span>
+                  <p className="form-hint">상위 카테고리를 고르면 하위 카테고리 상품에도 적용됩니다.</p>
+                  {categoriesError && <p className="error-text">카테고리를 불러오지 못했습니다</p>}
+                  {!categoriesError && flat.length === 0 && orphanCategories.length === 0 && <p className="form-hint">등록된 카테고리가 없습니다</p>}
+                  <ul className="coupon-category-list" aria-label="카테고리 고르기">
+                    {flat.map((c) => (
+                      <li key={c.id} className={c.parentId === null ? 'coupon-category' : 'coupon-category coupon-category--child'}>
+                        <label className="form-check">
+                          <input type="checkbox" checked={categoryIds.includes(c.id)} onChange={(e) => toggleCategory(c.id, e.target.checked)} />
+                          {c.label}
+                        </label>
+                      </li>
+                    ))}
+                    {orphanCategories.map((t) => (
+                      <li key={t.id} className="coupon-category">
+                        <label className="form-check">
+                          <input type="checkbox" checked onChange={(e) => toggleCategory(t.id, e.target.checked)} />
+                          {t.name} <span className="form-warning">(목록에 없는 카테고리)</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {scope === 'PRODUCT' && (
+                <div className="form-field">
+                  <span className="form-label">지정 상품 ({scopeProducts.length})</span>
+                  {scopeProducts.length > 0 && (
+                    <ul className="image-list" aria-label="지정 상품 목록">
+                      {scopeProducts.map((p) => (
+                        <li key={p.id} className="image-item">
+                          <span className="image-url" title={p.name}>
+                            {p.name}
+                          </span>
+                          <span className="image-actions">
+                            <button
+                              type="button"
+                              className="btn btn--danger btn--sm"
+                              aria-label={`${p.name} 빼기`}
+                              onClick={() => setScopeProducts(scopeProducts.filter((x) => x.id !== p.id))}
+                            >
+                              빼기
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="inline-form">
+                    <input
+                      type="text"
+                      aria-label="상품 검색"
+                      placeholder="상품 이름으로 찾기"
+                      value={productKeyword}
+                      onChange={(e) => setProductKeyword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          void onProductSearch()
+                        }
+                      }}
+                    />
+                    <button type="button" className="btn btn--secondary btn--sm" onClick={onProductSearch} disabled={productSearching}>
+                      상품 찾기
+                    </button>
+                  </div>
+                  {productSearchError && <p className="error-text">{productSearchError}</p>}
+                  {productResults && productResults.length === 0 && <p className="form-hint">찾은 상품이 없습니다</p>}
+                  {productResults && productResults.length > 0 && (
+                    <ul className="image-list promotion-search-results" aria-label="상품 검색 결과">
+                      {productResults.map((p) => (
+                        <li key={p.id} className="image-item">
+                          <span className="image-url" title={p.name}>
+                            {p.name} · {formatPrice(p.price)}
+                            {p.status !== 'SELLING' && <span className="status-badge status-badge--cancelled"> {STATUS_LABELS[p.status] ?? p.status}</span>}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            aria-label={`${p.name} 추가`}
+                            onClick={() => addProduct(p)}
+                            disabled={addedProductIds.has(p.id) || scopeProducts.length >= MAX_SCOPE_PRODUCTS}
+                          >
+                            {addedProductIds.has(p.id) ? '추가됨' : '추가'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="form-section">
+              <h2 className="form-heading">기간 · 수량</h2>
+              <div className="date-range">
+                <div className="form-field">
+                  <label htmlFor="coupon-issue-start">발급 시작일</label>
+                  <DateField id="coupon-issue-start" value={issueStart} onChange={setIssueStart} rangeStart={issueStart} rangeEnd={issueEnd} presets={START_PRESETS} />
+                </div>
+                <span className="date-range-sep" aria-hidden="true">
+                  ~
+                </span>
+                <div className="form-field">
+                  <label htmlFor="coupon-issue-end">발급 종료일</label>
+                  <DateField
+                    id="coupon-issue-end"
+                    value={issueEnd}
+                    onChange={setIssueEnd}
+                    min={issueStart || undefined}
+                    rangeStart={issueStart}
+                    rangeEnd={issueEnd}
+                    presets={PERIOD_PRESETS}
+                    presetBase={issueStart}
+                  />
+                </div>
+              </div>
+              <p className="form-hint">받기·코드·이벤트로 받을 수 있는 기간입니다. 한국 날짜 기준, 시작일·종료일 포함.</p>
+              <fieldset className="form-field promotion-type">
+                <legend>사용 기한</legend>
+                <label className="form-check">
+                  <input type="radio" name="coupon-validity" value="UNTIL" checked={validity === 'UNTIL'} onChange={() => setValidity('UNTIL')} />
+                  날짜까지
+                </label>
+                <label className="form-check">
+                  <input type="radio" name="coupon-validity" value="DAYS" checked={validity === 'DAYS'} onChange={() => setValidity('DAYS')} />
+                  받은 날부터 N일
+                </label>
+              </fieldset>
+              {validity === 'UNTIL' ? (
+                <div className="form-field">
+                  <label htmlFor="coupon-valid-until">사용 기한 날짜</label>
+                  <DateField id="coupon-valid-until" value={validUntil} onChange={setValidUntil} min={issueStart || undefined} presets={PERIOD_PRESETS} presetBase={issueStart || undefined} />
+                  <p className="form-hint">이 날(한국 날짜)까지 쓸 수 있습니다.</p>
+                </div>
+              ) : (
+                <div className="form-field">
+                  <label htmlFor="coupon-valid-days">사용 기한 일수</label>
+                  <span className="input-unit">
+                    <input id="coupon-valid-days" className="input-xs" type="number" min={1} step={1} value={validDays} onChange={(e) => setValidDays(e.target.value)} />
+                    <span>일</span>
+                  </span>
+                  <p className="form-hint">받은 날을 1일째로 셉니다. 7이면 받은 날부터 7일째까지.</p>
+                </div>
+              )}
+              <div className="form-row">
+                <div className="form-field">
+                  <label htmlFor="coupon-quantity">총 수량</label>
+                  <span className="input-unit">
+                    <input id="coupon-quantity" className="input-sm" type="number" min={1} step={1} placeholder="무제한" value={totalQuantity} onChange={(e) => setTotalQuantity(e.target.value)} />
+                    <span>장</span>
+                  </span>
+                  <p className="form-hint">비우면 무제한</p>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="coupon-code">쿠폰 코드</label>
+                  <input
+                    id="coupon-code"
+                    className="input-md input-code"
+                    value={code}
+                    maxLength={20}
+                    placeholder="예: WELCOME2026"
+                    autoCapitalize="characters"
+                    onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                  />
+                  <p className="form-hint">입력하면 앱에서 코드로 받을 수 있어요. 영문 대문자·숫자 4~20자.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2 className="form-heading">노출</h2>
+              <label className="form-check" htmlFor="coupon-downloadable">
+                <input id="coupon-downloadable" type="checkbox" checked={downloadable} onChange={(e) => setDownloadable(e.target.checked)} />
+                앱에서 받기 노출
+              </label>
+              <p className="form-hint">켜면 앱의 쿠폰 받기 목록·상품 화면에 보입니다. 꺼도 코드·이벤트·관리자 지급으로는 받을 수 있습니다.</p>
+              <label className="form-check" htmlFor="coupon-active">
+                <input id="coupon-active" type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+                활성
+              </label>
+              <p className="form-hint">끄면 새로 받을 수 없습니다.</p>
+            </div>
+
+            <div className="form-actions">
+              {editing && !confirmingDelete && (
+                <button type="button" className="btn btn--danger" onClick={() => setConfirmingDelete(true)} disabled={submitting}>
+                  삭제
+                </button>
+              )}
+              {editing && confirmingDelete && (
+                <span className="confirm-inline" role="group" aria-label="삭제 확인">
+                  <span>'{saved?.name}' 쿠폰을 삭제할까요? 이미 받은 쿠폰은 기한까지 쓸 수 있습니다.</span>
+                  <button type="button" className="btn btn--danger" onClick={onDelete} disabled={submitting}>
+                    삭제 확인
+                  </button>
+                  <button type="button" className="btn btn--ghost" onClick={() => setConfirmingDelete(false)} disabled={submitting}>
+                    취소
+                  </button>
+                </span>
+              )}
+              <button type="submit" className="btn btn--primary" disabled={submitting}>
+                {editing ? '저장' : '등록'}
+              </button>
+            </div>
+          </form>
+
+          {message && <p className="result-text">{message}</p>}
+          {error && <p className="error-text">{error}</p>}
+        </div>
+
+        {editing && id && (
+          <div className="detail-aside detail-aside--sticky">
+            <GrantSection id={id} onGranted={refreshCounts} />
+          </div>
+        )}
+      </div>
+
+      {editing && id && <IssuesSection id={id} reloadKey={issuesKey} />}
     </div>
   )
 }

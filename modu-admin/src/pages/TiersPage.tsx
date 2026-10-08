@@ -100,6 +100,13 @@ function TierCouponSearch({ tierName, selected, onAdd, onClose }: { tierName: st
 }
 
 /** 커머스 > 회원 등급. 4개 등급의 이름·색·기준 금액·적립률·매월 쿠폰을 고치고, 산정 이력을 보고, 지금 다시 산정한다. */
+/** 적립률 범위 "1~5" (모두 같으면 한 값). */
+const rateRange = (rates: number[]) => {
+  const lo = Math.min(...rates)
+  const hi = Math.max(...rates)
+  return lo === hi ? String(lo) : `${lo}~${hi}`
+}
+
 export default function TiersPage() {
   const [tiers, setTiers] = useState<AdminTier[] | null>(null)
   const [drafts, setDrafts] = useState<TierDraft[]>([])
@@ -233,19 +240,69 @@ export default function TiersPage() {
 
   return (
     <div>
-      <h1>회원 등급</h1>
-      <p className="form-hint tier-rule">
-        매월 1일 0시 10분(한국 시간)에 지난 6개월 배송 완료 금액(쿠폰·포인트를 뺀 결제 금액)으로 등급을 다시 정하고, 등급별 매월 쿠폰을 발급합니다. 적립률은 배송 완료 때
-        그 고객의 등급으로 계산합니다.
-      </p>
+      <div className="page-head">
+        <div className="page-head-main">
+          <div className="page-head-title">
+            <h1>회원 등급</h1>
+          </div>
+          <p className="page-head-sub">
+            매월 1일 0시 10분(한국 시간)에 지난 6개월 배송 완료 금액(쿠폰·포인트를 뺀 결제 금액)으로 등급을 다시 정하고, 등급별 매월 쿠폰을 발급합니다. 적립률은 배송 완료 때
+            그 고객의 등급으로 계산합니다.
+          </p>
+        </div>
+      </div>
+
+      {tiers && tiers.length > 0 && (
+        <section className="stat-grid tier-stats" aria-label="등급 요약">
+          <div className="stat-card">
+            <span className="stat-card-label">등급</span>
+            <span className="stat-card-value">
+              {tiers.length}
+              <span className="stat-card-unit">개</span>
+            </span>
+            <span className="stat-card-sub">{tiers.map((t) => t.name).join(' · ')}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card-label">등급이 있는 고객</span>
+            <span className="stat-card-value">
+              {num(tiers.reduce((n, t) => n + (t.customerCount ?? 0), 0))}
+              <span className="stat-card-unit">명</span>
+            </span>
+            <span className="stat-card-sub">마지막 산정 기준</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card-label">적립률</span>
+            <span className="stat-card-value">
+              {rateRange(tiers.map((t) => t.earnRate))}
+              <span className="stat-card-unit">%</span>
+            </span>
+            <span className="stat-card-sub">배송 완료 때 등급으로 적립</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card-label">정기 산정</span>
+            <span className="stat-card-value">
+              매월 1일
+            </span>
+            <span className="stat-card-sub">0시 10분 (한국 시간)</span>
+          </div>
+        </section>
+      )}
 
       {loadError && <p className="error-text">{loadError}</p>}
       {!tiers && !loadError && <p>불러오는 중...</p>}
 
       {tiers && (
-        <section className="tier-editor" aria-label="등급 설정">
-          <div className="table-scroll">
-            <table className="tier-table">
+        <section className="section-card tier-editor-card" aria-label="등급 설정">
+          <div className="section-card-head">
+            <div>
+              <h2 className="section-card-title">등급 설정</h2>
+              <p className="section-card-hint">
+                가장 낮은 등급은 0원부터, 위 등급일수록 기준 금액이 커야 합니다. 적립률은 0~{MAX_EARN_RATE}%. 매월 쿠폰은 그 달 산정 때 동의한 고객에게 한 번씩 발급됩니다.
+              </p>
+            </div>
+          </div>
+          <div className="card-table-wrap">
+            <table className="tier-table card-table">
               <thead>
                 <tr>
                   <th>등급</th>
@@ -352,9 +409,6 @@ export default function TiersPage() {
               </tbody>
             </table>
           </div>
-          <p className="form-hint">
-            가장 낮은 등급은 0원부터, 위 등급일수록 기준 금액이 커야 합니다. 적립률은 0~{MAX_EARN_RATE}%. 매월 쿠폰은 그 달 산정 때 동의한 고객에게 한 번씩 발급됩니다.
-          </p>
           <div className="tier-actions">
             {dirty && problem && <span className="error-text">{problem}</span>}
             {saveError && <span className="error-text">{saveError}</span>}
@@ -372,74 +426,78 @@ export default function TiersPage() {
         </section>
       )}
 
-      <div className="tier-runs-head">
-        <h2>산정 이력</h2>
-        {!confirming && (
-          <button type="button" className="btn btn--secondary" disabled={anyRunning || starting} onClick={() => setConfirming(true)}>
-            {anyRunning ? '산정 중...' : '지금 다시 산정'}
-          </button>
-        )}
-        {confirming && (
-          <span className="confirm-inline" role="group" aria-label="다시 산정 확인">
-            <span>모든 고객의 등급을 지금 다시 산정할까요? 이번 달 등급 쿠폰을 아직 보내지 않았다면 함께 발급합니다.</span>
-            <button type="button" className="btn btn--primary" onClick={onStartRun} disabled={starting}>
-              산정 시작
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)} disabled={starting}>
-              아니요
-            </button>
-          </span>
-        )}
-      </div>
-      {runError && <p className="error-text">{runError}</p>}
-      {runsLoading && runs.length === 0 && <p>불러오는 중...</p>}
-      {runsError && <p className="error-text">{runsError}</p>}
-      {!runsLoading && !runsError && runs.length === 0 && <p>아직 산정한 적이 없습니다</p>}
-      {runs.length > 0 && (
-        <>
-          <div className="table-scroll">
-            <table className="tier-runs-table">
-              <thead>
-                <tr>
-                  <th>기간</th>
-                  <th>구분</th>
-                  <th>시작</th>
-                  <th>끝</th>
-                  <th className="amount-cell">고객</th>
-                  <th className="amount-cell">변경</th>
-                  <th>등급별</th>
-                  <th>쿠폰 발급 · 건너뜀</th>
-                  <th>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runs.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.periodLabel}</td>
-                    <td>{RUN_REASON_LABELS[r.reason] ?? r.reason}</td>
-                    <td>{kst(r.startedAt)}</td>
-                    <td>{kst(r.finishedAt)}</td>
-                    <td className="amount-cell">{num(r.customers)}</td>
-                    <td className="amount-cell">{num(r.changed)}</td>
-                    <td>{countsText(r, tiers ?? [])}</td>
-                    <td>
-                      {num(r.couponsIssued)} · {num(r.couponsSkipped)}
-                    </td>
-                    <td>
-                      <span className={runStatusClass(r.status)} title={r.message ?? undefined}>
-                        {RUN_STATUS_LABELS[r.status] ?? r.status}
-                      </span>
-                      {r.status === 'FAILED' && r.message && <div className="error-text tier-run-message">{r.message}</div>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="section-card tier-runs-card" aria-label="산정 이력">
+        <div className="section-card-head">
+          <h2 className="section-card-title">산정 이력</h2>
+          <div className="section-card-actions">
+            {!confirming && (
+              <button type="button" className="btn btn--secondary" disabled={anyRunning || starting} onClick={() => setConfirming(true)}>
+                {anyRunning ? '산정 중...' : '지금 다시 산정'}
+              </button>
+            )}
+            {confirming && (
+              <span className="confirm-inline" role="group" aria-label="다시 산정 확인">
+                <span>모든 고객의 등급을 지금 다시 산정할까요? 이번 달 등급 쿠폰을 아직 보내지 않았다면 함께 발급합니다.</span>
+                <button type="button" className="btn btn--primary" onClick={onStartRun} disabled={starting}>
+                  산정 시작
+                </button>
+                <button type="button" className="btn btn--ghost" onClick={() => setConfirming(false)} disabled={starting}>
+                  아니요
+                </button>
+              </span>
+            )}
           </div>
-          <Pager page={runsPage} totalPages={runsTotalPages} onChange={setRunsPage} />
-        </>
-      )}
-      <p className="form-hint">시각은 한국 시간입니다. 쿠폰 건너뜀은 비활성·수량 소진 등으로 발급하지 못한 수입니다.</p>
+        </div>
+        {runError && <p className="error-text">{runError}</p>}
+        {runsLoading && runs.length === 0 && <p>불러오는 중...</p>}
+        {runsError && <p className="error-text">{runsError}</p>}
+        {!runsLoading && !runsError && runs.length === 0 && <p>아직 산정한 적이 없습니다</p>}
+        {runs.length > 0 && (
+          <>
+            <div className="card-table-wrap">
+              <table className="tier-runs-table card-table">
+                <thead>
+                  <tr>
+                    <th>기간</th>
+                    <th>구분</th>
+                    <th>시작</th>
+                    <th>끝</th>
+                    <th className="amount-cell">고객</th>
+                    <th className="amount-cell">변경</th>
+                    <th>등급별</th>
+                    <th>쿠폰 발급 · 건너뜀</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {runs.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.periodLabel}</td>
+                      <td>{RUN_REASON_LABELS[r.reason] ?? r.reason}</td>
+                      <td>{kst(r.startedAt)}</td>
+                      <td>{kst(r.finishedAt)}</td>
+                      <td className="amount-cell">{num(r.customers)}</td>
+                      <td className="amount-cell">{num(r.changed)}</td>
+                      <td>{countsText(r, tiers ?? [])}</td>
+                      <td>
+                        {num(r.couponsIssued)} · {num(r.couponsSkipped)}
+                      </td>
+                      <td>
+                        <span className={runStatusClass(r.status)} title={r.message ?? undefined}>
+                          {RUN_STATUS_LABELS[r.status] ?? r.status}
+                        </span>
+                        {r.status === 'FAILED' && r.message && <div className="error-text tier-run-message">{r.message}</div>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager page={runsPage} totalPages={runsTotalPages} onChange={setRunsPage} />
+          </>
+        )}
+        <p className="form-hint">시각은 한국 시간입니다. 쿠폰 건너뜀은 비활성·수량 소진 등으로 발급하지 못한 수입니다.</p>
+      </section>
     </div>
   )
 }

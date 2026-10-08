@@ -63,16 +63,54 @@ export default function CategoriesPage() {
     void run(() => deleteCategory(category.id), '삭제하지 못했습니다')
   }
 
+  const childCount = tree.reduce((n, root) => n + root.children.length, 0)
+  const productCount = tree.reduce((n, root) => n + (root.productCount ?? 0) + root.children.reduce((m, c) => m + (c.productCount ?? 0), 0), 0)
+
   return (
     <div>
-      <h1>카테고리 관리</h1>
+      <div className="page-head">
+        <div className="page-head-main">
+          <div className="page-head-title">
+            <h1>카테고리 관리</h1>
+          </div>
+          <p className="page-head-sub">상위 &gt; 하위 2단계입니다. 하위나 상품이 있는 카테고리는 삭제할 수 없습니다.</p>
+        </div>
+        {!loading && !loadError && (
+          <div className="page-head-actions">
+            <NewCategoryForm label="상위 카테고리 추가" onCreate={(name) => onCreate(name, null, tree.length)} disabled={busy} />
+          </div>
+        )}
+      </div>
       {loading && <p>불러오는 중...</p>}
       {loadError && <p className="error-text">{loadError}</p>}
       {!loading && !loadError && (
         <>
-          <NewCategoryForm label="상위 카테고리 추가" onCreate={(name) => onCreate(name, null, tree.length)} disabled={busy} />
+          <section className="stat-grid category-stats" aria-label="카테고리 요약">
+            <div className="stat-card">
+              <span className="stat-card-label">상위 카테고리</span>
+              <span className="stat-card-value">
+                {tree.length}
+                <span className="stat-card-unit">개</span>
+              </span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-card-label">하위 카테고리</span>
+              <span className="stat-card-value">
+                {childCount}
+                <span className="stat-card-unit">개</span>
+              </span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-card-label">등록 상품</span>
+              <span className="stat-card-value">
+                {productCount.toLocaleString('ko-KR')}
+                <span className="stat-card-unit">개</span>
+              </span>
+            </div>
+          </section>
+          {error && <p className="error-text">{error}</p>}
           {tree.length === 0 && <p>등록된 카테고리가 없습니다</p>}
-          <ul className="tree-list">
+          <ul className="tree-list category-grid">
             {tree.map((root) => (
               <li key={root.id} className="tree-root">
                 <CategoryRow category={root} parentId={null} onSave={onSave} onDelete={onDelete} disabled={busy} />
@@ -96,7 +134,6 @@ export default function CategoriesPage() {
           </ul>
         </>
       )}
-      {error && <p className="error-text">{error}</p>}
     </div>
   )
 }

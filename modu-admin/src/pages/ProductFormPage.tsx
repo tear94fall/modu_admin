@@ -9,11 +9,13 @@ import {
   type ProductDetail,
   type ProductInput,
   type ProductStatus,
+  STATUS_LABELS,
   updateProduct,
   validationMessage,
 } from '../api/products'
 import { cleanGroups, type GroupDraft, optionLabel, reconcileSkus, type SkuDraft, splitValues } from '../util/options'
 import Select from '../components/Select'
+import { formatPrice } from '../util/format'
 
 const MAX_IMAGES = 10
 const MAX_GROUPS = 3
@@ -214,199 +216,257 @@ export default function ProductFormPage() {
       ? Math.floor(((Number(listPrice) - Number(price)) * 100) / Number(listPrice))
       : 0
 
+  const totalStock = skus.reduce((sum, s) => sum + (Number(s.stock) || 0), 0)
+  const categoryLabel = flattenCategories(categories).find((c) => c.id === categoryId)?.label ?? '미분류'
+  const cover = images[0]
+  const priceValue = Number(price)
+
   return (
     <div>
       {backLink}
-      <h1>{editing ? '상품 수정' : '상품 등록'}</h1>
-      <form className="form-card form-card--wide" onSubmit={onSubmit}>
-        <div className="form-section">
-          <h2 className="form-heading">기본 정보</h2>
-          <div className="form-field">
-            <label htmlFor="product-name">이름</label>
-            <input id="product-name" value={name} maxLength={100} required onChange={(e) => setName(e.target.value)} />
+      <div className="page-head">
+        <div className="page-head-main">
+          <div className="page-head-title">
+            <h1>{editing ? '상품 수정' : '상품 등록'}</h1>
+            {editing && <span className={status === 'SELLING' ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'}>{STATUS_LABELS[status]}</span>}
           </div>
-          <div className="form-grid">
-            <div className="form-field">
-              <label htmlFor="product-category">카테고리</label>
-              <Select
-                id="product-category"
-                value={categoryId == null ? '' : String(categoryId)}
-                onChange={(v) => setCategoryId(v === '' ? null : Number(v))}
-                options={[
-                  { value: '', label: '미분류' },
-                  ...flattenCategories(categories).map((c) => ({ value: String(c.id), label: c.label })),
-                ]}
-              />
-            </div>
-            <div className="form-field">
-              <label htmlFor="product-status">판매 상태</label>
-              <Select
-                id="product-status"
-                value={status}
-                onChange={(v) => setStatus(v as ProductStatus)}
-                options={[
-                  { value: 'SELLING', label: '판매중' },
-                  { value: 'HIDDEN', label: '숨김' },
-                ]}
-              />
-            </div>
-          </div>
-          <div className="form-grid">
-            <div className="form-field">
-              <label htmlFor="product-price">판매가</label>
-              <input id="product-price" type="number" min={0} step={1} value={price} required onChange={(e) => setPrice(e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label htmlFor="product-list-price">정가</label>
-              <input
-                id="product-list-price"
-                type="number"
-                min={0}
-                step={1}
-                placeholder="할인 없음"
-                value={listPrice}
-                onChange={(e) => setListPrice(e.target.value)}
-              />
-              {discount > 0 && <p className="form-hint">할인율 {discount}%</p>}
-            </div>
-          </div>
-          <div className="form-field">
-            <label htmlFor="product-description">소개</label>
-            <textarea id="product-description" rows={3} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="product-detail">상세 설명</label>
-            <textarea id="product-detail" rows={8} maxLength={20000} value={detail} onChange={(e) => setDetail(e.target.value)} />
-          </div>
+          {editing && savedName && <p className="page-head-sub">{savedName}</p>}
         </div>
+      </div>
+      <div className="detail-layout detail-layout--aside-right">
+        <div className="detail-main">
+          <form className="form-card form-stack" onSubmit={onSubmit}>
+            <div className="form-section">
+              <h2 className="form-heading">기본 정보</h2>
+              <div className="form-field">
+                <label htmlFor="product-name">이름</label>
+                <input id="product-name" value={name} maxLength={100} required onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label htmlFor="product-category">카테고리</label>
+                  <Select
+                    id="product-category"
+                    value={categoryId == null ? '' : String(categoryId)}
+                    onChange={(v) => setCategoryId(v === '' ? null : Number(v))}
+                    options={[
+                      { value: '', label: '미분류' },
+                      ...flattenCategories(categories).map((c) => ({ value: String(c.id), label: c.label })),
+                    ]}
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="product-status">판매 상태</label>
+                  <Select
+                    id="product-status"
+                    value={status}
+                    onChange={(v) => setStatus(v as ProductStatus)}
+                    options={[
+                      { value: 'SELLING', label: '판매중' },
+                      { value: 'HIDDEN', label: '숨김' },
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label htmlFor="product-price">판매가</label>
+                  <input id="product-price" type="number" min={0} step={1} value={price} required onChange={(e) => setPrice(e.target.value)} />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="product-list-price">정가</label>
+                  <input
+                    id="product-list-price"
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="할인 없음"
+                    value={listPrice}
+                    onChange={(e) => setListPrice(e.target.value)}
+                  />
+                  {discount > 0 && <p className="form-hint">할인율 {discount}%</p>}
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="product-description">소개</label>
+                <textarea id="product-description" rows={3} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="product-detail">상세 설명</label>
+                <textarea id="product-detail" rows={8} maxLength={20000} value={detail} onChange={(e) => setDetail(e.target.value)} />
+              </div>
+            </div>
 
-        <div className="form-section">
-          <h2 className="form-heading">사진</h2>
-          <p className="form-hint">첫 번째 사진이 대표 사진입니다. 최대 {MAX_IMAGES}장.</p>
-          <ul className="image-list">
-            {images.map((url, i) => (
-              <li key={`${url}-${i}`} className="image-item">
-                {failedPreviews.includes(url) ? (
-                  <span className="product-thumb image-placeholder" />
-                ) : (
-                  <img src={url} alt={`사진 ${i + 1}`} className="product-thumb" onError={() => setFailedPreviews((f) => [...f, url])} />
-                )}
-                <span className="image-url" title={url}>
-                  {i === 0 && <span className="status-badge status-badge--selling">대표</span>} {url}
-                </span>
-                <span className="image-actions">
-                  <button type="button" className="btn btn--secondary btn--sm" aria-label={`사진 ${i + 1} 위로`} onClick={() => moveImage(i, -1)} disabled={i === 0}>
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--secondary btn--sm"
-                    aria-label={`사진 ${i + 1} 아래로`}
-                    onClick={() => moveImage(i, 1)}
-                    disabled={i === images.length - 1}
-                  >
-                    ↓
-                  </button>
-                  <button type="button" className="btn btn--danger btn--sm" aria-label={`사진 ${i + 1} 삭제`} onClick={() => setImages(images.filter((_, j) => j !== i))}>
+            <div className="form-section">
+              <h2 className="form-heading">사진</h2>
+              <p className="form-hint">첫 번째 사진이 대표 사진입니다. 최대 {MAX_IMAGES}장.</p>
+              <ul className="image-list">
+                {images.map((url, i) => (
+                  <li key={`${url}-${i}`} className="image-item">
+                    {failedPreviews.includes(url) ? (
+                      <span className="product-thumb image-placeholder" />
+                    ) : (
+                      <img src={url} alt={`사진 ${i + 1}`} className="product-thumb" onError={() => setFailedPreviews((f) => [...f, url])} />
+                    )}
+                    <span className="image-url" title={url}>
+                      {i === 0 && <span className="status-badge status-badge--selling">대표</span>} {url}
+                    </span>
+                    <span className="image-actions">
+                      <button type="button" className="btn btn--secondary btn--sm" aria-label={`사진 ${i + 1} 위로`} onClick={() => moveImage(i, -1)} disabled={i === 0}>
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        aria-label={`사진 ${i + 1} 아래로`}
+                        onClick={() => moveImage(i, 1)}
+                        disabled={i === images.length - 1}
+                      >
+                        ↓
+                      </button>
+                      <button type="button" className="btn btn--danger btn--sm" aria-label={`사진 ${i + 1} 삭제`} onClick={() => setImages(images.filter((_, j) => j !== i))}>
+                        삭제
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="inline-form">
+                <input
+                  type="url"
+                  aria-label="사진 URL"
+                  placeholder="https://"
+                  value={newImage}
+                  onChange={(e) => setNewImage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addImage()
+                    }
+                  }}
+                />
+                <button type="button" className="btn btn--secondary btn--sm" onClick={addImage} disabled={newImage.trim() === '' || images.length >= MAX_IMAGES}>
+                  사진 추가
+                </button>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2 className="form-heading">옵션</h2>
+              <p className="form-hint">옵션 그룹(색상, 사이즈…)과 값을 쉼표로 넣으면 조합표가 만들어집니다. 최대 {MAX_GROUPS}개.</p>
+              {groups.map((g, i) => (
+                <div key={i} className="option-group">
+                  <input aria-label={`옵션 ${i + 1} 이름`} placeholder="예: 색상" value={g.name} maxLength={30} onChange={(e) => setGroupName(i, e.target.value)} />
+                  <input
+                    aria-label={`옵션 ${i + 1} 값`}
+                    placeholder="예: 블랙, 화이트"
+                    value={valueTexts[i] ?? ''}
+                    onChange={(e) => setGroupValues(i, e.target.value)}
+                  />
+                  <button type="button" className="btn btn--danger btn--sm" aria-label={`옵션 ${i + 1} 삭제`} onClick={() => removeGroup(i)}>
                     삭제
                   </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="inline-form">
-            <input
-              type="url"
-              aria-label="사진 URL"
-              placeholder="https://"
-              value={newImage}
-              onChange={(e) => setNewImage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addImage()
-                }
-              }}
-            />
-            <button type="button" className="btn btn--secondary btn--sm" onClick={addImage} disabled={newImage.trim() === '' || images.length >= MAX_IMAGES}>
-              사진 추가
-            </button>
-          </div>
-        </div>
+                </div>
+              ))}
+              {groups.length < MAX_GROUPS && (
+                <div>
+                  <button type="button" className="btn btn--secondary btn--sm" onClick={addGroup}>
+                    옵션 그룹 추가
+                  </button>
+                </div>
+              )}
 
-        <div className="form-section">
-          <h2 className="form-heading">옵션</h2>
-          <p className="form-hint">옵션 그룹(색상, 사이즈…)과 값을 쉼표로 넣으면 조합표가 만들어집니다. 최대 {MAX_GROUPS}개.</p>
-          {groups.map((g, i) => (
-            <div key={i} className="option-group">
-              <input aria-label={`옵션 ${i + 1} 이름`} placeholder="예: 색상" value={g.name} maxLength={30} onChange={(e) => setGroupName(i, e.target.value)} />
-              <input
-                aria-label={`옵션 ${i + 1} 값`}
-                placeholder="예: 블랙, 화이트"
-                value={valueTexts[i] ?? ''}
-                onChange={(e) => setGroupValues(i, e.target.value)}
-              />
-              <button type="button" className="btn btn--danger btn--sm" aria-label={`옵션 ${i + 1} 삭제`} onClick={() => removeGroup(i)}>
-                삭제
-              </button>
-            </div>
-          ))}
-          {groups.length < MAX_GROUPS && (
-            <div>
-              <button type="button" className="btn btn--secondary btn--sm" onClick={addGroup}>
-                옵션 그룹 추가
-              </button>
-            </div>
-          )}
-
-          {hasOptions ? (
-            <table className="sku-table">
-              <thead>
-                <tr>
-                  <th>조합</th>
-                  <th>추가금</th>
-                  <th>재고</th>
-                </tr>
-              </thead>
-              <tbody>
-                {skus.map((s, i) => {
-                  const label = optionLabel(groups, s.options)
-                  return (
-                    <tr key={label}>
-                      <td>{label}</td>
-                      <td>
-                        <input aria-label={`${label} 추가금`} type="number" min={0} step={1} value={s.extraPrice} onChange={(e) => setSku(i, { extraPrice: e.target.value })} />
-                      </td>
-                      <td>
-                        <input aria-label={`${label} 재고`} type="number" min={0} step={1} value={s.stock} onChange={(e) => setSku(i, { stock: e.target.value })} />
-                      </td>
+              {hasOptions ? (
+                <table className="sku-table">
+                  <thead>
+                    <tr>
+                      <th>조합</th>
+                      <th>추가금</th>
+                      <th>재고</th>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="form-field form-field--narrow">
-              <label htmlFor="product-stock">재고</label>
-              <input id="product-stock" type="number" min={0} step={1} value={skus[0]?.stock ?? '0'} onChange={(e) => setSku(0, { stock: e.target.value })} />
+                  </thead>
+                  <tbody>
+                    {skus.map((s, i) => {
+                      const label = optionLabel(groups, s.options)
+                      return (
+                        <tr key={label}>
+                          <td>{label}</td>
+                          <td>
+                            <input aria-label={`${label} 추가금`} type="number" min={0} step={1} value={s.extraPrice} onChange={(e) => setSku(i, { extraPrice: e.target.value })} />
+                          </td>
+                          <td>
+                            <input aria-label={`${label} 재고`} type="number" min={0} step={1} value={s.stock} onChange={(e) => setSku(i, { stock: e.target.value })} />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="form-field form-field--narrow">
+                  <label htmlFor="product-stock">재고</label>
+                  <input id="product-stock" type="number" min={0} step={1} value={skus[0]?.stock ?? '0'} onChange={(e) => setSku(0, { stock: e.target.value })} />
+                </div>
+              )}
             </div>
-          )}
+
+            <div className="form-actions">
+              {editing && (
+                <button type="button" className="btn btn--danger" onClick={onDelete} disabled={submitting}>
+                  삭제
+                </button>
+              )}
+              <button type="submit" className="btn btn--primary" disabled={submitting}>
+                {editing ? '저장' : '등록'}
+              </button>
+            </div>
+          </form>
+
+          {message && <p className="result-text">{message}</p>}
+          {error && <p className="error-text">{error}</p>}
         </div>
 
-        <div className="form-actions">
-          {editing && (
-            <button type="button" className="btn btn--danger" onClick={onDelete} disabled={submitting}>
-              삭제
-            </button>
-          )}
-          <button type="submit" className="btn btn--primary" disabled={submitting}>
-            {editing ? '저장' : '등록'}
-          </button>
-        </div>
-      </form>
-
-      {message && <p className="result-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+        <aside className="detail-aside detail-aside--sticky detail-aside--first" aria-label="상품 미리보기">
+          <section className="section-card">
+            <div className="section-card-head">
+              <h2 className="section-card-title">미리보기</h2>
+              <span className={status === 'SELLING' ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'}>{STATUS_LABELS[status]}</span>
+            </div>
+            {cover && !failedPreviews.includes(cover) ? (
+              <img src={cover} alt="" className="aside-preview" />
+            ) : (
+              <div className="aside-preview aside-preview--empty">대표 사진 없음</div>
+            )}
+            {images.length > 1 && (
+              <div className="aside-preview-thumbs" aria-hidden="true">
+                {images.slice(1, 6).map((url, i) => (failedPreviews.includes(url) ? <span key={`${url}-${i}`} /> : <img key={`${url}-${i}`} src={url} alt="" />))}
+              </div>
+            )}
+            <p className="aside-product-name">{name.trim() || '이름 없음'}</p>
+            <p className="aside-product-price">
+              <strong>{price.trim() !== '' && Number.isFinite(priceValue) ? formatPrice(priceValue) : '-'}</strong>
+              {discount > 0 && (
+                <>
+                  <span className="price-strike">{formatPrice(Number(listPrice))}</span>
+                  <span className="aside-discount">{discount}%</span>
+                </>
+              )}
+            </p>
+            <dl className="kv-grid aside-kv">
+              <dt>카테고리</dt>
+              <dd>{categoryLabel}</dd>
+              <dt>사진</dt>
+              <dd>
+                {images.length} / {MAX_IMAGES}장
+              </dd>
+              <dt>옵션</dt>
+              <dd>{hasOptions ? `${skus.length}개 조합` : '없음'}</dd>
+              <dt>총 재고</dt>
+              <dd className={totalStock === 0 ? 'stock-out' : undefined}>{totalStock.toLocaleString('ko-KR')}개</dd>
+            </dl>
+          </section>
+        </aside>
+      </div>
     </div>
   )
 }

@@ -141,7 +141,7 @@ h2 {
   border: 1px solid #3b4256;
 }
 
-.sidebar-footer .btn--ghost:hover {
+.sidebar-footer .btn--ghost:hover:not(:disabled) {
   background: #2a3142;
   color: #fff;
 }
@@ -280,10 +280,16 @@ button:disabled {
   border-radius: 6px;
 }
 
-.tab.active {
+.tab.active,
+.tab.active:hover:not(:disabled) {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: #fff;
+}
+
+.tab.active:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 /* 폼 */
@@ -2058,3 +2064,228 @@ button, input, select, textarea, optgroup { font-family: inherit; }
   .room-message { grid-template-columns: 28px minmax(0, 1fr); }
   .room-message-time { grid-column: 2; line-height: 16px; }
 }
+
+/* 상세 페이지 디자인 (2026-10-08) — 포인트·쿠폰·카테고리·상품·주문·회원 등급·리뷰·기획전·캠페인 화면이 함께 쓴다.
+   회원·채팅방 상세(.member-hub · .member-profile · .sub-card)와 같은 카드 모양: 흰 둥근 카드, 옅은 테두리, 흐린 라벨. */
+
+/* 머리: 제목 + 상태 알약 + 한 줄 설명(왼쪽), 동작 버튼(오른쪽). 좁으면 버튼이 아래로 내려간다. */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 16px; margin-bottom: 20px; }
+.page-head-main { display: grid; gap: 6px; min-width: 0; }
+.page-head-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.page-head-title h1 { margin: 0; overflow-wrap: anywhere; }
+.page-head-title .status-badge { font-weight: 600; }
+.page-head-sub { margin: 0; color: var(--color-muted); font-size: 14px; max-width: 80ch; }
+.page-head-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.page-head-actions .confirm-inline { margin-right: 0; }
+
+/* 2단: 왼쪽 요약 카드(320px) + 오른쪽 본문. --aside-right 는 본문 + 오른쪽 곁 카드(폼 화면). 1200px 아래로는 한 줄로 쌓인다. */
+.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.detail-main, .detail-aside { display: grid; gap: 16px; align-content: start; min-width: 0; }
+@media (min-width: 1200px) {
+  .detail-layout { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
+  .detail-layout--aside-right { grid-template-columns: minmax(0, 1fr) 340px; }
+  .detail-aside--sticky { position: sticky; top: 24px; }
+}
+
+/* 요약 카드: .member-profile 그대로 + 아이콘 칸·큰 숫자 */
+.summary-card .member-profile-facts { grid-template-columns: 76px minmax(0, 1fr); }
+.summary-card .member-profile-facts dd { overflow-wrap: anywhere; }
+.summary-card .member-profile-head .service-badges { margin-top: 10px; }
+.summary-card .member-profile-name { margin-top: 12px; }
+.summary-icon {
+  position: relative; display: grid; place-items: center; width: 72px; height: 72px; margin-top: -36px;
+  border: 3px solid #fff; border-radius: 18px; background: #eef2ff; color: #4f46e5; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+.summary-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.summary-icon svg { display: block; }
+.summary-icon--amber { background: #fef3c7; color: #b45309; }
+.summary-icon--green { background: #dcfce7; color: #15803d; }
+.summary-sub { margin: 4px 0 0; color: var(--color-muted); font-size: 13px; overflow-wrap: anywhere; }
+.summary-figure { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
+.summary-figure-value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.summary-figure-note { font-size: 12px; color: var(--color-muted); }
+.summary-text { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+
+/* 내용 카드: 제목(+설명·버튼) 머리와 본문 */
+.section-card { min-width: 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.section-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 16px; }
+.section-card-head > div { min-width: 0; }
+.section-card-title { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
+.section-card-hint { margin: 4px 0 0; font-size: 12px; color: var(--color-muted); }
+.section-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.section-card-actions .confirm-inline { margin-right: 0; }
+.section-card > :last-child { margin-bottom: 0; }
+.section-card > .form-hint:last-child { margin: 14px 0 0; }
+.section-card .pager { margin-top: 14px; }
+.section-card .sort-chips { margin: 0 0 14px; }
+.section-card + .section-card { margin-top: 0; }
+
+/* 카드 안 표: 카드 양끝까지, 머리줄은 옅은 회색 */
+.card-table-wrap { margin: 0 -20px; overflow-x: auto; border-top: 1px solid #eef0f3; }
+.card-table-wrap:last-child { margin-bottom: -20px; border-radius: 0 0 11px 11px; }
+.card-table { margin: 0; background: #fff; }
+.card-table th { background: #fafafb; color: var(--color-muted); font-size: 12px; font-weight: 600; }
+.card-table td { font-variant-numeric: tabular-nums; }
+.card-table th:first-child, .card-table td:first-child { padding-left: 20px; }
+.card-table th:last-child, .card-table td:last-child { padding-right: 20px; }
+.card-table tbody tr:last-child td { border-bottom: 0; }
+.card-table tbody tr { cursor: default; }
+
+/* 라벨·값 목록 */
+.kv-grid { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px 16px; margin: 0; font-size: 14px; }
+.kv-grid dt { color: var(--color-muted); font-size: 13px; line-height: 22px; }
+.kv-grid dd { margin: 0; min-width: 0; line-height: 22px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.kv-id { display: flex; align-items: flex-start; gap: 6px; }
+.kv-id code { flex: 1; min-width: 0; font-size: inherit; word-break: break-all; }
+.kv-id .copy-btn { margin-top: -1px; }
+
+/* 숫자 칸 */
+.stat-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.stat-card { display: grid; gap: 2px; align-content: start; min-width: 0; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.stat-card-label { font-size: 12px; color: var(--color-muted); }
+.stat-card-value { font-size: 22px; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat-card-unit { margin-left: 2px; font-size: 14px; font-weight: 600; color: #4b5563; }
+.stat-card-sub { font-size: 12px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.stat-card--accent { border-color: #c7d2fe; background: linear-gradient(135deg, #eef2ff, #f5f3ff); }
+.stat-card--accent .stat-card-value { color: #3730a3; }
+
+/* 폼 화면: 섹션마다 흰 카드, 저장 줄은 화면 아래에 붙는다. form-card 의 하위 규칙(제목·검색 줄 폭)은 그대로 쓴다. */
+.form-card.form-stack { display: grid; gap: 16px; max-width: none; min-width: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.form-stack > .form-section { min-width: 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.form-card.form-stack > .form-section + .form-section { margin-top: 0; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+.form-card.form-stack .form-heading { margin: 0 0 2px; }
+.form-card.form-stack > .form-actions {
+  position: sticky; bottom: 0; z-index: 5; flex-wrap: wrap; align-items: center; margin: 0; padding: 12px 20px;
+  border: 1px solid #e5e7eb; border-radius: 12px; background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06); backdrop-filter: blur(6px);
+}
+.form-actions-note { margin-right: auto; font-size: 13px; color: var(--color-muted); }
+.form-actions .confirm-inline { margin-right: auto; }
+.form-stack .sku-table { margin: 4px 0 0; }
+.form-stack .sku-table th { background: #fafafb; color: var(--color-muted); font-size: 12px; font-weight: 600; }
+
+/* 곁 카드의 미리보기(상품 대표 사진·기획전 배너·알림) */
+.aside-preview { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; background: #eef0f3; }
+.aside-preview--empty { display: grid; place-items: center; color: var(--color-muted); font-size: 13px; }
+.aside-preview-thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.aside-preview-thumbs img, .aside-preview-thumbs span { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #eef0f3; }
+.section-card .promotion-banner { max-width: none; margin-top: 0; }
+.section-card > .kv-grid + *, .section-card > * + .kv-grid { margin-top: 16px; }
+.aside-kv { grid-template-columns: 76px minmax(0, 1fr); }
+.price-strike { margin-left: 6px; color: var(--color-muted); text-decoration: line-through; font-size: 13px; }
+
+/* 주문 상품 */
+.section-card .order-items { gap: 0; margin: 0 -20px; border-top: 1px solid #eef0f3; }
+.section-card .order-item { padding: 14px 20px; border-bottom: 1px solid #eef0f3; }
+.section-card .order-item .product-thumb { width: 56px; height: 56px; border-radius: 8px; }
+.order-sum { display: grid; gap: 8px; margin-top: 16px; }
+.order-sum .order-total { padding-top: 0; border-top: 0; font-size: 14px; }
+.order-sum .order-total--grand { margin-top: 4px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 16px; }
+.order-sum .order-total--grand strong { font-size: 20px; color: #111827; }
+
+/* 리뷰 */
+.review-stars-lg { font-size: 22px; letter-spacing: 2px; }
+.section-card .review-body { font-size: 15px; }
+.review-quote { margin: 0; padding: 16px 18px; border-radius: 10px; background: #f9fafb; border: 1px solid #eef0f3; }
+.section-card .review-hide-form { margin-top: 16px; }
+
+/* 캠페인: 내용(왼쪽) + 폰 미리보기(오른쪽) */
+.push-content-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+@container section (min-width: 720px) { .push-content-grid { grid-template-columns: minmax(0, 1fr) 300px; } }
+.section-card--container { container: section / inline-size; }
+.section-card .funnel-steps { max-width: none; margin: 0; padding: 0; border: 0; }
+
+/* 카테고리: 상위마다 카드, 하위는 줄 목록 */
+.category-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 1200px) { .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.category-grid > .tree-root { display: grid; gap: 0; padding: 0; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; align-self: start; }
+.category-grid > .tree-root > .tree-row,
+.category-grid > .tree-root > .category-editor { padding: 14px 16px; }
+.category-grid > .tree-root > .tree-row { border-bottom: 1px solid #eef0f3; background: #fafafb; border-radius: 12px 12px 0 0; }
+.category-grid > .tree-root > .tree-row .tree-name { font-size: 16px; font-weight: 700; }
+.category-grid .tree-children { gap: 0; margin: 0; padding: 4px 0 12px; }
+.category-grid .tree-children > li { padding: 4px 16px; }
+.category-grid .tree-children > li:last-child { padding-top: 10px; }
+.category-grid .tree-count { padding: 1px 8px; border-radius: 999px; background: #f3f4f6; font-size: 12px; font-variant-numeric: tabular-nums; }
+.category-grid .category-editor { max-width: none; margin: 0; }
+.category-grid .inline-form--compact { margin-top: 0; }
+.page-head .category-add { min-width: min(100%, 360px); }
+
+/* 회원 등급 */
+.section-card .tier-table { min-width: 980px; }
+.section-card .tier-runs-table { min-width: 900px; }
+.section-card .tier-actions { margin-top: 0; padding-top: 14px; border-top: 1px solid #eef0f3; }
+.section-card .tier-table + .form-hint, .tier-editor-hint { margin: 14px 0; }
+
+@media (max-width: 768px) {
+  .page-head { margin-bottom: 16px; }
+  .page-head-actions { justify-content: flex-start; }
+  .section-card { padding: 16px; }
+  .card-table-wrap, .section-card .order-items { margin-left: -16px; margin-right: -16px; }
+  .card-table-wrap:last-child { margin-bottom: -16px; }
+  .card-table th:first-child, .card-table td:first-child { padding-left: 16px; }
+  .card-table th:last-child, .card-table td:last-child { padding-right: 16px; }
+  .section-card .order-item { padding: 12px 16px; }
+  .form-stack > .form-section { padding: 16px; }
+  .form-card.form-stack > .form-actions { padding: 10px 16px; }
+  .kv-grid { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .kv-grid dd + dt { margin-top: 8px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .layout--mobile .card-table { display: table; min-width: 640px; }
+}
+
+/* 포인트 상세: 지급·회수 한 줄(포인트 · 메모 · 반영) */
+.point-adjust-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.point-adjust-row > .form-field { flex: 0 1 220px; min-width: 0; }
+.point-adjust-row > .point-adjust-memo { flex: 1 1 280px; }
+.point-adjust-row > .form-field > input { max-width: none; }
+.point-adjust-submit { height: 36px; padding: 0 18px; }
+.point-amount { font-weight: 600; }
+.point-amount--plus { color: #15803d; }
+.point-amount--minus { color: var(--color-danger); }
+.summary-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.summary-card .result-text, .summary-card .error-text { margin: 10px 0 0; font-size: 13px; }
+.review-hidden-note { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: #fef2f2; color: #991b1b; }
+.summary-card .member-profile-name .status-badge { font-weight: 600; }
+.summary-card .review-product-name { color: var(--color-accent); text-decoration: none; }
+.summary-card .review-product-name:hover { text-decoration: underline; }
+.review-hide-form .form-actions { margin-top: 4px; padding-top: 0; border-top: 0; justify-content: flex-start; }
+.summary-facts-flush { padding: 0; border-top: 0; }
+.section-card-count { font-size: 13px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.summary-card .avatar-placeholder { background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; }
+.review-product-card { gap: 14px; }
+.review-product-card .product-thumb { width: 72px; height: 72px; border-radius: 10px; }
+.review-product-card .review-product-name { font-size: 15px; color: var(--color-accent); text-decoration: none; }
+.review-product-card .review-product-name:hover { text-decoration: underline; }
+
+/* 쿠폰·기획전 폼 아래의 지급·발급 현황·출석 현황 카드 */
+.section-card.coupon-section, .section-card.promotion-attendance { margin-top: 0; display: grid; gap: 10px; }
+.section-card .form-heading { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
+.section-card .time-zone-note { margin: -4px 0 4px; }
+.section-card.coupon-section .sort-chips { margin: 0; }
+.section-card.coupon-section .inline-form { max-width: none; }
+.coupon-stat-grid, .detail-layout + .section-card { margin-bottom: 16px; }
+.detail-layout + .section-card { margin-top: 16px; }
+
+/* 상품 폼 곁 카드 */
+.aside-product-name { margin: 14px 0 2px; font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.aside-product-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 0; }
+.aside-product-price strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.aside-product-price .price-strike { margin-left: 0; }
+.aside-discount { font-size: 14px; font-weight: 700; color: #e11d48; }
+.aside-kv { padding-top: 14px; border-top: 1px solid #eef0f3; font-size: 13px; }
+@media (max-width: 1199px) { .detail-layout--aside-right > .detail-aside--first { order: -1; } }
+.section-card .promotion-banner + .aside-kv { margin-top: 14px; }
+.category-stats { margin-bottom: 16px; }
+.tier-stats { margin-bottom: 16px; }
+.tier-editor-card { margin-bottom: 16px; }
+.tier-editor-card .card-table-wrap + .tier-actions { margin-top: 0; padding-top: 14px; }
+.card-table-wrap + .tier-actions { border-top: 1px solid #eef0f3; }
+.tier-runs-card > .form-hint:last-child { margin: 14px 0 0; }
+.review-product-card .card-muted { font-size: 13px; }
+@media (max-width: 768px) {
+  /* 두 칸에 홀수 개면 마지막 카드는 한 줄을 다 쓴다(빈 칸이 남지 않게). */
+  .stat-grid > .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+.card-table th { white-space: nowrap; }
