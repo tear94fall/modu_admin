@@ -142,6 +142,10 @@ export function shortBy(by: string): string {
   return v
 }
 
+/** 배포 한 건의 이력 화면 주소. 그 행을 펼친 채로 연다(결과 배너의 "이력에서 보기"). */
+export const historyEntryPath = (d: Pick<Deployment, 'id' | 'service'>) =>
+  `/deploy/history?service=${encodeURIComponent(d.service)}&open=${encodeURIComponent(d.id)}`
+
 /** 배포가 끝났는지(더 폴링하지 않는다). */
 export const isFinished = (d: Deployment) => d.status === 'SUCCEEDED' || d.status === 'FAILED'
 

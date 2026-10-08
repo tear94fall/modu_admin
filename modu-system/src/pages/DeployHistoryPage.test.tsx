@@ -73,6 +73,14 @@ describe('DeployHistoryPage', () => {
     expect(screen.queryByText('develop-9378b00')).not.toBeInTheDocument()
   })
 
+  it('opens the entry named by ?open= (the result banner link) with its timeline, facts and highlighted error', async () => {
+    renderPage('/deploy/history?service=point-service&open=dep-2')
+    const error = await screen.findByText('CrashLoopBackOff')
+    expect(error.closest('.deploy-error-box')).not.toBeNull()
+    expect(screen.getByRole('list', { name: '배포 단계' })).toBeInTheDocument()
+    expect(screen.getAllByRole('list', { name: '배포 단계' })).toHaveLength(1)
+  })
+
   it('says so when there is no history yet', async () => {
     vi.spyOn(deploy, 'listDeployments').mockResolvedValue([])
     renderPage()

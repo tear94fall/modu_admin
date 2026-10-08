@@ -1584,3 +1584,116 @@ a.btn {
 code, pre, kbd, samp { font-family: inherit; }
 /* 버튼·입력칸은 브라우저가 화면 글꼴을 물려주지 않아 Arial 로 그려졌다 — 모두 화면 글꼴로. */
 button, input, select, textarea, optgroup { font-family: inherit; }
+
+/* 콘솔 카드형 디자인 (2026-10-09) — 모두의 어드민 상세 화면과 같은 모양(머리·숫자 칸·흰 둥근 카드·카드 안 표).
+   새 클래스만 더한다. 기존 규칙은 건드리지 않아 이 클래스를 안 쓰는 화면(사내 업무 콘솔 등)은 그대로다. */
+
+/* 머리: 제목 + 한 줄 설명(왼쪽), 동작(오른쪽). 좁으면 동작이 아래로 내려간다. */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 16px; margin-bottom: 20px; }
+.page-head-main { display: grid; gap: 6px; min-width: 0; }
+.page-head-main h1 { margin: 0; overflow-wrap: anywhere; }
+.page-head-sub { margin: 0; color: var(--color-muted); font-size: 14px; max-width: 90ch; overflow-wrap: anywhere; }
+.page-head-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+
+/* 숫자 칸 */
+.stat-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 16px; }
+.stat-card { display: grid; gap: 2px; align-content: start; min-width: 0; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.stat-card-label { font-size: 12px; color: var(--color-muted); }
+.stat-card-value { font-size: 22px; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat-card-unit { margin-left: 2px; font-size: 14px; font-weight: 600; color: #4b5563; }
+.stat-card-sub { font-size: 12px; color: var(--color-muted); }
+.stat-card--good .stat-card-value { color: #15803d; }
+.stat-card--info .stat-card-value { color: #1d4ed8; }
+.stat-card--bad .stat-card-value { color: #b91c1c; }
+.stat-card--warn { border-color: #fde68a; background: #fffbeb; }
+.stat-card--warn .stat-card-value { color: #b45309; }
+
+/* 내용 카드: 머리(제목·설명·칩·동작) + 본문 */
+.section-card { min-width: 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.section-card + .section-card { margin-top: 16px; }
+.section-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; margin-bottom: 16px; }
+.section-card-head > div { min-width: 0; }
+.section-card-title { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
+.section-card-hint { margin: 4px 0 0; font-size: 12px; color: var(--color-muted); }
+.section-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.section-card-count { font-size: 13px; color: var(--color-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.section-card > :last-child { margin-bottom: 0; }
+.section-card .error-text { margin: 0 0 12px; }
+.section-card-search { width: 280px; max-width: 100%; }
+.section-card-link { font-size: 13px; font-weight: 600; color: var(--color-accent); text-decoration: none; white-space: nowrap; }
+.section-card-link:hover { color: var(--color-accent-hover); text-decoration: underline; }
+
+/* 걸러 보기 칩(라디오 묶음). 32px 한 줄. */
+.filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-chip { height: 32px; padding: 0 12px; border: 1px solid #e5e7eb; border-radius: 999px; background: #fff; color: #374151; font-size: 13px; font-weight: 500; }
+.filter-chip:hover:not(:disabled) { border-color: #cbd5e1; background: #f8fafc; }
+.filter-chip--on, .filter-chip--on:hover:not(:disabled) { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; font-weight: 700; }
+.filter-chip:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.filter-chip-count { margin-left: 4px; color: var(--color-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* 카드 안 표: 카드 양끝까지, 머리줄은 옅은 회색, 칸은 세로 가운데 */
+.card-table-wrap { margin: 0 -20px; overflow-x: auto; border-top: 1px solid #eef0f3; }
+.card-table-wrap:last-child { margin-bottom: -20px; border-radius: 0 0 11px 11px; }
+.card-table { margin: 0; background: #fff; }
+.card-table th { padding: 9px 12px; background: #fafafb; color: var(--color-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.card-table td { padding: 11px 12px; border-bottom-color: #eef0f3; vertical-align: middle; font-variant-numeric: tabular-nums; }
+.card-table th:first-child, .card-table td:first-child { padding-left: 20px; }
+.card-table th:last-child, .card-table td:last-child { padding-right: 20px; }
+.card-table tbody tr:last-child td { border-bottom: 0; }
+.card-table tbody tr { cursor: default; }
+.card-table tbody tr.clickable-row { cursor: pointer; }
+.card-table tbody tr:not(.clickable-row):hover { background: transparent; }
+
+/* 카드 안 목록(폰): 카드 양끝까지 줄로 나눈다. */
+.card-rows { list-style: none; margin: 0 -20px; padding: 0; border-top: 1px solid #eef0f3; }
+.card-rows > li { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 12px 20px; border-bottom: 1px solid #eef0f3; }
+.card-rows > li:last-child { border-bottom: 0; }
+.card-rows:last-child { margin-bottom: -20px; }
+
+/* 라벨·값 목록 */
+.kv-grid { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px 16px; margin: 0; font-size: 14px; }
+.kv-grid dt { color: var(--color-muted); font-size: 13px; line-height: 22px; }
+.kv-grid dd { margin: 0; min-width: 0; line-height: 22px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+/* 2단: 왼쪽 요약 카드(320px) + 오른쪽 본문. 1200px 아래로는 한 줄로 쌓인다. */
+.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.detail-main, .detail-aside { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.detail-main > .section-card + .section-card { margin-top: 0; }
+@media (min-width: 1200px) {
+  .detail-layout { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
+  .detail-aside--sticky { position: sticky; top: 24px; }
+}
+
+@media (max-width: 768px) {
+  .page-head { margin-bottom: 16px; }
+  .page-head-actions { justify-content: flex-start; }
+  .section-card { padding: 16px; }
+  .card-table-wrap, .card-rows { margin-left: -16px; margin-right: -16px; }
+  .card-table-wrap:last-child, .card-rows:last-child { margin-bottom: -16px; }
+  .card-rows > li { padding: 12px 16px; }
+  .card-table th:first-child, .card-table td:first-child { padding-left: 16px; }
+  .card-table th:last-child, .card-table td:last-child { padding-right: 16px; }
+  .layout--mobile .card-table { display: table; }
+  .section-card-search { width: 100%; }
+  .kv-grid { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .kv-grid dd + dt { margin-top: 8px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 두 칸에 홀수 개면 마지막 카드는 한 줄을 다 쓴다. */
+  .stat-grid > .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* 한 번 더 묻는 대화상자(components/ConfirmDialog.tsx) */
+.confirm-dialog-backdrop { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, 0.45); }
+.confirm-dialog { width: min(480px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 20px; border-radius: 12px; background: #fff; box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22); }
+.confirm-dialog-title { margin: 0 0 14px; font-size: 17px; font-weight: 700; color: #111827; }
+.confirm-dialog-body { display: grid; gap: 12px; font-size: 14px; overflow-wrap: anywhere; }
+.confirm-dialog-body p { margin: 0; }
+.confirm-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.confirm-dialog-actions .btn { height: 36px; padding: 0 16px; font-size: 14px; }
+.btn--danger-solid { background: var(--color-danger); border-color: var(--color-danger); color: #fff; }
+.btn--danger-solid:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; }
+/* 작은 링크 칩(외부 링크·이력 바로가기). 이름 중간에서 줄이 바뀌지 않는다. */
+.link-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.link-chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border: 1px solid #dbe3f0; border-radius: 999px; background: #f5f8ff; color: #1d4ed8; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.link-chip:hover { border-color: #93c5fd; background: #e0ecff; color: #1e40af; }
+.link-chip:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }

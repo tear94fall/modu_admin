@@ -25,6 +25,8 @@ export default function DeployHistoryPage() {
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<StatusFilter>('ALL')
   const service = params.get('service') ?? ''
+  /** 진행 카드의 "이력에서 보기"로 오면 그 배포를 펼쳐 둔다. */
+  const openId = params.get('open')
 
   useEffect(() => {
     let cancelled = false
@@ -62,31 +64,39 @@ export default function DeployHistoryPage() {
 
   return (
     <div>
-      <h1>배포 이력</h1>
-      <p className="page-note">최근 {LIMIT}건. 행을 누르면 단계·커밋·오류가 펼쳐진다. deploy-service 가 다시 뜨면 이력은 비워진다(dev).</p>
+      <header className="page-head">
+        <div className="page-head-main">
+          <h1>배포 이력</h1>
+          <p className="page-head-sub">최근 {LIMIT}건. 행을 누르면 단계·커밋·오류가 펼쳐진다. deploy-service 가 다시 뜨면 이력은 비워진다(dev).</p>
+        </div>
+      </header>
       {error && <p className="error-text">{error}</p>}
 
-      <div className="list-controls deploy-controls">
-        <Select
-          className="config-file-select deploy-service-select"
-          aria-label="서비스"
-          value={service}
-          onChange={selectService}
-          options={[{ value: '', label: '모든 서비스' }, ...services.map((s) => ({ value: s, label: s }))]}
-        />
-        <span className="card-muted deploy-count">
-          {filtered.length} / {deployments.length}
-        </span>
-      </div>
-      <div className="access-chips" role="radiogroup" aria-label="상태">
-        {STATUS_FILTERS.map((f) => (
-          <button key={f.value} type="button" role="radio" aria-checked={status === f.value} className={status === f.value ? 'access-chip access-chip--on' : 'access-chip'} onClick={() => setStatus(f.value)}>
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <section className="section-card deploy-history-card">
+        <div className="section-card-head">
+          <div className="deploy-filters">
+            <Select
+              className="deploy-service-select"
+              aria-label="서비스"
+              value={service}
+              onChange={selectService}
+              options={[{ value: '', label: '모든 서비스' }, ...services.map((s) => ({ value: s, label: s }))]}
+            />
+            <div className="filter-chips" role="radiogroup" aria-label="상태">
+              {STATUS_FILTERS.map((f) => (
+                <button key={f.value} type="button" role="radio" aria-checked={status === f.value} className={status === f.value ? 'filter-chip filter-chip--on' : 'filter-chip'} onClick={() => setStatus(f.value)}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="section-card-count">
+            {filtered.length} / {deployments.length}
+          </span>
+        </div>
 
-      <DeploymentList deployments={filtered} isMobile={isMobile} emptyText={deployments.length === 0 ? '아직 배포 이력이 없다' : '조건에 맞는 배포가 없다'} />
+        <DeploymentList deployments={filtered} isMobile={isMobile} initialOpen={openId} emptyText={deployments.length === 0 ? '아직 배포 이력이 없다' : '조건에 맞는 배포가 없다'} />
+      </section>
     </div>
   )
 }
