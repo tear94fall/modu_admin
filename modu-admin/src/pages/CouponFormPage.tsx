@@ -635,7 +635,7 @@ export default function CouponFormPage() {
                   {!categoriesError && flat.length === 0 && orphanCategories.length === 0 && <p className="form-hint">등록된 카테고리가 없습니다</p>}
                   <ul className="coupon-category-list" aria-label="카테고리 고르기">
                     {flat.map((c) => (
-                      <li key={c.id} className={c.parentId === null ? 'coupon-category' : 'coupon-category coupon-category--child'}>
+                      <li key={c.id} className={c.depth === 1 ? 'coupon-category' : `coupon-category coupon-category--child coupon-category--depth-${Math.min(c.depth, 3)}`}>
                         <label className="form-check">
                           <input type="checkbox" checked={categoryIds.includes(c.id)} onChange={(e) => toggleCategory(c.id, e.target.checked)} />
                           {c.label}
