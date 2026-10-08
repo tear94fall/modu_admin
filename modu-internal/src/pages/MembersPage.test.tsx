@@ -157,11 +157,19 @@ describe('internal members', () => {
 
     await userEvent.click(within(section).getByRole('checkbox', { name: /최상위/ }))
     expect(within(section).getByText(/최상위는 모든 콘솔을 포함합니다/)).toBeInTheDocument()
+    expect(within(section).getByText('변경 사항 있음')).toBeInTheDocument()
     await userEvent.click(save)
+    expect(update).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog', { name: '직원 지정' })
+    expect(within(dialog).getByText(/최상위 권한을 줍니다/)).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: '직원으로 지정' }))
+    expect(update).toHaveBeenCalledTimes(1)
     expect(update).toHaveBeenCalledWith(11, ['SUPER'])
     expect(await within(section).findByText('직원으로 지정했습니다')).toBeInTheDocument()
     expect(within(section).getByText(/2026-09-24 12:30 · 나/)).toBeInTheDocument()
     expect(within(section).getByRole('button', { name: '직원 해제' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(within(section).queryByText('변경 사항 있음')).not.toBeInTheDocument()
   })
 
   it('shows the server message when a SUPER changes their own permissions', async () => {
@@ -175,10 +183,11 @@ describe('internal members', () => {
     const section = await screen.findByRole('region', { name: '직원 권한' })
     await userEvent.click(within(section).getByRole('checkbox', { name: /시스템/ }))
     await userEvent.click(within(section).getByRole('button', { name: '저장' }))
+    await userEvent.click(within(screen.getByRole('dialog', { name: '직원 권한 저장' })).getByRole('button', { name: '권한 저장' }))
     expect(await within(section).findByRole('alert')).toHaveTextContent('자기 자신의 직원 권한은 바꿀 수 없습니다')
   })
 
-  it('removes staff only after the in-page confirm', async () => {
+  it('removes staff only after the danger confirm dialog', async () => {
     loginAs(SUPER_ROLES)
     vi.spyOn(members, 'getMember').mockResolvedValue(detail({ staff: staffInfo() }))
     const remove = vi.spyOn(members, 'removeStaff').mockResolvedValue(undefined)
@@ -187,15 +196,99 @@ describe('internal members', () => {
     const section = await screen.findByRole('region', { name: '직원 권한' })
     await userEvent.click(within(section).getByRole('button', { name: '직원 해제' }))
     expect(remove).not.toHaveBeenCalled()
-    const confirm = within(section).getByRole('group', { name: '직원 해제 확인' })
-    await userEvent.click(within(confirm).getByRole('button', { name: '취소' }))
-    expect(within(section).queryByRole('group', { name: '직원 해제 확인' })).not.toBeInTheDocument()
+    let dialog = screen.getByRole('dialog', { name: '직원 해제' })
+    // 위험한 일이라 처음 포커스는 취소. 빠질 권한과 회원이 보인다.
+    expect(within(dialog).getByRole('button', { name: '취소' })).toHaveFocus()
+    expect(within(dialog).getByText('임준섭')).toBeInTheDocument()
+    expect(within(dialog).getByText(/어드민/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/인터널/)).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: '취소' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     await userEvent.click(within(section).getByRole('button', { name: '직원 해제' }))
-    await userEvent.click(within(within(section).getByRole('group', { name: '직원 해제 확인' })).getByRole('button', { name: '해제' }))
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(remove).not.toHaveBeenCalled()
+
+    await userEvent.click(within(section).getByRole('button', { name: '직원 해제' }))
+    dialog = screen.getByRole('dialog', { name: '직원 해제' })
+    await userEvent.click(within(dialog).getByRole('button', { name: '직원 해제' }))
+    expect(remove).toHaveBeenCalledTimes(1)
     expect(remove).toHaveBeenCalledWith(11)
     expect(await within(section).findByText('직원에서 해제했습니다')).toBeInTheDocument()
     expect(within(section).getByText('직원이 아닙니다.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('confirms a permission change with a before → after diff; cancel and Esc never call the API', async () => {
+    loginAs(SUPER_ROLES)
+    vi.spyOn(members, 'getMember').mockResolvedValue(detail({ staff: staffInfo() }))
+    const update = vi.spyOn(members, 'updateStaff').mockResolvedValue({
+      memberId: 11,
+      userId: '104614857372392207989',
+      username: '임준섭',
+      email: 'joonsub2990@gmail.com',
+      profileImage: null,
+      ...staffInfo({ permissions: ['ADMIN', 'SYSTEM'], modifiedByName: '나' }),
+    })
+    renderAt('/members/11')
+
+    const section = await screen.findByRole('region', { name: '직원 권한' })
+    const save = within(section).getByRole('button', { name: '저장' })
+    expect(save).toBeDisabled()
+    expect(within(section).queryByText('변경 사항 있음')).not.toBeInTheDocument()
+
+    // 인터널 빼고 시스템 더하기
+    await userEvent.click(within(section).getByRole('checkbox', { name: /인터널/ }))
+    await userEvent.click(within(section).getByRole('checkbox', { name: /시스템/ }))
+    expect(within(section).getByText('변경 사항 있음')).toBeInTheDocument()
+    expect(save).toBeEnabled()
+
+    await userEvent.click(save)
+    let dialog = screen.getByRole('dialog', { name: '직원 권한 저장' })
+    expect(within(dialog).getByText('임준섭')).toBeInTheDocument()
+    expect(within(dialog).getByText(/joonsub2990@gmail.com/)).toBeInTheDocument()
+    const added = within(dialog).getByText('추가될 권한').nextElementSibling as HTMLElement
+    const removed = within(dialog).getByText('빠질 권한').nextElementSibling as HTMLElement
+    expect(added).toHaveTextContent('+ 시스템')
+    expect(added).not.toHaveTextContent('인터널')
+    expect(removed).toHaveTextContent('− 인터널')
+    expect(removed).not.toHaveTextContent('시스템')
+    expect(within(dialog).queryByText(/최상위 권한을 줍니다/)).not.toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: '취소' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.click(save)
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(update).not.toHaveBeenCalled()
+    // 취소해도 고른 것은 그대로
+    expect(within(section).getByText('변경 사항 있음')).toBeInTheDocument()
+
+    await userEvent.click(save)
+    dialog = screen.getByRole('dialog', { name: '직원 권한 저장' })
+    await userEvent.dblClick(within(dialog).getByRole('button', { name: '권한 저장' }))
+    expect(update).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledWith(11, ['ADMIN', 'SYSTEM'])
+    expect(await within(section).findByText('직원 권한을 저장했습니다')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(within(section).getByRole('button', { name: '저장' })).toBeDisabled()
+  })
+
+  it('reverts unsaved choices without calling the API', async () => {
+    loginAs(SUPER_ROLES)
+    vi.spyOn(members, 'getMember').mockResolvedValue(detail({ staff: staffInfo() }))
+    const update = vi.spyOn(members, 'updateStaff')
+    renderAt('/members/11')
+
+    const section = await screen.findByRole('region', { name: '직원 권한' })
+    await userEvent.click(within(section).getByRole('checkbox', { name: /시스템/ }))
+    expect(within(section).getByRole('checkbox', { name: /시스템/ })).toBeChecked()
+    await userEvent.click(within(section).getByRole('button', { name: '되돌리기' }))
+    expect(within(section).getByRole('checkbox', { name: /시스템/ })).not.toBeChecked()
+    expect(within(section).getByRole('checkbox', { name: /인터널/ })).toBeChecked()
+    expect(within(section).getByRole('button', { name: '저장' })).toBeDisabled()
+    expect(update).not.toHaveBeenCalled()
   })
 })
 
@@ -225,7 +318,9 @@ describe('staff page and nav', () => {
     expect(within(row).getByText('어드민')).toBeInTheDocument()
     expect(within(row).getByText('2026-09-24 03:30')).toBeInTheDocument()
     expect(within(row).getByText('최상위', { selector: 'td' })).toBeInTheDocument()
-    expect(screen.getAllByText('root@modu.local', { selector: 'td' })).toHaveLength(2) // 이름이 없으면 이메일
+    // 이름이 없으면 이메일
+    const rootRow = screen.getByText('root@modu.local', { selector: 'td' }).closest('tr')!
+    expect(within(rootRow).getByText('root@modu.local', { selector: '.int-name' })).toBeInTheDocument()
 
     await userEvent.click(row)
     expect(await screen.findByText('인생은 즐거워!!!')).toBeInTheDocument()
