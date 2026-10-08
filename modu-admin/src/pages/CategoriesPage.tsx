@@ -17,6 +17,7 @@ export default function CategoriesPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
 
   const reload = useCallback(async () => {
     try {
@@ -49,8 +50,12 @@ export default function CategoriesPage() {
     }
   }
 
-  const onCreate = (name: string, parentId: number | null, sortOrder: number) =>
-    run(() => createCategory({ name, parentId, sortOrder }), '카테고리를 추가하지 못했습니다')
+  /** [select] 면 새로 만든 카테고리를 바로 오른쪽에 연다(상위 추가). */
+  const onCreate = (name: string, parentId: number | null, sortOrder: number, select = false) =>
+    run(async () => {
+      const created = await createCategory({ name, parentId, sortOrder })
+      if (select && created?.id != null) setSelectedId(created.id)
+    }, '카테고리를 추가하지 못했습니다')
 
   const onSave = (category: Category, parentId: number | null, edit: CategoryEdit) =>
     run(
@@ -64,7 +69,10 @@ export default function CategoriesPage() {
   }
 
   const childCount = tree.reduce((n, root) => n + root.children.length, 0)
-  const productCount = tree.reduce((n, root) => n + (root.productCount ?? 0) + root.children.reduce((m, c) => m + (c.productCount ?? 0), 0), 0)
+  const productTotal = (root: Category) => (root.productCount ?? 0) + root.children.reduce((m, c) => m + (c.productCount ?? 0), 0)
+  const productCount = tree.reduce((n, root) => n + productTotal(root), 0)
+  // 왼쪽 목록에서 고른 상위 카테고리. 지워졌거나 아직 안 골랐으면 첫 번째.
+  const selected = tree.find((root) => root.id === selectedId) ?? tree[0]
 
   return (
     <div>
@@ -75,11 +83,6 @@ export default function CategoriesPage() {
           </div>
           <p className="page-head-sub">상위 &gt; 하위 2단계입니다. 하위나 상품이 있는 카테고리는 삭제할 수 없습니다.</p>
         </div>
-        {!loading && !loadError && (
-          <div className="page-head-actions">
-            <NewCategoryForm label="상위 카테고리 추가" onCreate={(name) => onCreate(name, null, tree.length)} disabled={busy} />
-          </div>
-        )}
       </div>
       {loading && <p>불러오는 중...</p>}
       {loadError && <p className="error-text">{loadError}</p>}
@@ -109,29 +112,83 @@ export default function CategoriesPage() {
             </div>
           </section>
           {error && <p className="error-text">{error}</p>}
-          {tree.length === 0 && <p>등록된 카테고리가 없습니다</p>}
-          <ul className="tree-list category-grid">
-            {tree.map((root) => (
-              <li key={root.id} className="tree-root">
-                <CategoryRow category={root} parentId={null} onSave={onSave} onDelete={onDelete} disabled={busy} />
-                <ul className="tree-children">
-                  {root.children.map((child) => (
-                    <li key={child.id}>
-                      <CategoryRow category={child} parentId={root.id} onSave={onSave} onDelete={onDelete} disabled={busy} />
+          <div className="category-layout">
+            <nav className="category-nav" aria-label="상위 카테고리">
+              <div className="category-nav-head">
+                <span>상위 카테고리</span>
+                <span className="category-nav-count">{tree.length}</span>
+              </div>
+              {tree.length === 0 && <p className="category-empty">등록된 카테고리가 없습니다</p>}
+              <ul className="category-nav-list">
+                {tree.map((root) => {
+                  const on = selected?.id === root.id
+                  return (
+                    <li key={root.id}>
+                      <button
+                        type="button"
+                        className={on ? 'category-nav-item category-nav-item--on' : 'category-nav-item'}
+                        aria-current={on ? 'true' : undefined}
+                        onClick={() => setSelectedId(root.id)}
+                      >
+                        <CategoryIconTile icon={root.icon} color={root.color} name={root.name} size={32} />
+                        <span className="category-nav-text">
+                          <span className="category-nav-name">{root.name}</span>
+                          <span className="category-nav-meta">
+                            하위 {root.children.length} · 상품 {productTotal(root).toLocaleString('ko-KR')}
+                          </span>
+                        </span>
+                        <span className="category-nav-chevron" aria-hidden="true">
+                          ›
+                        </span>
+                      </button>
                     </li>
-                  ))}
-                  <li>
+                  )
+                })}
+              </ul>
+              <div className="category-nav-foot">
+                <NewCategoryForm
+                  label="상위 카테고리 추가"
+                  compact
+                  onCreate={(name) => onCreate(name, null, tree.length, true)}
+                  disabled={busy}
+                />
+              </div>
+            </nav>
+            {selected && (
+              <section className="category-panel" aria-label={`${selected.name} 상세`}>
+                <div className="category-panel-head">
+                  <CategoryRow category={selected} parentId={null} onSave={onSave} onDelete={onDelete} disabled={busy} variant="head" />
+                  <div className="category-panel-stats">
+                    <span className="category-chip">하위 {selected.children.length}개</span>
+                    <span className="category-chip">상품 {productTotal(selected).toLocaleString('ko-KR')}개</span>
+                    {(selected.productCount ?? 0) > 0 && <span className="category-chip">상위에 직접 {selected.productCount}개</span>}
+                  </div>
+                </div>
+                <div className="category-panel-body">
+                  <h2 className="category-section-title">하위 카테고리</h2>
+                  {selected.children.length === 0 ? (
+                    <p className="category-empty">아직 하위 카테고리가 없습니다. 아래에서 추가하세요.</p>
+                  ) : (
+                    <ul className="category-children">
+                      {selected.children.map((child) => (
+                        <li key={child.id}>
+                          <CategoryRow category={child} parentId={selected.id} onSave={onSave} onDelete={onDelete} disabled={busy} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="category-panel-add">
                     <NewCategoryForm
-                      label={`${root.name} 하위 추가`}
+                      label={`${selected.name} 하위 추가`}
                       compact
-                      onCreate={(name) => onCreate(name, root.id, root.children.length)}
+                      onCreate={(name) => onCreate(name, selected.id, selected.children.length)}
                       disabled={busy}
                     />
-                  </li>
-                </ul>
-              </li>
-            ))}
-          </ul>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
         </>
       )}
     </div>
@@ -172,12 +229,15 @@ function CategoryRow({
   onSave,
   onDelete,
   disabled,
+  variant = 'item',
 }: {
   category: Category
   parentId: number | null
   onSave: (category: Category, parentId: number | null, edit: CategoryEdit) => Promise<boolean>
   onDelete: (category: Category) => void
   disabled: boolean
+  /** head = 오른쪽 패널 머리(큰 아이콘·제목), item = 하위 카드 */
+  variant?: 'head' | 'item'
 }) {
   const [editing, setEditing] = useState(false)
 
@@ -189,10 +249,16 @@ function CategoryRow({
   }
 
   return (
-    <div className="tree-row">
-      <CategoryIconTile icon={category.icon} color={category.color} name={category.name} />
-      <span className="tree-name">{category.name}</span>
-      <span className="tree-count">상품 {category.productCount ?? 0}</span>
+    <div className={variant === 'head' ? 'tree-row category-head-row' : 'tree-row category-item'}>
+      <CategoryIconTile icon={category.icon} color={category.color} name={category.name} size={variant === 'head' ? 48 : 36} />
+      <span className="tree-text">
+        <span className="tree-name">{category.name}</span>
+        {variant === 'head' ? (
+          <span className="tree-sub">상위 카테고리</span>
+        ) : (
+          <span className="tree-count">상품 {category.productCount ?? 0}</span>
+        )}
+      </span>
       <span className="tree-actions">
         <button type="button" className="btn btn--secondary btn--sm" onClick={() => setEditing(true)} disabled={disabled}>
           편집
