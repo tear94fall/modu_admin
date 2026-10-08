@@ -61,7 +61,7 @@ export const updateCategory = (id: number, input: CategoryInput) =>
 
 export const deleteCategory = (id: number) => api<void>(`${BASE}/${id}`, { method: 'DELETE' })
 
-/** 상품 폼·필터의 <select> 에 넣을 평면 목록. 하위는 "상위 > 하위" 로 보인다. */
+/** 상품 폼·필터의 드롭다운(Select)에 넣을 평면 목록. 하위는 "상위 > 하위" 로 보인다. */
 export function flattenCategories(tree: Category[]): { id: number; label: string; parentId: number | null }[] {
   return tree.flatMap((root) => [
     { id: root.id, label: root.name, parentId: null },

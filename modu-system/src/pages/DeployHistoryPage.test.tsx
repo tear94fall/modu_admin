@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setDisplayTimeZone } from '@modu/console-core'
+import { chooseOption } from '@modu/console-core/test/select'
 import * as deploy from '../api/deploy'
 import DeployHistoryPage from './DeployHistoryPage'
 
@@ -51,7 +52,7 @@ describe('DeployHistoryPage', () => {
     expect(within(runningRow).getByText('진행 중')).toBeInTheDocument()
     expect(within(runningRow).getByText('-')).toBeInTheDocument()
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: '서비스' }), 'point-service')
+    await chooseOption(userEvent, '서비스', 'point-service')
     expect(screen.queryByText('develop-aaaaaaa')).not.toBeInTheDocument()
     expect(screen.getByText('2 / 3')).toBeInTheDocument()
 
@@ -68,7 +69,7 @@ describe('DeployHistoryPage', () => {
   it('preselects the service from the query string', async () => {
     renderPage('/deploy/history?service=chat-service')
     expect(await screen.findByText('develop-aaaaaaa')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: '서비스' })).toHaveValue('chat-service')
+    expect(screen.getByRole('combobox', { name: '서비스' })).toHaveTextContent('chat-service')
     expect(screen.queryByText('develop-9378b00')).not.toBeInTheDocument()
   })
 

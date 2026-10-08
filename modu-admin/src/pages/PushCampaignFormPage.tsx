@@ -28,6 +28,7 @@ import {
 import DateField from '../components/DateField'
 import { addDays, pad, todayKst } from '../util/dateInput'
 import { formatPrice } from '../util/format'
+import Select from '../components/Select'
 
 const TARGETS: PushTargetType[] = ['PRODUCT', 'PROMOTION', 'COUPONS', 'HOME']
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
@@ -631,23 +632,21 @@ export default function PushCampaignFormPage() {
                 </div>
                 <div className="form-field">
                   <label htmlFor="push-hour">시</label>
-                  <select id="push-hour" value={hour} onChange={(e) => setHour(Number(e.target.value))}>
-                    {HOURS.map((h) => (
-                      <option key={h} value={h}>
-                        {pad(h)}시
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    id="push-hour"
+                    value={String(hour)}
+                    onChange={(v) => setHour(Number(v))}
+                    options={HOURS.map((h) => ({ value: String(h), label: `${pad(h)}시` }))}
+                  />
                 </div>
                 <div className="form-field">
                   <label htmlFor="push-minute">분</label>
-                  <select id="push-minute" value={minute} onChange={(e) => setMinute(Number(e.target.value))}>
-                    {MINUTES.map((m) => (
-                      <option key={m} value={m}>
-                        {pad(m)}분
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    id="push-minute"
+                    value={String(minute)}
+                    onChange={(v) => setMinute(Number(v))}
+                    options={MINUTES.map((m) => ({ value: String(m), label: `${pad(m)}분` }))}
+                  />
                 </div>
               </div>
             )}

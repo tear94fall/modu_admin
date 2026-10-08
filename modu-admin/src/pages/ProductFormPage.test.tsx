@@ -6,6 +6,7 @@ import * as categories from '../api/categories'
 import { ApiError } from '../api/client'
 import * as products from '../api/products'
 import ProductFormPage from './ProductFormPage'
+import { chooseOption } from '../test/select'
 
 const tumbler: products.ProductDetail = {
   id: 7,
@@ -56,7 +57,7 @@ describe('ProductFormPage', () => {
 
     expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('이름'), '모두 우산')
-    await userEvent.selectOptions(await screen.findByLabelText('카테고리'), '5')
+    await chooseOption(userEvent, await screen.findByLabelText('카테고리'), '생활 > 주방')
     await userEvent.type(screen.getByLabelText('판매가'), '15000')
     await userEvent.type(screen.getByLabelText('소개'), '자동 우산')
     const stock = screen.getByLabelText('재고')
@@ -113,7 +114,7 @@ describe('ProductFormPage', () => {
     expect(screen.getByLabelText('판매가')).toHaveValue(24000)
     expect(screen.getByLabelText('정가')).toHaveValue(30000)
     expect(screen.getByText('할인율 20%')).toBeInTheDocument()
-    expect(screen.getByLabelText('카테고리')).toHaveValue('5')
+    expect(screen.getByLabelText('카테고리')).toHaveTextContent('생활 > 주방')
     expect(screen.getByLabelText('상세 설명')).toHaveValue('이중 진공')
     expect(screen.getByAltText('사진 1')).toHaveAttribute('src', 'https://img/t.png')
     expect(screen.getByLabelText('옵션 1 값')).toHaveValue('500ml, 750ml')

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { formatUtcDateTime, useIsMobile } from '@modu/console-core'
+import { formatUtcDateTime, Select, useIsMobile } from '@modu/console-core'
 import {
   formatSize,
   getConfigFile,
@@ -95,17 +95,13 @@ export default function ConfigRepoPage() {
 
       <div className="config-layout">
         {isMobile ? (
-          <select className="config-file-select" aria-label="설정 파일" value={selected ?? ''} onChange={(e) => select(e.target.value)}>
-            {groups.map(([group, list]) => (
-              <optgroup key={group} label={groupLabel(group)}>
-                {list.map((f) => (
-                  <option key={f.path} value={f.path}>
-                    {f.path}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <Select
+            className="config-file-select"
+            aria-label="설정 파일"
+            value={selected ?? ''}
+            onChange={select}
+            options={groups.flatMap(([group, list]) => list.map((f) => ({ value: f.path, label: f.path, group: groupLabel(group) })))}
+          />
         ) : (
           <nav className="config-files" aria-label="설정 파일">
             {groups.map(([group, list]) => (

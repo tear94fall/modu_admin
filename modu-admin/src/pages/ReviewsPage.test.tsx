@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as reviews from '../api/reviews'
 import ReviewsPage from './ReviewsPage'
+import { chooseOption } from '../test/select'
 
 const review = (over: Partial<reviews.Review> = {}): reviews.Review => ({
   id: 1,
@@ -68,10 +69,10 @@ describe('ReviewsPage', () => {
     expect(await screen.findByText('리뷰가 없습니다')).toBeInTheDocument()
     expect(search).toHaveBeenLastCalledWith('', 0, { rating: null, hidden: null })
 
-    await userEvent.selectOptions(screen.getByLabelText('별점'), '3')
+    await chooseOption(userEvent, '별점', '3점')
     expect(search).toHaveBeenLastCalledWith('', 0, { rating: 3, hidden: null })
 
-    await userEvent.selectOptions(screen.getByLabelText('노출 상태'), 'hidden')
+    await chooseOption(userEvent, '노출 상태', '숨김')
     expect(search).toHaveBeenLastCalledWith('', 0, { rating: 3, hidden: true })
 
     await userEvent.type(screen.getByLabelText('리뷰 검색'), '머그컵')

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, setDisplayTimeZone } from '@modu/console-core'
+import { chooseOption } from '@modu/console-core/test/select'
 import * as members from '../api/members'
 import { navSections } from '../nav'
 import { loginAs, SUPER_ROLES } from '../test/jwt'
@@ -88,7 +89,7 @@ describe('internal members', () => {
     await userEvent.click(screen.getByRole('button', { name: '검색' }))
     expect(search).toHaveBeenLastCalledWith('joonsub', 0, 'name,asc', false)
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: '정렬' }), 'createdDate,desc')
+    await chooseOption(userEvent, '정렬', '최근 가입순')
     expect(search).toHaveBeenLastCalledWith('joonsub', 0, 'createdDate,desc', false)
 
     await userEvent.click(screen.getByRole('checkbox', { name: '직원만' }))

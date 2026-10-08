@@ -9,3 +9,4 @@ export { default as ConsoleLayout, activeLink, type NavSection } from './layout/
 export { default as Pager } from './components/Pager'
 export { useIsMobile, MOBILE_QUERY } from './hooks/useIsMobile'
 export { browserTimeZone, formatUtcDateTime, getDisplayTimeZone, setDisplayTimeZone, timeZoneLabel, useDisplayTimeZone } from './util/timeZone'
+export { default as Select, type SelectOption } from './components/Select'

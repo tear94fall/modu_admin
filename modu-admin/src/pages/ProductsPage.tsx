@@ -6,6 +6,7 @@ import { type ProductStatus, type ProductSummary, STATUS_LABELS, searchProducts 
 import Pager from '../components/Pager'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { formatPrice } from '../util/format'
+import Select from '../components/Select'
 
 export default function ProductsPage() {
   const navigate = useNavigate()
@@ -90,33 +91,31 @@ export default function ProductsPage() {
         </Link>
       </div>
       <div className="filter-row">
-        <select
+        <Select
           aria-label="카테고리"
-          value={categoryId ?? ''}
-          onChange={(e) => {
+          value={categoryId == null ? '' : String(categoryId)}
+          onChange={(v) => {
             setPage(0)
-            setCategoryId(e.target.value === '' ? null : Number(e.target.value))
+            setCategoryId(v === '' ? null : Number(v))
           }}
-        >
-          <option value="">전체 카테고리</option>
-          {flattenCategories(categories).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-        <select
+          options={[
+            { value: '', label: '전체 카테고리' },
+            ...flattenCategories(categories).map((c) => ({ value: String(c.id), label: c.label })),
+          ]}
+        />
+        <Select
           aria-label="판매 상태"
           value={status ?? ''}
-          onChange={(e) => {
+          onChange={(v) => {
             setPage(0)
-            setStatus(e.target.value === '' ? null : (e.target.value as ProductStatus))
+            setStatus(v === '' ? null : (v as ProductStatus))
           }}
-        >
-          <option value="">전체 상태</option>
-          <option value="SELLING">판매중</option>
-          <option value="HIDDEN">숨김</option>
-        </select>
+          options={[
+            { value: '', label: '전체 상태' },
+            { value: 'SELLING', label: '판매중' },
+            { value: 'HIDDEN', label: '숨김' },
+          ]}
+        />
       </div>
 
       {loading && <p>불러오는 중...</p>}
