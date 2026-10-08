@@ -141,7 +141,7 @@ h2 {
   border: 1px solid #3b4256;
 }
 
-.sidebar-footer .btn--ghost:hover {
+.sidebar-footer .btn--ghost:hover:not(:disabled) {
   background: #2a3142;
   color: #fff;
 }
@@ -280,10 +280,16 @@ button:disabled {
   border-radius: 6px;
 }
 
-.tab.active {
+.tab.active,
+.tab.active:hover:not(:disabled) {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: #fff;
+}
+
+.tab.active:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 /* 폼 */
