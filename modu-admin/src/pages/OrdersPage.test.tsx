@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as orders from '../api/orders'
 import OrdersPage from './OrdersPage'
+import { chooseOption } from '../test/select'
 
 const order = (over: Partial<orders.OrderSummary> = {}): orders.OrderSummary => ({
   id: 1,
@@ -54,7 +55,7 @@ describe('OrdersPage', () => {
     renderPage()
     await screen.findByText('모두 베이직 티셔츠 외 2건')
 
-    await userEvent.selectOptions(screen.getByLabelText('주문 상태'), 'SHIPPING')
+    await chooseOption(userEvent, '주문 상태', orders.ORDER_STATUS_LABELS.SHIPPING)
     expect(search).toHaveBeenLastCalledWith('', 0, { status: 'SHIPPING' })
 
     await userEvent.type(screen.getByLabelText('주문 검색'), 'ABC')

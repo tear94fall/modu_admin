@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { formatUtcDateTime, PAGE_SIZE, Pager, useIsMobile } from '@modu/console-core'
+import { formatUtcDateTime, PAGE_SIZE, Pager, Select, useIsMobile } from '@modu/console-core'
 import { displayName, MEMBER_SORT_LABELS, searchMembers, type MemberSort, type StaffMemberSummary } from '../api/members'
 import StaffBadges from '../components/StaffBadges'
 
@@ -62,20 +62,15 @@ export default function MembersPage() {
         </form>
       </div>
       <div className="filter-row">
-        <select
+        <Select
           aria-label="정렬"
           value={sort}
-          onChange={(e) => {
+          onChange={(v) => {
             setPage(0)
-            setSort(e.target.value as MemberSort)
+            setSort(v as MemberSort)
           }}
-        >
-          {(Object.keys(MEMBER_SORT_LABELS) as MemberSort[]).map((s) => (
-            <option key={s} value={s}>
-              {MEMBER_SORT_LABELS[s]}
-            </option>
-          ))}
-        </select>
+          options={(Object.keys(MEMBER_SORT_LABELS) as MemberSort[]).map((s) => ({ value: s, label: MEMBER_SORT_LABELS[s] }))}
+        />
         <label className="form-check">
           <input
             type="checkbox"

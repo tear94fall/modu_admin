@@ -32,6 +32,7 @@ import CouponPicker from '../components/CouponPicker'
 import Pager from '../components/Pager'
 import { formatPrice } from '../util/format'
 import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
+import Select from '../components/Select'
 
 /** 배너 색 빠른 선택. */
 const BANNER_PALETTE = ['#E11D48', '#F97316', '#F59E0B', '#16A34A', '#0EA5E9', '#2563EB', '#7C3AED', '#DB2777', '#111827']
@@ -553,20 +554,23 @@ export default function PromotionFormPage() {
             ) : (
               <div className="form-field">
                 <label htmlFor="promotion-rule">보상 포인트 규칙</label>
-                <select id="promotion-rule" value={pointRuleCode} onChange={(e) => setPointRuleCode(e.target.value)}>
-                  <option value="">보상 없음</option>
-                  {rules.map((r) => (
-                    <option key={r.code} value={r.code}>
-                      {ruleOptionLabel(r)}
-                    </option>
-                  ))}
-                  {pointRuleCode !== '' && !selectedRule && (
-                    <option value={pointRuleCode}>
-                      {pointRuleCode}
-                      {savedRewardPoints != null ? ` · ${formatPoints(savedRewardPoints)}` : ''}
-                    </option>
-                  )}
-                </select>
+                <Select
+                  id="promotion-rule"
+                  value={pointRuleCode}
+                  onChange={setPointRuleCode}
+                  options={[
+                    { value: '', label: '보상 없음' },
+                    ...rules.map((r) => ({ value: r.code, label: ruleOptionLabel(r) })),
+                    ...(pointRuleCode !== '' && !selectedRule
+                      ? [
+                          {
+                            value: pointRuleCode,
+                            label: `${pointRuleCode}${savedRewardPoints != null ? ` · ${formatPoints(savedRewardPoints)}` : ''}`,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
                 {rulesError && <p className="error-text">포인트 규칙을 불러오지 못했습니다</p>}
                 {missingRule && <p className="form-warning">이 규칙은 포인트 규칙 목록에 없습니다. 적립이 되지 않을 수 있습니다.</p>}
                 {selectedRule && !selectedRule.enabled && (

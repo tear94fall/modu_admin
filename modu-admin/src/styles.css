@@ -1430,7 +1430,7 @@ a.btn {
 .rule-row--off .rule-name, .rule-row--off .rule-points { color: var(--color-muted); }
 .rule-name { font-weight: 600; }
 .rule-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: inherit;
   font-size: 12px;
   color: var(--color-muted);
   letter-spacing: 0.02em;
@@ -1507,7 +1507,7 @@ a.btn {
 .form-subheading { font-size: 14px; margin: 8px 0 0; }
 .coupon-picker { display: grid; gap: 8px; }
 .coupon-table { min-width: 1100px; }
-.coupon-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: #eef0f3; }
+.coupon-code { font-family: inherit; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: #eef0f3; }
 .coupon-stats { margin: -8px 0 16px; color: var(--color-muted); font-size: 14px; }
 .coupon-section { margin-top: 24px; display: grid; gap: 8px; }
 .coupon-section .form-heading { margin-bottom: 0; }
@@ -1537,7 +1537,7 @@ a.btn {
 .input-sm { max-width: 180px; }
 .input-md { max-width: 280px; }
 .input-lg { max-width: 560px; }
-.input-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.06em; }
+.input-code { font-family: inherit; letter-spacing: 0.06em; }
 input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -1776,7 +1776,7 @@ input, textarea, select { font-family: inherit; }
 .tier-table input.tier-name-input { width: 110px; }
 .tier-color { display: inline-flex; align-items: center; gap: 6px; }
 .tier-color .color-input { width: 36px; height: 34px; padding: 2px; flex: none; }
-.tier-table input.tier-hex-input { width: 92px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.tier-table input.tier-hex-input { width: 92px; font-family: inherit; font-size: 13px; }
 .tier-unit-input { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; color: var(--color-muted); }
 .tier-unit-input input { width: 110px; text-align: right; }
 .tier-unit-input--rate input { width: 64px; }
@@ -1925,7 +1925,7 @@ input, textarea, select { font-family: inherit; }
 .file-info { font-size: 12px; color: var(--color-muted); }
 .file-info summary { cursor: pointer; user-select: none; }
 .file-info dl { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 4px 12px; margin: 8px 0 0; }
-.file-info dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+.file-info dd { margin: 0; font-family: inherit; word-break: break-all; }
 
 @media (max-width: 700px) {
   .member-hub { gap: 16px; }
@@ -1933,3 +1933,164 @@ input, textarea, select { font-family: inherit; }
   .kpi-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi--wide { grid-column: 1 / -1; }
 }
+
+/* ── 입력 컨트롤 크기 통일 (2026-10-08) ──
+   .inline-form input · .option-group input · .form-field select · .filter-row select 가 `font: inherit` 로 본문 글자(16px)를 받아
+   기본 입력칸(0.95rem, 36px)보다 크게 보였다. 글자 크기·높이를 하나로 맞춘다(표 안의 작은 숫자칸 .sku-table 은 그대로). */
+.inline-form input,
+.option-group input,
+.form-field select,
+.filter-row select,
+.date-input input,
+.tier-color input[type='text'] {
+  font-size: 0.95rem;
+}
+/* :where() 로 우선순위 0 — 표 안 숫자칸(.sku-table) 같은 개별 규칙이 이긴다. */
+:where(input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='color'])),
+:where(select) {
+  height: 36px;
+  box-sizing: border-box;
+}
+/* 조합표의 숫자칸은 표 안에서 촘촘하게(기존 크기) 유지. */
+.tier-table input.tier-hex-input { font-size: 0.95rem; }
+.sku-table input { height: auto; }   /* 조합표 숫자칸은 표 안에서 촘촘하게(기존 31px) */
+.tier-color input[type='color'],
+.inline-form input[type='color'] { height: 36px; }
+
+/* 한 값만 받는 칸은 칸 전체로 늘이지 않는다. */
+/* .form-field 는 grid 라 자식이 칸 끝까지 늘어난다 — justify-self 로 내용 폭만. */
+.form-field > select { justify-self: start; width: auto; min-width: 96px; max-width: 100%; }
+.form-field > input[type='number'] { justify-self: start; width: 100%; max-width: 240px; }
+/* 검색·추가 줄(상품·쿠폰·회원 찾기, 사진 URL, 카테고리 추가) */
+.inline-form input:not(.input-xs):not(.input-sm) { max-width: 420px; }
+.inline-form input[type='url']:not(.input-xs):not(.input-sm) { max-width: 560px; }
+
+/* select 를 입력칸과 같은 모양으로(2026-10-08) — 맥 크롬의 기본 select(appearance:auto)는 진한 글자·큰 화살표로 그려져
+   같은 높이여도 옆 입력칸·버튼보다 커 보였다. 기본 모양을 끄고 작은 화살표를 직접 그린다.
+   예전 규칙(.form-field select 등)의 background 단축 속성이 화살표를 지우므로 같은 선택자로 덮는다. */
+select,
+.form-field select,
+.filter-row select,
+.time-zone-setting select,
+.push-schedule select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 36px;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #374151;
+  line-height: 1.2;
+  cursor: pointer;
+}
+select:focus,
+.form-field select:focus,
+.filter-row select:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+select:disabled { background-color: #f3f4f6; cursor: not-allowed; }
+/* 검색칸도 같은 글자 크기로 — 목록 위 도구줄(검색·필터·버튼)이 한 줄로 고르게 보이게 */
+.search-form input,
+.list-controls input,
+.filter-row input { font-size: 0.875rem; }
+/* 글자 크기는 옆 칸과 같게: 폼 안 select 는 입력칸(0.95rem), 목록 위 도구줄은 검색칸(0.875rem). */
+.form-field select,
+.push-schedule select,
+.time-zone-setting select { font-size: 0.95rem; }
+.filter-row select { font-size: 0.875rem; }
+
+/* 직접 그리는 드롭다운(components/Select.tsx, 2026-10-08) — 맥 크롬의 네이티브 select 메뉴는 OS 가 그려 상자 왼쪽으로 치우쳐 떴다.
+   상자(.select-trigger)는 위 select 와 똑같은 모양, 목록(.select-popup)은 body 포털에 fixed 로 상자 왼쪽 끝에 맞춰 연다. */
+.select-trigger {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  height: 36px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #374151;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+/* 값과 모든 항목을 한 칸에 겹쳐 놓아, 상자 폭 = 가장 긴 항목 폭(값이 바뀌어도 상자가 들썩이지 않음) */
+.select-trigger__value,
+.select-trigger__sizer {
+  grid-area: 1 / 1;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.select-trigger__sizer { visibility: hidden; height: 0; }
+.select-trigger__sizer::before { content: attr(data-label); }
+.select-trigger:focus,
+.select-trigger:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+.select-trigger:disabled { opacity: 1; background-color: #f3f4f6; cursor: not-allowed; }
+.form-field > .select-trigger { justify-self: start; width: auto; min-width: 96px; }
+.form-field .select-trigger,
+.push-schedule .select-trigger,
+.time-zone-setting .select-trigger { font-size: 0.95rem; }
+.filter-row .select-trigger { font-size: 0.875rem; }
+
+.select-popup {
+  position: fixed;
+  z-index: 10000;
+  box-sizing: border-box;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  font-family: inherit;
+  color: #374151;
+}
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 34px;
+  padding: 0 10px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.select-option__label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.select-option:hover,
+.select-option--active { background: #eef2ff; }
+.select-option--selected { font-weight: 600; }
+.select-option::after { content: ''; flex: none; width: 12px; height: 9px; }   /* 체크 자리(선택 안 된 항목도 같은 폭) */
+.select-option--selected::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='9' viewBox='0 0 12 9'%3E%3Cpath d='M1 4.5l3.5 3.5L11 1' fill='none' stroke='%232563eb' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+}
+.select-option[aria-disabled='true'] { color: #9ca3af; cursor: not-allowed; background: none; }
+@media (prefers-reduced-motion: reduce) {
+  .select-popup { scroll-behavior: auto; }
+}
+
+/* 글꼴 통일(2026-10-08): 코드·ID·키 같은 값도 화면 글꼴로 쓴다(브라우저 기본 고정폭 해제). 크기는 각 규칙 그대로. */
+code, pre, kbd, samp { font-family: inherit; }
+/* 버튼·입력칸은 브라우저가 화면 글꼴을 물려주지 않아 Arial 로 그려졌다 — 모두 화면 글꼴로. */
+button, input, select, textarea, optgroup { font-family: inherit; }

@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as push from '../api/pushCampaigns'
 import PushCampaignFormPage from './PushCampaignFormPage'
+import { chooseOption } from '../test/select'
 
 const campaign: push.AdminPushCampaign = {
   id: 7,
@@ -76,7 +77,7 @@ describe('PushCampaignFormPage', () => {
     expect(screen.getByText('가을 다이어리')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: '예약' }))
-    await userEvent.selectOptions(screen.getByLabelText('시'), '22')
+    await chooseOption(userEvent, screen.getByLabelText('시'), '22시')
     expect(await screen.findByText('야간(21시~08시) 발송이라 야간 수신 동의자 40명(기기 44대)에게만 발송됩니다')).toBeInTheDocument()
     expect(audience).toHaveBeenLastCalledWith(expect.stringMatching(/T22:\d0:00\+09:00$/))
   })

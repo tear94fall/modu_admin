@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useIsMobile } from '@modu/console-core'
+import { Select, useIsMobile } from '@modu/console-core'
 import { listDeployments, type Deployment, type DeploymentStatus } from '../api/deploy'
 import { DeploymentList } from '../components/DeployPanels'
 
@@ -67,14 +67,13 @@ export default function DeployHistoryPage() {
       {error && <p className="error-text">{error}</p>}
 
       <div className="list-controls deploy-controls">
-        <select className="config-file-select deploy-service-select" aria-label="서비스" value={service} onChange={(e) => selectService(e.target.value)}>
-          <option value="">모든 서비스</option>
-          {services.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <Select
+          className="config-file-select deploy-service-select"
+          aria-label="서비스"
+          value={service}
+          onChange={selectService}
+          options={[{ value: '', label: '모든 서비스' }, ...services.map((s) => ({ value: s, label: s }))]}
+        />
         <span className="card-muted deploy-count">
           {filtered.length} / {deployments.length}
         </span>

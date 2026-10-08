@@ -361,6 +361,11 @@ textarea {
   background: #fff;
 }
 
+/* 한 줄 입력칸·select 는 모두 같은 크기(0.95rem 글자, 36px 높이). :where 라 특이도 0 — 높이를 따로 준 작은 칸 규칙이 이긴다. */
+:where(input:not([type='checkbox'], [type='radio'], [type='file'], [type='range'], [type='color']), select) {
+  height: 36px;
+}
+
 input:focus,
 textarea:focus {
   outline: none;
@@ -1139,11 +1144,12 @@ a.btn {
 
 .form-field select,
 .filter-row select {
-  padding: 8px 10px;
+  padding: 0 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: #fff;
-  font: inherit;
+  font-family: inherit;
+  font-size: 0.95rem;
 }
 
 .filter-row {
@@ -1165,7 +1171,8 @@ a.btn {
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  font: inherit;
+  font-family: inherit;
+  font-size: 0.95rem;
 }
 
 .inline-form--compact {
@@ -1260,7 +1267,8 @@ a.btn {
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  font: inherit;
+  font-family: inherit;
+  font-size: 0.95rem;
   min-width: 0;
 }
 
@@ -1286,7 +1294,8 @@ a.btn {
   padding: 6px 8px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  font: inherit;
+  font-family: inherit;
+  font-size: 0.95rem;
 }
 
 .status-badge {
@@ -1423,7 +1432,7 @@ a.btn {
 .rule-row--off .rule-name, .rule-row--off .rule-points { color: var(--color-muted); }
 .rule-name { font-weight: 600; }
 .rule-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: inherit;
   font-size: 12px;
   color: var(--color-muted);
   letter-spacing: 0.02em;
@@ -1468,11 +1477,104 @@ a.btn {
 .review-hidden-reason { margin: 0; color: var(--color-muted); font-size: 14px; }
 .review-hide-form { display: grid; gap: 8px; padding: 12px; border: 1px dashed var(--color-border); border-radius: 8px; }
 .review-hide-form label { display: grid; gap: 6px; font-size: 14px; }
-.review-hide-form input { padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; }
+.review-hide-form input { padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.95rem; }
 
 /* 표시 시간대 (내 정보) · 채팅방 화면의 시간대 안내 */
 .time-zone-setting { margin-top: 24px; }
 .time-zone-setting .form-heading { margin-top: 0; }
-.time-zone-setting select { max-width: 360px; height: 36px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
+.time-zone-setting select { max-width: 360px; height: 36px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; font-family: inherit; font-size: 0.95rem; }
 .time-zone-setting .form-hint { margin-top: 8px; }
 .time-zone-note { margin: -8px 0 16px; font-size: 12px; color: var(--color-muted); }
+
+/* 직접 그리는 드롭다운(components/Select.tsx, 2026-10-08) — 맥 크롬의 네이티브 select 메뉴는 OS 가 그려 상자 왼쪽으로 치우쳐 떴다.
+   상자(.select-trigger)는 입력칸과 똑같은 모양(36px, 0.95rem), 목록(.select-popup)은 body 포털에 fixed 로 상자 왼쪽 끝에 맞춰 연다. */
+.select-trigger {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  height: 36px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: #374151;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+/* 값과 모든 항목을 한 칸에 겹쳐 놓아, 상자 폭 = 가장 긴 항목 폭(값이 바뀌어도 상자가 들썩이지 않음) */
+.select-trigger__value,
+.select-trigger__sizer {
+  grid-area: 1 / 1;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.select-trigger__sizer { visibility: hidden; height: 0; }
+.select-trigger__sizer::before { content: attr(data-label); }
+.select-trigger:focus,
+.select-trigger:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+.select-trigger:disabled { opacity: 1; background-color: #f3f4f6; cursor: not-allowed; }
+.form-field > .select-trigger { justify-self: start; width: auto; min-width: 96px; }
+
+.select-popup {
+  position: fixed;
+  z-index: 10000;
+  box-sizing: border-box;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  font-family: inherit;
+  color: #374151;
+}
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 34px;
+  padding: 0 10px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.select-option__label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.select-option:hover,
+.select-option--active { background: #eef2ff; }
+.select-option--selected { font-weight: 600; }
+.select-option::after { content: ''; flex: none; width: 12px; height: 9px; }   /* 체크 자리(선택 안 된 항목도 같은 폭) */
+.select-option--selected::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='9' viewBox='0 0 12 9'%3E%3Cpath d='M1 4.5l3.5 3.5L11 1' fill='none' stroke='%232563eb' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+}
+.select-group { margin: 0; padding: 0; }
+.select-group + .select-group,
+.select-option + .select-group { margin-top: 4px; border-top: 1px solid #f1f5f9; padding-top: 4px; }
+.select-group__label { padding: 6px 10px 2px; font-size: 0.75rem; font-weight: 600; color: var(--color-muted); white-space: nowrap; cursor: default; user-select: none; }
+.select-group__list { margin: 0; padding: 0; list-style: none; }
+.select-group__list .select-option { padding-left: 18px; }
+.select-option[aria-disabled='true'] { color: #9ca3af; cursor: not-allowed; background: none; }
+@media (prefers-reduced-motion: reduce) {
+  .select-popup { scroll-behavior: auto; }
+}
+
+/* 글꼴 통일(2026-10-08): 코드·ID·키 같은 값도 화면 글꼴로 쓴다(브라우저 기본 고정폭 해제). 크기는 각 규칙 그대로. */
+code, pre, kbd, samp { font-family: inherit; }
+/* 버튼·입력칸은 브라우저가 화면 글꼴을 물려주지 않아 Arial 로 그려졌다 — 모두 화면 글꼴로. */
+button, input, select, textarea, optgroup { font-family: inherit; }

@@ -4,7 +4,7 @@
  * 여기서는 Swagger UI 를 .api-docs-swagger 안에 가두고 글꼴만 콘솔 글꼴로 맞춘다.
  */
 .api-docs-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
-.api-docs-service { height: 36px; min-width: 220px; max-width: 100%; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
+.api-docs-service { min-width: 220px; }   /* 모양은 공통 .select-trigger(console-core Select) */
 .api-docs-chips { margin: 0; }
 .api-docs-count { font-variant-numeric: tabular-nums; color: var(--color-muted); font-weight: 400; }
 .access-chip--on .api-docs-count { color: inherit; }
@@ -15,9 +15,9 @@
 .api-docs-swagger { min-width: 0; }
 /* 화면 여백은 콘솔이 준다. Swagger UI 자체 좌우 여백은 없앤다. */
 .api-docs-swagger .swagger-ui .wrapper { padding: 0; max-width: none; }
-/* Swagger UI 는 sans-serif 를 곳곳에 직접 적는다. 코드·경로·모델처럼 고정폭이어야 하는 곳만 빼고 콘솔 글꼴을 물려받게 한다. */
+/* Swagger UI 는 sans-serif·monospace 를 곳곳에 직접 적는다. 코드·경로·모델까지 전부 콘솔 글꼴을 물려받게 한다(2026-10-08 글꼴 통일). */
 .api-docs-swagger .swagger-ui { font-family: inherit; color: #111827; }
-.api-docs-swagger .swagger-ui *:not(code, code *, pre, pre *, .microlight, .microlight *, .opblock-summary-path, .opblock-summary-path *, .opblock-summary-path__deprecated, .model, .model *, .prop-type, .prop-format, .parameter__type, .parameter__in, .parameter__deprecated, textarea, .response-col_status) {
+.api-docs-swagger .swagger-ui * {
   font-family: inherit !important;
 }
 /* 문서 제목·설명: 콘솔 카드처럼 테두리 안에 여백을 둔다. */

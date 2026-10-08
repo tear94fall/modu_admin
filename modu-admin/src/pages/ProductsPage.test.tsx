@@ -6,6 +6,7 @@ import * as categories from '../api/categories'
 import * as products from '../api/products'
 import { mockViewport } from '../test/viewport'
 import ProductsPage from './ProductsPage'
+import { chooseOption } from '../test/select'
 
 const base = { listPrice: null, status: 'SELLING' as const, totalStock: 10, categoryId: 1, categoryName: '주방' }
 const tumbler = { id: 2, name: '모두 텀블러 500ml', description: '하루 종일 차가운', price: 24000, imageUrl: null, ...base }
@@ -53,11 +54,11 @@ describe('ProductsPage', () => {
     renderPage()
     await screen.findByText('모두 텀블러 500ml')
 
-    await userEvent.selectOptions(await screen.findByLabelText('카테고리'), '5')
+    await chooseOption(userEvent, await screen.findByLabelText('카테고리'), '생활 > 주방')
     expect(search).toHaveBeenLastCalledWith('', 0, { categoryId: 5, status: null })
-    expect(screen.getByRole('option', { name: '생활 > 주방' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '카테고리' })).toHaveTextContent('생활 > 주방')
 
-    await userEvent.selectOptions(screen.getByLabelText('판매 상태'), 'HIDDEN')
+    await chooseOption(userEvent, '판매 상태', '숨김')
     expect(search).toHaveBeenLastCalledWith('', 0, { categoryId: 5, status: 'HIDDEN' })
   })
 

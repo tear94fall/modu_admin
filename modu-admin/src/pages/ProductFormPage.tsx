@@ -13,6 +13,7 @@ import {
   validationMessage,
 } from '../api/products'
 import { cleanGroups, type GroupDraft, optionLabel, reconcileSkus, type SkuDraft, splitValues } from '../util/options'
+import Select from '../components/Select'
 
 const MAX_IMAGES = 10
 const MAX_GROUPS = 3
@@ -227,25 +228,27 @@ export default function ProductFormPage() {
           <div className="form-grid">
             <div className="form-field">
               <label htmlFor="product-category">카테고리</label>
-              <select
+              <Select
                 id="product-category"
-                value={categoryId ?? ''}
-                onChange={(e) => setCategoryId(e.target.value === '' ? null : Number(e.target.value))}
-              >
-                <option value="">미분류</option>
-                {flattenCategories(categories).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                value={categoryId == null ? '' : String(categoryId)}
+                onChange={(v) => setCategoryId(v === '' ? null : Number(v))}
+                options={[
+                  { value: '', label: '미분류' },
+                  ...flattenCategories(categories).map((c) => ({ value: String(c.id), label: c.label })),
+                ]}
+              />
             </div>
             <div className="form-field">
               <label htmlFor="product-status">판매 상태</label>
-              <select id="product-status" value={status} onChange={(e) => setStatus(e.target.value as ProductStatus)}>
-                <option value="SELLING">판매중</option>
-                <option value="HIDDEN">숨김</option>
-              </select>
+              <Select
+                id="product-status"
+                value={status}
+                onChange={(v) => setStatus(v as ProductStatus)}
+                options={[
+                  { value: 'SELLING', label: '판매중' },
+                  { value: 'HIDDEN', label: '숨김' },
+                ]}
+              />
             </div>
           </div>
           <div className="form-grid">

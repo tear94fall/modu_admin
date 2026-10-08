@@ -2,7 +2,7 @@
 .page-note { margin: -8px 0 16px; font-size: 13px; color: var(--color-muted); }
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
 .summary-grid .info-card h2 { font-size: 15px; margin: 0 0 10px; }
-.mono, .mono-list { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.mono, .mono-list { font-family: inherit; font-size: 12.5px; }
 .mono-list { margin: 0; padding-left: 18px; }
 .route-search { width: 100%; max-width: 420px; height: 36px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 6px; }
 /* 공통 스타일의 .chip(정렬 칩)과 겹치지 않게 이름을 따로 둔다. */
@@ -30,7 +30,8 @@
 .config-table td { vertical-align: top; white-space: normal; word-break: break-all; }
 .config-table td.config-line { white-space: nowrap; word-break: normal; font-variant-numeric: tabular-nums; }
 .config-file .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.config-file-select { width: 100%; height: 38px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; }
+/* 모양은 공통 .select-trigger(console-core Select). 폰의 파일 선택 상자는 가로를 꽉 채운다. */
+.config-file-select { width: 100%; }
 .layout--mobile .config-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 /* 서비스 배포: 콘솔 기본 글꼴만 쓴다(모노스페이스 없음). 숫자만 tabular-nums. 표 아래 인라인 패널(태그 고르기 → 진행). 폰에서는 카드 안에 그대로 들어간다. */
 .deploy-num { font-variant-numeric: tabular-nums; }

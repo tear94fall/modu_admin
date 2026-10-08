@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import SwaggerUI from 'swagger-ui-react'
 import 'swagger-ui-react/swagger-ui.css'
-import { apiErrorMessage, getToken } from '@modu/console-core'
+import { apiErrorMessage, getToken, Select } from '@modu/console-core'
 import {
   getApiDoc,
   getApiDocServices,
@@ -148,13 +148,13 @@ export default function ApiDocsPage() {
       ) : (
         <>
           <div className="api-docs-bar">
-            <select className="api-docs-service" aria-label="서비스" value={selected ?? ''} onChange={(e) => selectService(e.target.value)}>
-              {services.map((s) => (
-                <option key={s.name} value={s.name}>
-                  {s.title || s.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              className="api-docs-service"
+              aria-label="서비스"
+              value={selected ?? ''}
+              onChange={selectService}
+              options={services.map((s) => ({ value: s.name, label: s.title || s.name }))}
+            />
             <div className="access-chips api-docs-chips" role="radiogroup" aria-label="구역">
               {SECTIONS.map((s) => (
                 <button

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, setToken, clearToken } from '@modu/console-core'
+import { chooseOption } from '@modu/console-core/test/select'
 import * as apiDocs from '../api/apiDocs'
 import ApiDocsPage, { LAST_SERVICE_KEY } from './ApiDocsPage'
 
@@ -96,9 +97,9 @@ describe('ApiDocsPage', () => {
 
     await screen.findByTestId('swagger')
     expect(apiDocs.getApiDoc).toHaveBeenCalledWith('chat-store-service')
-    expect(screen.getByRole('combobox', { name: '서비스' })).toHaveValue('chat-store-service')
+    expect(screen.getByRole('combobox', { name: '서비스' })).toHaveTextContent('chat-store-service')
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: '서비스' }), 'member-service')
+    await chooseOption(userEvent, '서비스', 'member-service')
 
     expect(await screen.findByText(/\/api-admin\/members/)).toBeInTheDocument()
     expect(apiDocs.getApiDoc).toHaveBeenCalledWith('member-service')
@@ -113,7 +114,7 @@ describe('ApiDocsPage', () => {
     localStorage.setItem(LAST_SERVICE_KEY, 'point-service')
     renderPage()
     expect(await screen.findByText('/api-admin/points')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: '서비스' })).toHaveValue('point-service')
+    expect(screen.getByRole('combobox', { name: '서비스' })).toHaveTextContent('point-service')
   })
 
   it('counts APIs per section and filters paths client-side, following the URL section', async () => {

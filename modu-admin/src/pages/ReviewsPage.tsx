@@ -5,6 +5,7 @@ import { hiddenClass, hiddenLabel, type Review, searchReviews, stars } from '../
 import Pager from '../components/Pager'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { formatDateTime } from '../util/format'
+import Select from '../components/Select'
 
 const RATINGS = [5, 4, 3, 2, 1]
 
@@ -71,33 +72,28 @@ export default function ReviewsPage() {
         </form>
       </div>
       <div className="filter-row">
-        <select
+        <Select
           aria-label="별점"
-          value={rating ?? ''}
-          onChange={(e) => {
+          value={rating == null ? '' : String(rating)}
+          onChange={(v) => {
             setPage(0)
-            setRating(e.target.value === '' ? null : Number(e.target.value))
+            setRating(v === '' ? null : Number(v))
           }}
-        >
-          <option value="">전체 별점</option>
-          {RATINGS.map((r) => (
-            <option key={r} value={r}>
-              {r}점
-            </option>
-          ))}
-        </select>
-        <select
+          options={[{ value: '', label: '전체 별점' }, ...RATINGS.map((r) => ({ value: String(r), label: `${r}점` }))]}
+        />
+        <Select
           aria-label="노출 상태"
           value={hidden === null ? '' : hidden ? 'hidden' : 'visible'}
-          onChange={(e) => {
+          onChange={(v) => {
             setPage(0)
-            setHidden(e.target.value === '' ? null : e.target.value === 'hidden')
+            setHidden(v === '' ? null : v === 'hidden')
           }}
-        >
-          <option value="">전체</option>
-          <option value="visible">노출</option>
-          <option value="hidden">숨김</option>
-        </select>
+          options={[
+            { value: '', label: '전체' },
+            { value: 'visible', label: '노출' },
+            { value: 'hidden', label: '숨김' },
+          ]}
+        />
       </div>
 
       {loading && <p>불러오는 중...</p>}
