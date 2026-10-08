@@ -1458,6 +1458,7 @@ a.btn {
 .coupon-section .form-heading { margin-bottom: 0; }
 .coupon-category-list { list-style: none; margin: 0; padding: 8px 12px; display: grid; gap: 4px; max-height: 280px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; }
 .coupon-category--child { padding-left: 20px; }
+.coupon-category--depth-3 { padding-left: 40px; }
 .grant-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .grant-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border-radius: 999px; background: #e0e7ff; color: #3730a3; font-size: 13px; }
 .grant-chip button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 4px; }
@@ -2345,6 +2346,56 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 .category-item { flex-wrap: wrap; align-items: center; }
 .category-item .tree-name, .category-nav-name, .category-head-row .tree-name { word-break: keep-all; overflow-wrap: anywhere; }
 .category-item .tree-actions { display: flex; justify-content: flex-end; gap: 6px; width: 100%; margin-left: 0; padding-top: 10px; border-top: 1px solid #f1f3f5; }
+
+/* 카테고리 3단계 + 형제 순서 바꾸기 (2026-10-09)
+   중분류 = 카드(.category-card), 그 안 소분류 = 왼쪽 연결선이 있는 촘촘한 줄(.category-leaf).
+   ↑↓ 버튼(.order-btn)은 늘 보이고, 손잡이(.drag-handle)는 끌어서 놓기용 덧붙임. */
+.category-layout .btn--sm { min-height: 32px; }
+.category-children { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.category-card { display: grid; gap: 0; min-width: 0; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; transition: border-color .12s, box-shadow .12s; }
+.category-card:hover { border-color: #cbd5e1; box-shadow: 0 1px 3px rgba(15, 23, 42, .06); }
+.category-card > .category-item { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.category-card > .category-item:hover { border: 0; box-shadow: none; }
+.category-item .tree-actions, .category-leaf .tree-actions { justify-content: space-between; align-items: center; }
+.tree-edit-actions { display: inline-flex; gap: 6px; margin-left: auto; }
+.order-buttons { display: inline-flex; gap: 4px; }
+.order-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 15px; line-height: 1; cursor: pointer; transition: background-color .12s, border-color .12s, color .12s; }
+.order-btn:hover:not(:disabled) { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.order-btn:disabled { opacity: .35; }
+.order-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.drag-handle { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 18px; height: 32px; border-radius: 4px; color: #b6bcc6; cursor: grab; }
+.drag-handle:hover { background: #f3f4f6; color: #6b7280; }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle--off { cursor: default; opacity: .4; }
+.drag-handle--off:hover { background: transparent; color: #b6bcc6; }
+.sortable { position: relative; }
+.sortable--dragging { opacity: .45; }
+.sortable--drop-before::before, .sortable--drop-after::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--color-accent); pointer-events: none; z-index: 1; }
+.sortable--drop-before::before { top: -4px; }
+.sortable--drop-after::after { bottom: -4px; }
+.category-children > .sortable--drop-before::before { top: -7px; }
+.category-children > .sortable--drop-after::after { bottom: -7px; }
+/* 왼쪽 상위 목록: 손잡이 | 고르기 버튼 | ↑↓ */
+.category-nav-row { display: flex; align-items: center; gap: 4px; padding-right: 4px; border-radius: 10px; }
+.category-nav-row > .category-nav-item { flex: 1; min-width: 0; }
+.category-nav-row > .order-buttons { flex: none; }
+/* 카드 안 소분류: 왼쪽 연결선 + 가지 */
+.category-leaves { margin: 12px 0 0; padding: 0 0 0 14px; list-style: none; display: grid; gap: 6px; border-left: 2px solid #e5e7eb; margin-left: 8px; }
+.category-leaves > li { position: relative; }
+.category-leaves > li::before { content: ''; position: absolute; left: -14px; top: 22px; width: 10px; border-top: 2px solid #e5e7eb; }
+.category-leaves > li:has(.category-editor)::before { display: none; }
+.category-leaf { flex-wrap: wrap; gap: 6px 8px; padding: 6px 8px 6px 4px; border: 1px solid #eef0f3; border-radius: 8px; background: #fafafb; }
+.category-leaf:hover { border-color: #dfe3e8; background: #f6f7f9; }
+.category-leaf .tree-text { flex: 1 1 96px; }
+.category-leaf .tree-name { font-weight: 500; word-break: keep-all; overflow-wrap: anywhere; }
+.category-leaf .tree-count { justify-self: start; color: var(--color-muted); font-size: 12px; }
+.category-leaf .tree-actions { flex: 0 1 auto; margin-left: auto; gap: 6px; flex-wrap: wrap; }
+.category-card-add { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb; }
+.category-card-add .category-add { max-width: none; margin: 0; }
+.category-add--small input { height: 32px; }
+.category-leaves .category-editor { margin: 0; }
+.category-editor-head { flex-wrap: wrap; }
+.category-parent-select { min-width: 200px; max-width: 100%; }
 
 /* 포인트 목록: 카드 안 밑줄 탭 + 표 (2026-10-09) */
 .points-shell { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; overflow: hidden; }

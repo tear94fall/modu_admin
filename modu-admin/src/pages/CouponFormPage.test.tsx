@@ -135,6 +135,22 @@ describe('CouponFormPage', () => {
     expect(await screen.findByText('목록 화면')).toBeInTheDocument()
   })
 
+  it('lists three-level categories with full paths, indented by depth', async () => {
+    vi.spyOn(categories, 'getCategories').mockResolvedValue([
+      { ...tree[0], children: [{ ...tree[0].children[0], children: [{ id: 51, name: '수저', sortOrder: 0, productCount: 2, children: [] }] }, tree[0].children[1]] },
+      tree[1],
+    ])
+    renderAt('/coupons/new')
+
+    await userEvent.click(await screen.findByLabelText('카테고리'))
+    const list = await screen.findByRole('list', { name: '카테고리 고르기' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items.map((li) => li.textContent)).toEqual(['생활', '생활 > 주방', '생활 > 주방 > 수저', '생활 > 욕실', '문구'])
+    expect(items[0]).not.toHaveClass('coupon-category--child')
+    expect(items[1]).toHaveClass('coupon-category--depth-2')
+    expect(items[2]).toHaveClass('coupon-category--depth-3')
+  })
+
   it('creates a percent coupon for chosen categories, valid for N days, with a quantity', async () => {
     const create = vi.spyOn(coupons, 'createCoupon').mockResolvedValue(detail)
     renderAt('/coupons/new')
