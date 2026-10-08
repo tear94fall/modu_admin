@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { apiErrorMessage, formatUtcDateTime } from '@modu/console-core'
+import { Link } from 'react-router-dom'
+import { apiErrorMessage, ConfirmDialog, formatUtcDateTime } from '@modu/console-core'
 import {
   DEPLOYMENT_STATUS_LABELS,
   deployService,
@@ -7,6 +8,7 @@ import {
   durationSeconds,
   getDeployment,
   getServiceTags,
+  historyEntryPath,
   isFinished,
   SERVICE_STATUS_LABELS,
   shortBy,
@@ -14,6 +16,7 @@ import {
   stepStates,
   type Deployment,
   type DeploymentStatus,
+  type DeploymentStep,
   type DeployService,
   type ImageTag,
   type ServiceStatus,
@@ -44,12 +47,16 @@ export function DeploymentStatusPill({ status }: { status: DeploymentStatus }) {
   return <span className={cls}>{DEPLOYMENT_STATUS_LABELS[status]}</span>
 }
 
-/** 태그 목록에서 하나 고르고 배포를 시작한다. 현재 태그는 "같은 태그 다시 배포"를 켜야 보낼 수 있다. */
-export function TagPicker({ service, onStarted, onClose }: { service: DeployService; onStarted: (d: Deployment) => void; onClose: () => void }) {
+/**
+ * 태그 목록에서 하나 고르고, 한 번 더 확인한 뒤 배포를 시작한다. 현재 태그는 "같은 태그 다시 배포"를 켜야 보낼 수 있다.
+ * [lockedReason] 이 있으면(이 서비스 배포가 진행 중) 고를 수는 있어도 보낼 수 없다.
+ */
+export function TagPicker({ service, onStarted, onClose, lockedReason }: { service: DeployService; onStarted: (d: Deployment) => void; onClose: () => void; lockedReason?: string | null }) {
   const [tags, setTags] = useState<ImageTag[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [redeploy, setRedeploy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -68,16 +75,19 @@ export function TagPicker({ service, onStarted, onClose }: { service: DeployServ
   }, [service.name])
 
   const chosen = tags?.find((t) => t.tag === selected) ?? null
-  const canSubmit = !!chosen && !submitting && (!chosen.current || redeploy)
+  const canSubmit = !!chosen && !submitting && !lockedReason && (!chosen.current || redeploy)
 
   const submit = async () => {
-    if (!chosen) return
+    if (!chosen || submitting) return
     setSubmitting(true)
     setSubmitError(null)
     try {
-      onStarted(await deployService(service.name, chosen.tag))
+      const d = await deployService(service.name, chosen.tag)
+      setConfirming(false)
+      onStarted(d)
     } catch (e) {
       setSubmitError(apiErrorMessage(e, '배포를 시작하지 못했습니다'))
+      setConfirming(false)
       setSubmitting(false)
     }
   }
@@ -85,7 +95,10 @@ export function TagPicker({ service, onStarted, onClose }: { service: DeployServ
   return (
     <div className="deploy-panel" role="group" aria-label={`${service.name} 배포 태그 선택`}>
       <div className="deploy-panel-head">
-        <strong>{service.name} 배포할 태그</strong>
+        <div className="deploy-panel-title">
+          <strong>{service.name} 배포할 태그</strong>
+          <span className="card-muted deploy-panel-sub">지금 실행 중 {service.runningTag}</span>
+        </div>
         <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>
           닫기
         </button>
@@ -100,7 +113,7 @@ export function TagPicker({ service, onStarted, onClose }: { service: DeployServ
               <label className={t.tag === selected ? 'deploy-tag deploy-tag--on' : 'deploy-tag'}>
                 <input type="radio" name={`tag-${service.name}`} value={t.tag} checked={t.tag === selected} onChange={() => setSelected(t.tag)} />
                 <span className="deploy-tag-body">
-                  <span>
+                  <span className="deploy-tag-name">
                     {t.tag}
                     {t.current && <span className="status-badge status-badge--selling deploy-tag-current">현재</span>}
                   </span>
@@ -120,12 +133,36 @@ export function TagPicker({ service, onStarted, onClose }: { service: DeployServ
           같은 태그 다시 배포
         </label>
       )}
+      {lockedReason && <p className="deploy-lock-note">{lockedReason}</p>}
       {submitError && <p className="error-text">{submitError}</p>}
       <div className="deploy-panel-actions">
-        <button type="button" className="btn btn--primary" disabled={!canSubmit} onClick={() => void submit()}>
+        <button type="button" className="btn btn--primary" disabled={!canSubmit} onClick={() => setConfirming(true)}>
           {submitting ? '시작하는 중...' : '배포'}
         </button>
       </div>
+      {confirming && chosen && (
+        <ConfirmDialog
+          title={`${service.name} 배포`}
+          confirmLabel={`${chosen.tag} 배포`}
+          busy={submitting}
+          onConfirm={() => void submit()}
+          onCancel={() => setConfirming(false)}
+        >
+          <dl className="kv-grid confirm-facts">
+            <dt>서비스</dt>
+            <dd>{service.name}</dd>
+            <dt>태그</dt>
+            <dd>
+              {service.runningTag} → <strong>{chosen.tag}</strong>
+            </dd>
+            <dt>커밋 메시지</dt>
+            <dd>{chosen.commitMessage || '-'}</dd>
+            <dt>태그 생성</dt>
+            <dd>{formatUtcDateTime(chosen.createdAt)}</dd>
+          </dl>
+          <p className="card-muted">modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 진행한다.</p>
+        </ConfirmDialog>
+      )}
     </div>
   )
 }
@@ -208,21 +245,34 @@ export function DeployProgress({ initial, onFinished, onClose }: { initial: Depl
         </p>
       )}
       {deployment.status === 'SUCCEEDED' && (
-        <p className="result-text deploy-status">
-          완료 · 소요 {durationSeconds(deployment) ?? 0}초{rollout && ` · 준비 ${rollout.ready}/${rollout.desired}`}
-        </p>
+        <div className="deploy-result deploy-result--ok" role="status">
+          <strong className="deploy-result-title">배포 성공</strong>
+          <span className="deploy-result-text">
+            완료 · 소요 {durationSeconds(deployment) ?? 0}초{rollout && ` · 준비 ${rollout.ready}/${rollout.desired}`}
+          </span>
+          <Link className="link-chip" to={historyEntryPath(deployment)}>
+            이력에서 보기
+          </Link>
+        </div>
       )}
       {deployment.status === 'FAILED' && (
-        <p className="error-text deploy-status" role="alert">
-          실패: {deployment.error || '원인 없음'}
-        </p>
+        <div className="deploy-result deploy-result--fail" role="alert">
+          <strong className="deploy-result-title">배포 실패</strong>
+          <span className="deploy-result-text">
+            실패: {deployment.error || '원인 없음'}
+            {durationSeconds(deployment) !== null && ` · 소요 ${durationSeconds(deployment)}초`}
+          </span>
+          <Link className="link-chip" to={historyEntryPath(deployment)}>
+            이력에서 보기
+          </Link>
+        </div>
       )}
       {pollError && <p className="error-text">{pollError}</p>}
 
       {deployment.commit && (
         <p className="card-muted deploy-commit">
           커밋{' '}
-          <a href={deployment.commit.url} target="_blank" rel="noreferrer">
+          <a className="link-chip" href={deployment.commit.url} target="_blank" rel="noreferrer">
             {deployment.commit.sha.slice(0, 7)}
           </a>
         </p>
@@ -260,34 +310,69 @@ export function DeployProgress({ initial, onFinished, onClose }: { initial: Depl
   )
 }
 
-/** 배포 한 건의 펼친 내용: 단계·커밋·오류·소요. 이력 표와 카드에서 같이 쓴다. */
+const stepSeconds = (s: DeploymentStep) => (s.startedAt && s.finishedAt ? durationSeconds({ startedAt: s.startedAt, finishedAt: s.finishedAt }) : null)
+
+/** 배포 한 건의 펼친 내용: 단계 세로 타임라인(시작·소요·메시지), 핵심 값 표, 오류 상자. 이력 표와 카드에서 같이 쓴다. */
 export function DeploymentDetail({ d }: { d: Deployment }) {
   return (
     <div className="deploy-detail">
-      <ul className="deploy-detail-steps">
-        {stepStates(d).map((s) => (
-          <li key={s.name} className={`deploy-detail-step deploy-step--${s.status.toLowerCase()}`}>
-            <span className="deploy-step-name">{STEP_LABELS[s.name]}</span>
-            <span>{STEP_STATUS_LABELS[s.status]}</span>
-            {s.message && <span className="card-muted">{s.message}</span>}
-            {s.finishedAt && <span className="card-muted">{formatUtcDateTime(s.finishedAt)}</span>}
-          </li>
-        ))}
-      </ul>
-      <p className="deploy-detail-line card-muted">
-        {d.previousTag && `이전 ${d.previousTag} · `}
-        시작 {formatUtcDateTime(d.startedAt)}
-        {d.finishedAt && ` · 끝 ${formatUtcDateTime(d.finishedAt)}`} · 소요 {durationLabel(d)}
-        {d.commit && (
-          <>
-            {' · 커밋 '}
-            <a href={d.commit.url} target="_blank" rel="noreferrer">
-              {d.commit.sha.slice(0, 7)}
-            </a>
-          </>
+      <ol className="deploy-timeline" aria-label="배포 단계">
+        {stepStates(d).map((s, i) => {
+          const sec = stepSeconds(s)
+          return (
+            <li key={s.name} className={`deploy-timeline-item deploy-step--${s.status.toLowerCase()}`}>
+              <span className="deploy-step-dot" aria-hidden="true">
+                {s.status === 'SUCCEEDED' ? '✓' : s.status === 'FAILED' ? '!' : i + 1}
+              </span>
+              <div className="deploy-timeline-body">
+                <div className="deploy-timeline-head">
+                  <span className="deploy-step-name">{STEP_LABELS[s.name]}</span>
+                  <span className="deploy-timeline-status">{STEP_STATUS_LABELS[s.status]}</span>
+                </div>
+                {(s.startedAt || s.finishedAt) && (
+                  <div className="card-muted deploy-timeline-meta">
+                    {s.startedAt ? `시작 ${formatUtcDateTime(s.startedAt)}` : `끝 ${formatUtcDateTime(s.finishedAt!)}`}
+                    {sec !== null && ` · ${sec}초`}
+                  </div>
+                )}
+                {s.message && <div className="deploy-timeline-msg">{s.message}</div>}
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+      <div className="deploy-detail-side">
+        <dl className="kv-grid deploy-detail-facts">
+          <dt>태그</dt>
+          <dd>{d.previousTag ? `${d.previousTag} → ${d.tag}` : d.tag}</dd>
+          <dt>배포자</dt>
+          <dd>
+            <DeployBy by={d.by} byId={d.byId} />
+          </dd>
+          <dt>시작</dt>
+          <dd>{formatUtcDateTime(d.startedAt)}</dd>
+          <dt>종료</dt>
+          <dd>{d.finishedAt ? formatUtcDateTime(d.finishedAt) : '진행 중'}</dd>
+          <dt>소요</dt>
+          <dd>{durationLabel(d)}</dd>
+          {d.commit && (
+            <>
+              <dt>커밋</dt>
+              <dd>
+                <a className="link-chip" href={d.commit.url} target="_blank" rel="noreferrer">
+                  {d.commit.sha.slice(0, 7)}
+                </a>
+              </dd>
+            </>
+          )}
+        </dl>
+        {d.error && (
+          <div className="deploy-error-box">
+            <span className="deploy-error-label">오류</span>
+            <p className="deploy-error-text">{d.error}</p>
+          </div>
         )}
-      </p>
-      {d.error && <p className="error-text deploy-detail-line">{d.error}</p>}
+      </div>
     </div>
   )
 }
@@ -296,17 +381,30 @@ export function DeploymentDetail({ d }: { d: Deployment }) {
  * 배포 목록. 행을 누르면 단계·커밋·오류가 펼쳐진다. PC 는 표, 폰은 카드.
  * [showService] 가 false 면 한 서비스 화면이라 서비스 칸을 뺀다.
  */
-export function DeploymentList({ deployments, isMobile, showService = true, emptyText = '아직 배포 이력이 없다' }: { deployments: Deployment[]; isMobile: boolean; showService?: boolean; emptyText?: string }) {
-  const [open, setOpen] = useState<string | null>(null)
+export function DeploymentList({
+  deployments,
+  isMobile,
+  showService = true,
+  emptyText = '아직 배포 이력이 없다',
+  initialOpen = null,
+}: {
+  deployments: Deployment[]
+  isMobile: boolean
+  showService?: boolean
+  emptyText?: string
+  /** 처음부터 펼쳐 둘 배포 id(결과 배너의 "이력에서 보기"). */
+  initialOpen?: string | null
+}) {
+  const [open, setOpen] = useState<string | null>(initialOpen)
   const toggle = (id: string) => setOpen((o) => (o === id ? null : id))
 
   if (deployments.length === 0) return <p className="card-muted">{emptyText}</p>
 
   if (isMobile) {
     return (
-      <ul className="card-list">
+      <ul className="card-rows">
         {deployments.map((d) => (
-          <li key={d.id} className="card deploy-card">
+          <li key={d.id} className="deploy-card">
             <button type="button" className="deploy-card-toggle" onClick={() => toggle(d.id)} aria-expanded={open === d.id}>
               <span className="card-title">{showService ? `${d.service} → ${d.tag}` : d.tag}</span>
               <span className="card-line card-muted">
@@ -325,50 +423,52 @@ export function DeploymentList({ deployments, isMobile, showService = true, empt
 
   const columns = showService ? 6 : 5
   return (
-    <table className="list-table deploy-table">
-      <colgroup>
-        {showService && <col style={{ width: '16%' }} />}
-        <col style={{ width: showService ? '20%' : '26%' }} />
-        <col />
-        <col style={{ width: showService ? '22%' : '24%' }} />
-        <col style={{ width: showService ? '12%' : '13%' }} />
-        <col style={{ width: showService ? '10%' : '11%' }} />
-      </colgroup>
-      <thead>
-        <tr>
-          {showService && <th>서비스</th>}
-          <th>태그</th>
-          <th>배포자</th>
-          <th>시작</th>
-          <th>상태</th>
-          <th>소요</th>
-        </tr>
-      </thead>
-      <tbody>
-        {deployments.map((d) => (
-          <Fragment key={d.id}>
-            <tr className="clickable-row" onClick={() => toggle(d.id)} aria-expanded={open === d.id}>
-              {showService && <td>{d.service}</td>}
-              <td>{d.tag}</td>
-              <td>
-                <DeployBy by={d.by} byId={d.byId} />
-              </td>
-              <td>{formatUtcDateTime(d.startedAt)}</td>
-              <td>
-                <DeploymentStatusPill status={d.status} />
-              </td>
-              <td className="deploy-num">{durationLabel(d)}</td>
-            </tr>
-            {open === d.id && (
-              <tr className="deploy-panel-row">
-                <td colSpan={columns}>
-                  <DeploymentDetail d={d} />
+    <div className="card-table-wrap">
+      <table className="list-table card-table deploy-table">
+        <colgroup>
+          {showService && <col style={{ width: '16%' }} />}
+          <col style={{ width: showService ? '20%' : '26%' }} />
+          <col />
+          <col style={{ width: showService ? '22%' : '24%' }} />
+          <col style={{ width: showService ? '12%' : '13%' }} />
+          <col style={{ width: showService ? '10%' : '11%' }} />
+        </colgroup>
+        <thead>
+          <tr>
+            {showService && <th>서비스</th>}
+            <th>태그</th>
+            <th>배포자</th>
+            <th>시작</th>
+            <th>상태</th>
+            <th>소요</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deployments.map((d) => (
+            <Fragment key={d.id}>
+              <tr className="clickable-row" onClick={() => toggle(d.id)} aria-expanded={open === d.id}>
+                {showService && <td>{d.service}</td>}
+                <td>{d.tag}</td>
+                <td>
+                  <DeployBy by={d.by} byId={d.byId} />
                 </td>
+                <td>{formatUtcDateTime(d.startedAt)}</td>
+                <td>
+                  <DeploymentStatusPill status={d.status} />
+                </td>
+                <td className="deploy-num">{durationLabel(d)}</td>
               </tr>
-            )}
-          </Fragment>
-        ))}
-      </tbody>
-    </table>
+              {open === d.id && (
+                <tr className="deploy-panel-row">
+                  <td colSpan={columns}>
+                    <DeploymentDetail d={d} />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

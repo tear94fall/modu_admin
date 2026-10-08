@@ -1,8 +1,8 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, setDisplayTimeZone } from '@modu/console-core'
+import { setDisplayTimeZone } from '@modu/console-core'
 import * as deploy from '../api/deploy'
 import { NARROW_QUERY } from '../hooks/useMediaQuery'
 import DeployPage from './DeployPage'
@@ -16,12 +16,19 @@ function mockNarrow() {
   })
 }
 
+/** 상세 화면 자리. 배포 버튼이 태그 고르기를 열라고(state.pick) 넘겼는지 보여 준다. */
+function DetailProbe() {
+  const { name } = useParams()
+  const state = useLocation().state as { pick?: boolean } | null
+  return <p>{`상세 화면 ${name}${state?.pick ? ' · 태그 고르기' : ''}`}</p>
+}
+
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/deploy']}>
       <Routes>
         <Route path="/deploy" element={<DeployPage />} />
-        <Route path="/deploy/:name" element={<p>상세 화면</p>} />
+        <Route path="/deploy/:name" element={<DetailProbe />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -98,17 +105,6 @@ const succeeded: deploy.Deployment = {
   rollout: { ...running.rollout!, ready: 2, available: 2, pods: [{ name: 'point-service-abc-xyz', phase: 'Running', ready: true, reason: '' }] },
 }
 
-const failed: deploy.Deployment = {
-  ...running,
-  finishedAt: '2026-10-06T05:01:00Z',
-  status: 'FAILED',
-  step: 'ROLLOUT',
-  percent: 50,
-  steps: [running.steps![0], running.steps![1], { name: 'ROLLOUT', status: 'FAILED', message: 'CrashLoopBackOff' }],
-  rollout: { desired: 2, updated: 1, ready: 0, available: 0, pods: [{ name: 'point-service-new-1', phase: 'Running', ready: false, reason: 'CrashLoopBackOff' }] },
-  error: 'point-service-new-1: CrashLoopBackOff',
-}
-
 const history: deploy.Deployment[] = [
   { ...succeeded, id: 'dep-1', tag: 'develop-5708871', startedAt: '2026-10-06T03:59:30Z', finishedAt: '2026-10-06T04:00:00Z' },
 ]
@@ -138,13 +134,15 @@ describe('DeployPage', () => {
     expect(within(row).getByText('1/1')).toBeInTheDocument()
     expect(within(row).getByText(/· 2026-10-06 04:00/)).toBeInTheDocument()
     expect(within(row).getByTitle('joonsub2990@gmail.com')).toHaveTextContent('joonsub2990')
-    expect(within(row).getByRole('button', { name: 'point-service 롤백' })).toBeEnabled()
+    // 롤백은 실수로 누르기 쉬워 표에서 뺐다(상세 화면에서 확인을 거쳐서만).
+    expect(within(row).queryByRole('button', { name: 'point-service 롤백' })).not.toBeInTheDocument()
+    expect(within(row).getByRole('link', { name: 'point-service 상세' })).toHaveAttribute('href', '/deploy/point-service')
 
     const chatRow = screen.getByRole('button', { name: 'chat-service 배포' }).closest('tr')!
     expect(within(chatRow).getByText('develop-9378b00')).toHaveClass('deploy-tag--diff')
     expect(within(chatRow).getByText('진행 중')).toBeInTheDocument()
     expect(within(chatRow).getByText('0/2')).toBeInTheDocument()
-    expect(within(chatRow).getByRole('button', { name: 'chat-service 롤백' })).toBeDisabled()
+    expect(within(chatRow).queryByRole('button', { name: 'chat-service 롤백' })).not.toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: 'Argo CD 열기' })).toHaveAttribute('href', 'http://localhost:8090/applications/modu-dev')
     const recent = screen.getByText('최근 배포 5건').closest('section')!
@@ -190,115 +188,36 @@ describe('DeployPage', () => {
     expect(within(row).getByText('정상')).toBeInTheDocument()
 
     await userEvent.click(within(row).getByRole('link', { name: 'point-service 상세' }))
-    expect(await screen.findByText('상세 화면')).toBeInTheDocument()
+    expect(await screen.findByText('상세 화면 point-service')).toBeInTheDocument()
   })
 
   it('clicking a row on a wide screen opens the service page too', async () => {
     renderPage()
     await userEvent.click(await screen.findByText('chat-service', { selector: 'td' }))
-    expect(await screen.findByText('상세 화면')).toBeInTheDocument()
+    expect(await screen.findByText('상세 화면 chat-service')).toBeInTheDocument()
   })
 
-  it('opens the tag list, enables 배포 after choosing a tag, and asks before redeploying the current one', async () => {
+  it('배포 in a row goes to the service page with the tag picker open, without deploying anything here', async () => {
+    const start = vi.spyOn(deploy, 'deployService')
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'point-service 배포' }))
-
-    const panel = await screen.findByRole('group', { name: 'point-service 배포 태그 선택' })
-    expect(within(panel).getByText(/2026-10-05 03:45 · Merge pull request #422/)).toBeInTheDocument()
-    expect(within(panel).getByText('현재')).toBeInTheDocument()
-    const confirm = within(panel).getByRole('button', { name: '배포' })
-    expect(confirm).toBeDisabled()
-
-    await userEvent.click(within(panel).getByRole('radio', { name: /develop-5708871/ }))
-    expect(confirm).toBeDisabled()
-    await userEvent.click(within(panel).getByRole('checkbox', { name: '같은 태그 다시 배포' }))
-    expect(confirm).toBeEnabled()
-
-    await userEvent.click(within(panel).getByRole('radio', { name: /develop-9378b00/ }))
-    expect(screen.queryByRole('checkbox', { name: '같은 태그 다시 배포' })).not.toBeInTheDocument()
-    expect(confirm).toBeEnabled()
+    expect(await screen.findByText('상세 화면 point-service · 태그 고르기')).toBeInTheDocument()
+    expect(start).not.toHaveBeenCalled()
   })
 
-  it('starts the deployment, shows the progress bar and pods while polling, then 완료 and a refreshed table', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const start = vi.spyOn(deploy, 'deployService').mockResolvedValue(started)
-    const get = vi.spyOn(deploy, 'getDeployment').mockResolvedValue(running)
+  it('disables 배포 for a service whose deployment is still running, with the reason', async () => {
+    vi.spyOn(deploy, 'getDeployServices').mockResolvedValue({
+      ...services,
+      services: [{ ...services.services[0], lastDeployment: { ...services.services[0].lastDeployment!, finishedAt: null, status: 'RUNNING' } }, services.services[1]],
+    })
     renderPage()
-
-    await user.click(await screen.findByRole('button', { name: 'point-service 배포' }))
-    const picker = await screen.findByRole('group', { name: 'point-service 배포 태그 선택' })
-    await user.click(within(picker).getByRole('radio', { name: /develop-9378b00/ }))
-    await user.click(within(picker).getByRole('button', { name: '배포' }))
-    expect(start).toHaveBeenCalledWith('point-service', 'develop-9378b00')
-
-    const progress = await screen.findByRole('group', { name: 'point-service 배포 진행' })
-    expect(within(progress).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '5')
-    expect(within(progress).getByText('커밋 진행 중', { exact: false })).toBeInTheDocument()
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2000)
-    })
-    expect(get).toHaveBeenCalledWith('dep-2')
-    expect(within(progress).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '75')
-    expect(within(progress).getByText(/준비 1\/2/)).toBeInTheDocument()
-    expect(within(progress).getByText('point-service-abc-xyz')).toBeInTheDocument()
-    expect(within(progress).getByText('커밋 abc1234')).toBeInTheDocument()
-
-    const servicesCalls = (deploy.getDeployServices as ReturnType<typeof vi.fn>).mock.calls.length
-    get.mockResolvedValue(succeeded)
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2000)
-    })
-    expect(within(progress).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100')
-    expect(within(progress).getByText(/완료 · 소요 42초/)).toBeInTheDocument()
-    expect(deploy.getDeployServices).toHaveBeenCalledTimes(servicesCalls + 1)
-
-    // 끝나면 더 읽지 않는다.
-    const getCalls = get.mock.calls.length
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(6000)
-    })
-    expect(get.mock.calls.length).toBe(getCalls)
+    const button = await screen.findByRole('button', { name: 'point-service 배포' })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('title', expect.stringContaining('진행 중'))
+    expect(screen.getByRole('button', { name: 'chat-service 배포' })).toBeEnabled()
   })
 
-  it('shows the error in the panel when the deployment fails', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    vi.spyOn(deploy, 'deployService').mockResolvedValue(started)
-    vi.spyOn(deploy, 'getDeployment').mockResolvedValue(failed)
-    renderPage()
-
-    await user.click(await screen.findByRole('button', { name: 'point-service 배포' }))
-    const picker = await screen.findByRole('group', { name: 'point-service 배포 태그 선택' })
-    await user.click(within(picker).getByRole('radio', { name: /develop-9378b00/ }))
-    await user.click(within(picker).getByRole('button', { name: '배포' }))
-    const progress = await screen.findByRole('group', { name: 'point-service 배포 진행' })
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2000)
-    })
-    expect(within(progress).getByRole('alert')).toHaveTextContent('실패: point-service-new-1: CrashLoopBackOff')
-    expect(within(progress).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
-    expect(within(progress).getByText('CrashLoopBackOff', { selector: 'span' })).toBeInTheDocument()
-    expect(within(progress).getByRole('button', { name: '닫기' })).toBeInTheDocument()
-  })
-
-  it('rolls back straight into the progress view and shows the 409 message when there is nothing to roll back', async () => {
-    const rollback = vi.spyOn(deploy, 'rollbackService').mockResolvedValue({ ...started, tag: 'develop-35db83f', previousTag: 'develop-5708871' })
-    vi.spyOn(deploy, 'getDeployment').mockResolvedValue(running)
-    renderPage()
-
-    await userEvent.click(await screen.findByRole('button', { name: 'point-service 롤백' }))
-    expect(rollback).toHaveBeenCalledWith('point-service')
-    expect(await screen.findByRole('group', { name: 'point-service 배포 진행' })).toBeInTheDocument()
-
-    rollback.mockRejectedValue(new ApiError(409, JSON.stringify({ error: 'no_previous', message: '되돌릴 배포가 없습니다' })))
-    await userEvent.click(screen.getByRole('button', { name: 'point-service 롤백' }))
-    expect(await screen.findByText('되돌릴 배포가 없습니다')).toBeInTheDocument()
-  })
-
-  it('reopens the progress panel on mount for a deployment that is still RUNNING, without clicking 배포', async () => {
+  it('reopens the progress card on mount for a deployment that is still RUNNING, without clicking 배포', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.spyOn(deploy, 'listDeployments').mockResolvedValue([{ ...running, id: 'dep-7', service: 'chat-service', tag: 'develop-9378b00' }, ...history])
     const get = vi.spyOn(deploy, 'getDeployment').mockResolvedValue({ ...running, id: 'dep-7', service: 'chat-service' })
@@ -325,17 +244,8 @@ describe('DeployPage', () => {
     expect(within(progress).getByText(/완료 · 소요 42초/)).toBeInTheDocument()
     expect(sessionStorage.getItem('modu-deploy-open:point-service')).toBeNull()
 
-    // 새로 배포를 시작하면 적어 두고, 닫으면 지운다.
-    vi.spyOn(deploy, 'deployService').mockResolvedValue(started)
     await userEvent.click(within(progress).getByRole('button', { name: '닫기' }))
-    await userEvent.click(screen.getByRole('button', { name: 'point-service 배포' }))
-    const picker = await screen.findByRole('group', { name: 'point-service 배포 태그 선택' })
-    await userEvent.click(within(picker).getByRole('radio', { name: /develop-9378b00/ }))
-    await userEvent.click(within(picker).getByRole('button', { name: '배포' }))
-    await screen.findByRole('group', { name: 'point-service 배포 진행' })
-    expect(sessionStorage.getItem('modu-deploy-open:point-service')).toBe('dep-2')
-    await userEvent.click(screen.getByRole('button', { name: '숨기기' }))
-    expect(sessionStorage.getItem('modu-deploy-open:point-service')).toBeNull()
+    expect(screen.queryByRole('group', { name: 'point-service 배포 진행' })).not.toBeInTheDocument()
   })
 
   it('shows an error when deploy-service is unreachable', async () => {

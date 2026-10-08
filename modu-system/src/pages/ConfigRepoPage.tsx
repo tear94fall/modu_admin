@@ -88,10 +88,12 @@ export default function ConfigRepoPage() {
 
   return (
     <div>
-      <h1>Config 설정</h1>
-      <p className="page-note">
-        설정 서버(config-service)가 읽는 config-repo 파일입니다(읽기 전용). 암호화된 값과 비밀값은 가려서 보여 줍니다.
-      </p>
+      <header className="page-head">
+        <div className="page-head-main">
+          <h1>Config 설정</h1>
+          <p className="page-head-sub">설정 서버(config-service)가 읽는 config-repo 파일입니다(읽기 전용). 암호화된 값과 비밀값은 가려서 보여 줍니다.</p>
+        </div>
+      </header>
 
       <div className="config-layout">
         {isMobile ? (
@@ -104,50 +106,65 @@ export default function ConfigRepoPage() {
           />
         ) : (
           <nav className="config-files" aria-label="설정 파일">
-            {groups.map(([group, list]) => (
-              <div key={group} className="config-group">
-                <div className="config-group-title">{groupLabel(group)}</div>
-                {list.map((f) => (
-                  <button
-                    key={f.path}
-                    type="button"
-                    className={f.path === selected ? 'config-file config-file--on' : 'config-file'}
-                    aria-current={f.path === selected ? 'true' : undefined}
-                    onClick={() => select(f.path)}
-                  >
-                    <span className="mono" title={f.path}>{f.name}</span>
-                    <span className="config-file-meta">{formatSize(f.size)}</span>
-                  </button>
-                ))}
-              </div>
-            ))}
+            <div className="config-files-head">
+              설정 파일 <span className="config-files-count">{files.length}</span>
+            </div>
+            <div className="config-files-body">
+              {groups.map(([group, list]) => (
+                <div key={group} className="config-group">
+                  <div className="config-group-title">{groupLabel(group)}</div>
+                  {list.map((f) => (
+                    <button
+                      key={f.path}
+                      type="button"
+                      className={f.path === selected ? 'config-file config-file--on' : 'config-file'}
+                      aria-current={f.path === selected ? 'true' : undefined}
+                      onClick={() => select(f.path)}
+                    >
+                      <span className="config-file-name" title={f.path}>
+                        {f.name}
+                      </span>
+                      <span className="config-file-meta">{formatSize(f.size)}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
           </nav>
         )}
 
         <section className="config-content">
           {summary && (
             <div className="config-head">
-              <h2 className="mono">{summary.path}</h2>
-              <span className="config-file-meta">
-                수정 {formatUtcDateTime(summary.modifiedAt)} · {formatSize(summary.size)}
-                {view && ` · 키 ${all.length}개(가림 ${hidden})`}
-              </span>
+              <h2>{summary.path}</h2>
+              <div className="config-head-chips">
+                <span className="config-chip">수정 {formatUtcDateTime(summary.modifiedAt)}</span>
+                <span className="config-chip">{formatSize(summary.size)}</span>
+                {view && (
+                  <span className="config-chip">
+                    키 {all.length}개(가림 {hidden})
+                  </span>
+                )}
+                {view && view.documents.length > 1 && <span className="config-chip">문서 {view.documents.length}개</span>}
+              </div>
             </div>
           )}
 
-          {fileError && <p className="error-text">{fileError}</p>}
-          {!fileError && !view && selected && <p>불러오는 중...</p>}
+          {fileError && <p className="error-text config-pad">{fileError}</p>}
+          {!fileError && !view && selected && <p className="config-pad">불러오는 중...</p>}
 
           {view && (
             <>
-              <input
-                className="route-search"
-                type="search"
-                aria-label="키 검색"
-                placeholder="키·값 검색"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
+              <div className="config-toolbar">
+                <input
+                  className="route-search"
+                  type="search"
+                  aria-label="키 검색"
+                  placeholder="키·값 검색"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </div>
               {view.documents.map((doc) => {
                 const props = doc.properties.filter((p) => matches(p, keyword))
                 return (
@@ -159,12 +176,12 @@ export default function ConfigRepoPage() {
                       </div>
                     )}
                     {props.length === 0 ? (
-                      <p className="card-muted">{keyword ? '검색에 맞는 키가 없습니다' : '키가 없습니다'}</p>
+                      <p className="card-muted config-pad">{keyword ? '검색에 맞는 키가 없습니다' : '키가 없습니다'}</p>
                     ) : (
-                      <table className="list-table config-table">
+                      <table className="list-table card-table config-table">
                         <colgroup>
-                          <col style={{ width: '3.5rem' }} />
-                          <col style={{ width: '42%' }} />
+                          <col style={{ width: '4.5rem' }} />
+                          <col style={{ width: '40%' }} />
                           <col />
                         </colgroup>
                         <thead>
@@ -178,8 +195,8 @@ export default function ConfigRepoPage() {
                           {props.map((p) => (
                             <tr key={p.key}>
                               <td className="card-muted config-line">{p.line ?? '-'}</td>
-                              <td className="mono">{p.key}</td>
-                              <td className="mono">
+                              <td className="config-key">{p.key}</td>
+                              <td className="config-value">
                                 {p.protection === 'NONE' ? (
                                   p.value || <span className="card-muted">(빈 값)</span>
                                 ) : (

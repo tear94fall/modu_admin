@@ -1,21 +1,21 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { apiErrorMessage, formatUtcDateTime, useIsMobile } from '@modu/console-core'
-import { getDeployServices, listDeployments, matchesService, rollbackService, type Deployment, type DeployService, type DeployServicesResponse } from '../api/deploy'
-import { DeployBy, DeploymentList, DeploymentStatusPill, DeployProgress, ServiceStatusPill, TagPicker } from '../components/DeployPanels'
+import { formatUtcDateTime, useIsMobile } from '@modu/console-core'
+import { getDeployServices, isFinished, listDeployments, matchesService, type Deployment, type DeployService, type DeployServicesResponse } from '../api/deploy'
+import { DeployBy, DeploymentList, DeploymentStatusPill, DeployProgress, ServiceStatusPill } from '../components/DeployPanels'
 import { NARROW_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
-import { findResumable, forgetOpen, rememberOpen } from '../util/openDeployments'
+import { findResumable, forgetOpen } from '../util/openDeployments'
 
 /** 서비스 표는 15초마다 다시 읽는다. */
 const SERVICES_POLL_MS = 15_000
 const RECENT_LIMIT = 5
 
-/** 서비스 아래 열리는 패널. 태그 고르기 → 배포 진행. 표가 15초마다 갱신돼도 이 상태는 서비스 이름으로만 묶여 있어 흔들리지 않는다. 여러 서비스가 동시에 열릴 수 있다. */
-export type Panel = { mode: 'pick' } | { mode: 'progress'; deployment: Deployment }
-
 const detailPath = (name: string) => `/deploy/${encodeURIComponent(name)}`
 
-/** 서비스 배포 목록. 태그를 골라 배포하고 커밋 → Argo 동기화 → 롤아웃 진행을 지켜본다. 상세·이력은 따로 있다. */
+/**
+ * 서비스 배포 목록. 행의 배포 버튼은 서비스 상세로 가서 태그 고르기를 바로 연다(고르기 → 확인 → 진행은 상세에서). 롤백도 상세에만 있다.
+ * 새로고침 전부터 돌던 배포는 "진행 중인 배포" 카드에 되살려 끝까지 지켜본다.
+ */
 export default function DeployPage() {
   const isMobile = useIsMobile()
   // 표가 좁으면 핵심 칸(서비스·실행 중 태그·준비)만 두고 나머지는 상세 화면에서 본다. 글자를 줄여 끼워 맞추지 않는다.
@@ -25,10 +25,8 @@ export default function DeployPage() {
   const [error, setError] = useState<string | null>(null)
   const [recent, setRecent] = useState<Deployment[] | null>(null)
   const [keyword, setKeyword] = useState('')
-  const [panels, setPanels] = useState<Record<string, Panel>>({})
-  /** 롤백처럼 패널 밖에서 난 오류. 서비스별로 한 줄. */
-  const [rowError, setRowError] = useState<{ service: string; message: string } | null>(null)
-  const [busy, setBusy] = useState<string | null>(null)
+  /** 되살린 진행 카드. 서비스 이름으로 묶는다(표가 15초마다 갱신돼도 흔들리지 않는다). */
+  const [progress, setProgress] = useState<Record<string, Deployment>>({})
 
   const refresh = useCallback(async () => {
     try {
@@ -54,15 +52,15 @@ export default function DeployPage() {
     }
   }, [refresh])
 
-  // 새로고침해도 배포는 계속 돈다. 진행 중인 배포(이력의 RUNNING + 이 탭에서 열어 둔 것)의 패널을 되살린다.
+  // 새로고침해도 배포는 계속 돈다. 진행 중인 배포(이력의 RUNNING + 이 탭에서 열어 둔 것)의 진행 카드를 되살린다.
   useEffect(() => {
     let cancelled = false
     findResumable()
       .then((list) => {
         if (cancelled || list.length === 0) return
-        setPanels((prev) => {
+        setProgress((prev) => {
           const next = { ...prev }
-          for (const d of list) if (!next[d.service]) next[d.service] = { mode: 'progress', deployment: d }
+          for (const d of list) if (!next[d.service]) next[d.service] = d
           return next
         })
       })
@@ -76,73 +74,36 @@ export default function DeployPage() {
 
   const services = useMemo(() => (data?.services ?? []).filter((s) => matchesService(s, keyword)), [data, keyword])
 
-  const setPanel = (service: string, panel: Panel | null) =>
-    setPanels((prev) => {
+  const closeProgress = (service: string) => {
+    forgetOpen(service)
+    setProgress((prev) => {
       const next = { ...prev }
-      if (panel) next[service] = panel
-      else delete next[service]
+      delete next[service]
       return next
     })
-
-  const openPick = (service: string) => {
-    setRowError(null)
-    setPanel(service, { mode: 'pick' })
-  }
-
-  const openProgress = (deployment: Deployment) => {
-    rememberOpen(deployment.service, deployment.id)
-    setPanel(deployment.service, { mode: 'progress', deployment })
-    void refresh()
-  }
-
-  const closePanel = (service: string) => {
-    forgetOpen(service)
-    setPanel(service, null)
-  }
-
-  const rollback = async (service: string) => {
-    setRowError(null)
-    setBusy(service)
-    try {
-      openProgress(await rollbackService(service))
-    } catch (e) {
-      setRowError({ service, message: apiErrorMessage(e, '롤백을 시작하지 못했습니다') })
-    } finally {
-      setBusy(null)
-    }
   }
 
   const onFinished = (deployment: Deployment) => {
     forgetOpen(deployment.service)
+    setProgress((prev) => (prev[deployment.service]?.id === deployment.id ? { ...prev, [deployment.service]: deployment } : prev))
     void refresh()
   }
 
   if (error && !data) return <p className="error-text">{error}</p>
   if (!data) return <p>불러오는 중...</p>
 
-  const renderPanel = (s: DeployService) => {
-    if (rowError?.service === s.name) return <p className="error-text deploy-row-error">{rowError.message}</p>
-    const panel = panels[s.name]
-    if (!panel) return null
-    if (panel.mode === 'pick') return <TagPicker service={s} onStarted={openProgress} onClose={() => closePanel(s.name)} />
-    return <DeployProgress key={panel.deployment.id} initial={panel.deployment} onFinished={onFinished} onClose={() => closePanel(s.name)} />
-  }
-
+  /** 이 서비스의 배포가 돌고 있으면 새 배포를 막는다(상세에서도 막힌다). */
+  const isRunning = (s: DeployService) => s.lastDeployment?.status === 'RUNNING' || (!!progress[s.name] && !isFinished(progress[s.name]))
   const deployButton = (s: DeployService) => (
-    <button type="button" className="btn btn--primary btn--sm" disabled={busy === s.name} onClick={() => openPick(s.name)} aria-label={`${s.name} 배포`}>
-      배포
-    </button>
-  )
-  const rollbackButton = (s: DeployService) => (
     <button
       type="button"
-      className="btn btn--secondary btn--sm"
-      disabled={busy === s.name || !s.lastDeployment}
-      onClick={() => void rollback(s.name)}
-      aria-label={`${s.name} 롤백`}
-      title={s.lastDeployment ? '마지막 성공 배포의 이전 태그로 되돌린다' : '배포 이력이 없어 되돌릴 수 없다'}
+      className="btn btn--primary btn--sm"
+      disabled={isRunning(s)}
+      title={isRunning(s) ? '배포가 진행 중이다. 끝난 뒤에 배포할 수 있다.' : '상세 화면에서 태그를 골라 배포한다'}
+      onClick={() => navigate(detailPath(s.name), { state: { pick: true } })}
+      aria-label={`${s.name} 배포`}
     >
-      롤백
+      배포
     </button>
   )
   const detailLink = (s: DeployService) => (
@@ -177,73 +138,134 @@ export default function DeployPage() {
     </span>
   )
 
+  const all = data.services
+  const stats = {
+    ready: all.filter((s) => s.status === 'READY').length,
+    progressing: all.filter((s) => s.status === 'PROGRESSING').length,
+    degraded: all.filter((s) => s.status === 'DEGRADED').length,
+    mismatch: all.filter(tagMismatch).length,
+  }
+
   return (
     <div>
-      <h1>서비스 배포</h1>
-      <p className="page-note">
-        GHCR 태그를 골라 modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 지켜봅니다. Argo 앱 {data.argocd.application} ·{' '}
-        <a href={data.argocd.url} target="_blank" rel="noreferrer">
-          Argo CD 열기
-        </a>
-      </p>
+      <header className="page-head">
+        <div className="page-head-main">
+          <h1>서비스 배포</h1>
+          <p className="page-head-sub">
+            GHCR 태그를 골라 modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 지켜봅니다. Argo 앱 {data.argocd.application}
+          </p>
+        </div>
+        <div className="page-head-actions">
+          <a className="btn btn--secondary" href={data.argocd.url} target="_blank" rel="noreferrer">
+            Argo CD 열기
+          </a>
+        </div>
+      </header>
       {error && <p className="error-text">{error}</p>}
 
-      <div className="list-controls deploy-controls">
-        <input className="route-search" type="search" aria-label="서비스 검색" placeholder="서비스·저장소·태그 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-        <span className="card-muted deploy-count">
-          {services.length} / {data.services.length}
-        </span>
-      </div>
+      <section className="stat-grid" aria-label="서비스 요약">
+        <div className="stat-card">
+          <div className="stat-card-label">서비스</div>
+          <div className="stat-card-value">
+            {all.length}
+            <span className="stat-card-unit">개</span>
+          </div>
+        </div>
+        <div className="stat-card stat-card--good">
+          <div className="stat-card-label">정상</div>
+          <div className="stat-card-value">{stats.ready}</div>
+        </div>
+        <div className="stat-card stat-card--info">
+          <div className="stat-card-label">롤아웃 진행 중</div>
+          <div className="stat-card-value">{stats.progressing}</div>
+        </div>
+        <div className={stats.degraded > 0 ? 'stat-card stat-card--bad' : 'stat-card'}>
+          <div className="stat-card-label">이상</div>
+          <div className="stat-card-value">{stats.degraded}</div>
+        </div>
+        <div className={stats.mismatch > 0 ? 'stat-card stat-card--warn' : 'stat-card'}>
+          <div className="stat-card-label">Git 태그와 다름</div>
+          <div className="stat-card-value">{stats.mismatch}</div>
+          <div className="stat-card-sub">실행 중 태그 ≠ kustomization</div>
+        </div>
+      </section>
 
-      {data.services.length === 0 && <p>배포할 수 있는 서비스가 없습니다(deploy-service 설정 `deploy.services`)</p>}
-      {data.services.length > 0 && services.length === 0 && <p>검색에 맞는 서비스가 없습니다</p>}
-
-      {services.length > 0 && isMobile && (
-        <ul className="card-list">
-          {services.map((s) => (
-            <li key={s.name} className="card deploy-card">
-              <span className="card-body">
-                <Link className="card-title deploy-card-link" to={detailPath(s.name)}>
-                  {s.name}
-                </Link>
-                <span className="card-line card-muted">
-                  {s.repo} · {readiness(s)}
-                </span>
-                <span className="card-line">실행 중 {s.runningTag}</span>
-                <span className={tagMismatch(s) ? 'card-line deploy-tag--diff' : 'card-line'}>Git {s.gitTag}</span>
-                <span className="card-meta deploy-actions">
-                  {deployButton(s)}
-                  {detailLink(s)}
-                </span>
-                {renderPanel(s)}
-              </span>
-            </li>
-          ))}
-        </ul>
+      {Object.keys(progress).length > 0 && (
+        <section className="section-card deploy-running" aria-label="진행 중인 배포">
+          <div className="section-card-head">
+            <div>
+              <h2 className="section-card-title">진행 중인 배포</h2>
+              <p className="section-card-hint">새로고침 전부터 돌던 배포를 끝까지 지켜본다</p>
+            </div>
+          </div>
+          <div className="deploy-running-list">
+            {Object.values(progress).map((d) => (
+              <DeployProgress key={d.id} initial={d} onFinished={onFinished} onClose={() => closeProgress(d.service)} />
+            ))}
+          </div>
+        </section>
       )}
 
-      {services.length > 0 && !isMobile && narrow && (
-        <table className="list-table deploy-table">
-          <colgroup>
-            <col style={{ width: '28%' }} />
-            <col style={{ width: '28%' }} />
-            <col />
-            <col style={{ width: '140px' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>서비스</th>
-              <th>실행 중 태그</th>
-              <th>준비</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {services.map((s) => {
-              const panelNode = renderPanel(s)
-              return (
-                <Fragment key={s.name}>
-                  <tr className="clickable-row" onClick={() => navigate(detailPath(s.name))}>
+      <section className="section-card deploy-services">
+        <div className="section-card-head">
+          <div>
+            <h2 className="section-card-title">서비스</h2>
+            <p className="section-card-hint">{isMobile ? '배포를 누르면 상세에서 태그를 고른다' : narrow ? '배포를 누르면 상세에서 태그를 고른다 · 롤백은 상세에서' : '배포를 누르면 상세에서 태그를 고른다 · 롤백은 상세에서 · Git 태그가 다르면 주황색'}</p>
+          </div>
+          <div className="section-card-actions">
+            <input className="route-search section-card-search" type="search" aria-label="서비스 검색" placeholder="서비스·저장소·태그 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+            <span className="section-card-count">
+              {services.length} / {data.services.length}
+            </span>
+          </div>
+        </div>
+
+        {data.services.length === 0 && <p className="card-muted">배포할 수 있는 서비스가 없습니다(deploy-service 설정 `deploy.services`)</p>}
+        {data.services.length > 0 && services.length === 0 && <p className="card-muted">검색에 맞는 서비스가 없습니다</p>}
+
+        {services.length > 0 && isMobile && (
+          <ul className="card-rows">
+            {services.map((s) => (
+              <li key={s.name} className="deploy-card">
+                <span className="card-body">
+                  <Link className="card-title deploy-card-link" to={detailPath(s.name)}>
+                    {s.name}
+                  </Link>
+                  <span className="card-line card-muted">
+                    {s.repo} · {readiness(s)}
+                  </span>
+                  <span className="card-line">실행 중 {s.runningTag}</span>
+                  <span className={tagMismatch(s) ? 'card-line deploy-tag--diff' : 'card-line'}>Git {s.gitTag}</span>
+                  <span className="card-meta deploy-actions">
+                    {deployButton(s)}
+                    {detailLink(s)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {services.length > 0 && !isMobile && narrow && (
+          <div className="card-table-wrap">
+            <table className="list-table card-table deploy-table">
+              <colgroup>
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '28%' }} />
+                <col />
+                <col style={{ width: '140px' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>서비스</th>
+                  <th>실행 중 태그</th>
+                  <th>준비</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {services.map((s) => (
+                  <tr key={s.name} className="clickable-row" onClick={() => navigate(detailPath(s.name))}>
                     <td>{s.name}</td>
                     <td className="deploy-nowrap" title={s.runningTag}>{s.runningTag}</td>
                     <td>{readiness(s)}</td>
@@ -254,47 +276,39 @@ export default function DeployPage() {
                       </span>
                     </td>
                   </tr>
-                  {panelNode && (
-                    <tr className="deploy-panel-row">
-                      <td colSpan={4}>{panelNode}</td>
-                    </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {services.length > 0 && !isMobile && !narrow && (
-        <table className="list-table deploy-table">
-          {/* 마지막 배포(태그+상태 알약 / 배포자·시각)가 제일 넓어야 한다: 나머지가 66% + 140px 이고 남는 폭(1281px 창에서 약 200px)을 가져간다. */}
-          <colgroup>
-            <col style={{ width: '17%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '10%' }} />
-            <col />
-            <col style={{ width: '140px' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>서비스</th>
-              <th>저장소</th>
-              <th>실행 중 태그</th>
-              <th>Git 태그</th>
-              <th>준비</th>
-              <th>마지막 배포</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {services.map((s) => {
-              const panelNode = renderPanel(s)
-              return (
-                <Fragment key={s.name}>
-                  <tr className="clickable-row" onClick={() => navigate(detailPath(s.name))}>
+        {services.length > 0 && !isMobile && !narrow && (
+          <div className="card-table-wrap">
+            <table className="list-table card-table deploy-table">
+              {/* 마지막 배포(태그+상태 알약 / 배포자·시각)가 제일 넓어야 한다: 나머지가 66% + 140px 이고 남는 폭(1281px 창에서 약 200px)을 가져간다. */}
+              <colgroup>
+                <col style={{ width: '17%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '10%' }} />
+                <col />
+                <col style={{ width: '140px' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>서비스</th>
+                  <th>저장소</th>
+                  <th>실행 중 태그</th>
+                  <th>Git 태그</th>
+                  <th>준비</th>
+                  <th>마지막 배포</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {services.map((s) => (
+                  <tr key={s.name} className="clickable-row" onClick={() => navigate(detailPath(s.name))}>
                     <td>{s.name}</td>
                     <td className="deploy-nowrap" title={s.repo}>{s.repo}</td>
                     <td className="deploy-nowrap" title={s.runningTag}>{s.runningTag}</td>
@@ -306,26 +320,26 @@ export default function DeployPage() {
                     <td className="deploy-actions-cell" onClick={(e) => e.stopPropagation()}>
                       <span className="deploy-actions">
                         {deployButton(s)}
-                        {rollbackButton(s)}
+                        {detailLink(s)}
                       </span>
                     </td>
                   </tr>
-                  {panelNode && (
-                    <tr className="deploy-panel-row">
-                      <td colSpan={7}>{panelNode}</td>
-                    </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-      <section className="deploy-history">
-        <div className="deploy-history-head">
-          <h2>최근 배포 {RECENT_LIMIT}건</h2>
-          <Link to="/deploy/history">전체 이력 →</Link>
+      <section className="section-card deploy-recent">
+        <div className="section-card-head">
+          <div>
+            <h2 className="section-card-title">최근 배포 {RECENT_LIMIT}건</h2>
+            <p className="section-card-hint">행을 누르면 단계·커밋·오류가 펼쳐진다</p>
+          </div>
+          <Link className="section-card-link" to="/deploy/history">
+            전체 이력 →
+          </Link>
         </div>
         {!recent ? <p>불러오는 중...</p> : <DeploymentList deployments={recent} isMobile={isMobile} />}
       </section>
