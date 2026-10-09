@@ -2165,6 +2165,7 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 .form-actions .confirm-inline { margin-right: auto; }
 .form-stack .sku-table { margin: 4px 0 0; }
 .form-stack .sku-table th { background: #fafafb; color: var(--color-muted); font-size: 12px; font-weight: 600; }
+.sku-table th .sku-th-hint { display: block; font-weight: 400; margin-top: 2px; }
 
 /* 곁 카드의 미리보기(상품 대표 사진·기획전 배너·알림) */
 .aside-preview { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; background: #eef0f3; }

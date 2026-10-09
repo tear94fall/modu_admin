@@ -63,11 +63,16 @@ export interface OptionGroupInput {
   values: string[]
 }
 
-/** options 는 그룹명 → 값명. 옵션 없는 상품은 빈 객체 하나. */
+/**
+ * options 는 그룹명 → 값명. 옵션 없는 상품은 빈 객체 하나.
+ * baseStock 은 수정 때 폼을 불러온 시점의 재고. 있으면 서버가 (stock - baseStock) 만큼만 더해
+ * 그사이 팔린 수량을 지킨다. 새 조합·등록에는 넣지 않는다(없으면 stock 을 그대로 덮어쓴다).
+ */
 export interface SkuInput {
   options: Record<string, string>
   extraPrice: number
   stock: number
+  baseStock?: number
 }
 
 /** 등록·수정 본문. 길이·범위·URL·조합 규칙은 서버가 검증하고 400 으로 이유를 준다. */

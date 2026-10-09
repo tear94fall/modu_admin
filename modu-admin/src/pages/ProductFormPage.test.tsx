@@ -77,11 +77,13 @@ describe('ProductFormPage', () => {
       optionGroups: [],
       skus: [{ options: {}, extraPrice: 0, stock: 12 }],
     })
+    expect(create.mock.calls[0][0].skus[0]).not.toHaveProperty('baseStock')
+    expect(screen.queryByText(/바꾼 만큼만 반영/)).not.toBeInTheDocument()
     expect(await screen.findByText('상품 목록 화면')).toBeInTheDocument()
   })
 
   it('builds the SKU table from option groups and keeps typed stock when a value is added', async () => {
-    vi.spyOn(products, 'createProduct').mockResolvedValue({ ...tumbler, id: 9 })
+    const create = vi.spyOn(products, 'createProduct').mockResolvedValue({ ...tumbler, id: 9 })
     renderAt('/products/new')
 
     await userEvent.click(screen.getByRole('button', { name: '옵션 그룹 추가' }))
@@ -102,6 +104,13 @@ describe('ProductFormPage', () => {
     expect(screen.getByLabelText('블랙 / M 재고')).toHaveValue(4)
     expect(screen.getByLabelText('블랙 / L 재고')).toHaveValue(0)
     expect(screen.queryByLabelText('재고')).not.toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('이름'), '모두 티셔츠')
+    await userEvent.type(screen.getByLabelText('판매가'), '19000')
+    await userEvent.click(screen.getByRole('button', { name: '등록' }))
+    const sent = create.mock.calls[0][0].skus
+    expect(sent).toHaveLength(4)
+    sent.forEach((sku) => expect(sku).not.toHaveProperty('baseStock'))
   })
 
   it('loads a product with images and options into the form and saves the new shape', async () => {
@@ -137,11 +146,53 @@ describe('ProductFormPage', () => {
       images: ['https://img/t2.png', 'https://img/t.png'],
       optionGroups: [{ name: '용량', values: ['500ml', '750ml'] }],
       skus: [
-        { options: { 용량: '500ml' }, extraPrice: 0, stock: 35 },
-        { options: { 용량: '750ml' }, extraPrice: 4000, stock: 20 },
+        { options: { 용량: '500ml' }, extraPrice: 0, stock: 35, baseStock: 35 },
+        { options: { 용량: '750ml' }, extraPrice: 4000, stock: 20, baseStock: 20 },
       ],
     })
     expect(await screen.findByText('저장했습니다')).toBeInTheDocument()
+  })
+
+  it('sends the loaded stock as baseStock for existing SKUs only, and re-bases on the saved response', async () => {
+    vi.spyOn(products, 'getProduct').mockResolvedValue(tumbler)
+    const saved: products.ProductDetail = {
+      ...tumbler,
+      optionGroups: [{ id: 1, name: '용량', values: [{ id: 10, name: '500ml' }, { id: 11, name: '750ml' }, { id: 12, name: '1L' }] }],
+      skus: [
+        { id: 100, optionValueIds: [10], optionLabel: '500ml', extraPrice: 0, stock: 30 },
+        { id: 101, optionValueIds: [11], optionLabel: '750ml', extraPrice: 4000, stock: 25 },
+        { id: 102, optionValueIds: [12], optionLabel: '1L', extraPrice: 8000, stock: 5 },
+      ],
+    }
+    const update = vi.spyOn(products, 'updateProduct').mockResolvedValue(saved)
+    renderAt('/products/7')
+
+    expect(await screen.findByText('저장할 때는 바꾼 만큼만 반영돼요(그사이 팔린 수량은 유지)')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('옵션 1 값'), ', 1L')
+    const big = screen.getByLabelText('750ml 재고')
+    await userEvent.clear(big)
+    await userEvent.type(big, '30')
+    const newStock = screen.getByLabelText('1L 재고')
+    await userEvent.clear(newStock)
+    await userEvent.type(newStock, '5')
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(update.mock.calls[0][1].skus).toEqual([
+      { options: { 용량: '500ml' }, extraPrice: 0, stock: 35, baseStock: 35 },
+      { options: { 용량: '750ml' }, extraPrice: 4000, stock: 30, baseStock: 20 },
+      { options: { 용량: '1L' }, extraPrice: 0, stock: 5 },
+    ])
+    expect(update.mock.calls[0][1].skus[2]).not.toHaveProperty('baseStock')
+
+    // 저장 응답(그사이 팔린 수량이 반영된 재고)이 다음 저장의 기준이 된다.
+    expect(await screen.findByText('저장했습니다')).toBeInTheDocument()
+    expect(screen.getByLabelText('500ml 재고')).toHaveValue(30)
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+    expect(update.mock.calls[1][1].skus).toEqual([
+      { options: { 용량: '500ml' }, extraPrice: 0, stock: 30, baseStock: 30 },
+      { options: { 용량: '750ml' }, extraPrice: 4000, stock: 25, baseStock: 25 },
+      { options: { 용량: '1L' }, extraPrice: 8000, stock: 5, baseStock: 5 },
+    ])
   })
 
   it('adds an image url and shows the server reason when the save is rejected with 400', async () => {
