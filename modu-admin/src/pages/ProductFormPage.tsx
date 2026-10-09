@@ -13,12 +13,13 @@ import {
   updateProduct,
   validationMessage,
 } from '../api/products'
-import { cleanGroups, type GroupDraft, optionLabel, reconcileSkus, type SkuDraft, splitValues } from '../util/options'
+import { cleanGroups, type GroupDraft, optionKey, optionLabel, reconcileSkus, type SkuDraft, splitValues } from '../util/options'
 import Select from '../components/Select'
 import { formatPrice } from '../util/format'
 
 const MAX_IMAGES = 10
 const MAX_GROUPS = 3
+const STOCK_DELTA_HINT = '저장할 때는 바꾼 만큼만 반영돼요(그사이 팔린 수량은 유지)'
 
 /** 서버 상세(옵션 값 id 기반 SKU)를 폼의 이름 기반 초안으로 바꾼다. */
 function draftsFrom(p: ProductDetail): { groups: GroupDraft[]; skus: SkuDraft[] } {
@@ -31,6 +32,11 @@ function draftsFrom(p: ProductDetail): { groups: GroupDraft[]; skus: SkuDraft[] 
     stock: String(s.stock),
   }))
   return { groups, skus: reconcileSkus(skus, groups) }
+}
+
+/** 불러온(또는 방금 저장한) 조합별 재고. 조합표는 옵션 그룹에서 다시 만들어지니 조합 키로 기억한다. */
+function baseStocksFrom(skus: SkuDraft[]): Map<string, number> {
+  return new Map(skus.map((s) => [optionKey(s.options), Number(s.stock) || 0]))
 }
 
 /** /products/new 는 등록, /products/:id 는 수정·삭제. 입력칸은 같다. */
@@ -55,6 +61,8 @@ export default function ProductFormPage() {
   const [skus, setSkus] = useState<SkuDraft[]>([{ options: {}, extraPrice: '0', stock: '0' }])
   /** 삭제 확인 문구에 쓴다. 입력 중인 이름이 아니라 서버에 저장된 이름이다. */
   const [savedName, setSavedName] = useState('')
+  /** 수정 때 서버에 baseStock 으로 보낼 기준 재고. 등록 화면에서는 비어 있다. */
+  const [baseStocks, setBaseStocks] = useState<Map<string, number>>(new Map())
   /** 미리보기를 못 그린 주소들. */
   const [failedPreviews, setFailedPreviews] = useState<string[]>([])
 
@@ -90,6 +98,7 @@ export default function ProductFormPage() {
         setGroups(drafts.groups)
         setValueTexts(drafts.groups.map((g) => g.values.join(', ')))
         setSkus(drafts.skus)
+        setBaseStocks(baseStocksFrom(drafts.skus))
         setSavedName(p.name)
       })
       .catch((err) => {
@@ -153,7 +162,11 @@ export default function ProductFormPage() {
     status,
     images,
     optionGroups: cleanGroups(groups),
-    skus: skus.map((s) => ({ options: s.options, extraPrice: Number(s.extraPrice) || 0, stock: Number(s.stock) || 0 })),
+    skus: skus.map((s) => {
+      const sku = { options: s.options, extraPrice: Number(s.extraPrice) || 0, stock: Number(s.stock) || 0 }
+      const baseStock = editing ? baseStocks.get(optionKey(s.options)) : undefined
+      return baseStock === undefined ? sku : { ...sku, baseStock }
+    }),
   })
 
   const onSubmit = async (e: FormEvent) => {
@@ -167,6 +180,7 @@ export default function ProductFormPage() {
         setSavedName(saved.name)
         const drafts = draftsFrom(saved)
         setSkus(drafts.skus)
+        setBaseStocks(baseStocksFrom(drafts.skus))
         setMessage('저장했습니다')
       } else {
         await createProduct(input())
@@ -382,7 +396,10 @@ export default function ProductFormPage() {
                     <tr>
                       <th>조합</th>
                       <th>추가금</th>
-                      <th>재고</th>
+                      <th>
+                        재고
+                        {editing && <span className="form-hint sku-th-hint">{STOCK_DELTA_HINT}</span>}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -406,6 +423,7 @@ export default function ProductFormPage() {
                 <div className="form-field form-field--narrow">
                   <label htmlFor="product-stock">재고</label>
                   <input id="product-stock" type="number" min={0} step={1} value={skus[0]?.stock ?? '0'} onChange={(e) => setSku(0, { stock: e.target.value })} />
+                  {editing && <p className="form-hint">{STOCK_DELTA_HINT}</p>}
                 </div>
               )}
             </div>
