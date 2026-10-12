@@ -11,6 +11,11 @@ describe('chatKindOf', () => {
     expect(chatKindOf(4, `${HASH}.m4a`)).toBe('audio')
   })
 
+  it('maps the server notice types 5/6 to system regardless of the body', () => {
+    expect(chatKindOf(5, '이름1님이 이름2님을 초대했습니다')).toBe('system')
+    expect(chatKindOf(6, `${HASH}.jpg`)).toBe('system')
+  })
+
   it('infers the kind from a stored file name when the type says text (old data)', () => {
     expect(chatKindOf(1, `${HASH}.JPG`)).toBe('image')
     expect(chatKindOf(0, `${HASH}.mp3`)).toBe('audio')

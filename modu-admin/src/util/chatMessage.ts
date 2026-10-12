@@ -1,12 +1,13 @@
 /**
  * 채팅 메시지 종류. 서버(chat-service ChatType, ws-service ChatType)와 앱(modu-chat core/model/ChatType)이 쓰는 chatType 정수:
- * 1 글, 2 사진, 3 파일, 4 음성(0 은 앱의 INVALID). 사진·파일·음성의 본문은 저장소 파일 이름(64자리 16진수 + 확장자)이다.
+ * 1 글, 2 사진, 3 파일, 4 음성, 5 초대 안내, 6 나감 안내(0 은 앱의 INVALID). 사진·파일·음성의 본문은 저장소 파일 이름(64자리 16진수 + 확장자)이다.
  */
-export const CHAT_TYPE = { TEXT: 1, IMAGE: 2, FILE: 3, AUDIO: 4 } as const
+export const CHAT_TYPE = { TEXT: 1, IMAGE: 2, FILE: 3, AUDIO: 4, SYSTEM_INVITE: 5, SYSTEM_LEAVE: 6 } as const
 
-export type ChatKind = 'text' | 'image' | 'file' | 'audio'
+/** system = 서버가 남긴 안내 행(초대·나감). 본문이 곧 보여 줄 문장이고 sender 는 그 사건의 주인공이다. */
+export type ChatKind = 'text' | 'image' | 'file' | 'audio' | 'system'
 
-export const CHAT_KIND_LABELS: Record<Exclude<ChatKind, 'text'>, string> = { image: '사진', file: '파일', audio: '음성' }
+export const CHAT_KIND_LABELS: Record<Exclude<ChatKind, 'text' | 'system'>, string> = { image: '사진', file: '파일', audio: '음성' }
 
 /** 방의 lastChatMsg 에 서버가 본문 대신 넣는 표식(ws-service ChatType.chatTypeStr). */
 const MARKERS: Record<string, Exclude<ChatKind, 'text'>> = { image: 'image', file: 'file', audio: 'audio' }
@@ -26,6 +27,7 @@ function kindOfStoredName(message: string): Exclude<ChatKind, 'text'> | null {
 
 /** 메시지 한 건의 종류. chatType 이 우선이고, 글(또는 알 수 없는 값)인데 본문이 저장 파일 이름이면 확장자로 정한다. */
 export function chatKindOf(chatType: number, message: string): ChatKind {
+  if (chatType === CHAT_TYPE.SYSTEM_INVITE || chatType === CHAT_TYPE.SYSTEM_LEAVE) return 'system'
   if (chatType === CHAT_TYPE.IMAGE) return 'image'
   if (chatType === CHAT_TYPE.FILE) return 'file'
   if (chatType === CHAT_TYPE.AUDIO) return 'audio'

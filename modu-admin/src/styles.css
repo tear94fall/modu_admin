@@ -2052,6 +2052,12 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 .room-message-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .room-message-sender { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .room-message-text { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* 서버가 남긴 안내 행(초대·나감) — 글과 구분되게 흐리고 기울임 */
+.room-message-system {
+  color: var(--text-muted, #6b7280);
+  font-style: italic;
+}
+
 .room-message-time { font-size: 12px; line-height: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .room-message-attachment { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; max-width: 100%; font-size: 13px; color: #374151; }
 .room-message-attachment--file, .room-message-attachment--audio { padding: 4px 10px 4px 8px; border: 1px solid var(--color-border); border-radius: 8px; background: #fafafb; }
