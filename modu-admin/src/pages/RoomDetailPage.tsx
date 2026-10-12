@@ -234,6 +234,8 @@ function MessagesTab({ chats, error, memberByUserId, timeZone, onPage }: Message
 function MessageBody({ chat }: { chat: Chat }) {
   const kind = chatKindOf(chat.chatType, chat.message)
   if (kind === 'text') return <span className="room-message-text">{chat.message}</span>
+  // 서버가 남긴 안내(누가 초대됐다·나갔다). 본문이 곧 문장이라 그대로, 다만 글과 구분되게 흐리게.
+  if (kind === 'system') return <span className="room-message-text room-message-system">{chat.message}</span>
   const label = CHAT_KIND_LABELS[kind]
   return (
     <span className={`room-message-attachment room-message-attachment--${kind}`} title={chat.message}>
