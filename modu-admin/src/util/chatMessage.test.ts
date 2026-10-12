@@ -16,6 +16,12 @@ describe('chatKindOf', () => {
     expect(chatKindOf(6, `${HASH}.jpg`)).toBe('system')
   })
 
+  it('maps the rename notice type 7 to system', () => {
+    expect(chatKindOf(7, "이름1님이 채팅방 이름을 '주말 모임'(으)로 변경했습니다")).toBe('system')
+    // 본문이 저장 파일 이름처럼 생겨도 안내 행이다(5·6 과 같은 규칙).
+    expect(chatKindOf(7, `${HASH}.jpg`)).toBe('system')
+  })
+
   it('infers the kind from a stored file name when the type says text (old data)', () => {
     expect(chatKindOf(1, `${HASH}.JPG`)).toBe('image')
     expect(chatKindOf(0, `${HASH}.mp3`)).toBe('audio')
