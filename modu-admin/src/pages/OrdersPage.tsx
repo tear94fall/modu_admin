@@ -5,6 +5,7 @@ import { ORDER_STATUS_LABELS, type OrderStatus, type OrderSummary, searchOrders 
 import Pager from '../components/Pager'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { formatDateTime, formatPrice } from '../util/format'
+import Select from '../components/Select'
 
 export function statusClass(status: OrderStatus): string {
   switch (status) {
@@ -81,21 +82,18 @@ export default function OrdersPage() {
         </form>
       </div>
       <div className="filter-row">
-        <select
+        <Select
           aria-label="주문 상태"
           value={status ?? ''}
-          onChange={(e) => {
+          onChange={(v) => {
             setPage(0)
-            setStatus(e.target.value === '' ? null : (e.target.value as OrderStatus))
+            setStatus(v === '' ? null : (v as OrderStatus))
           }}
-        >
-          <option value="">전체 상태</option>
-          {(Object.keys(ORDER_STATUS_LABELS) as OrderStatus[]).map((s) => (
-            <option key={s} value={s}>
-              {ORDER_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: '', label: '전체 상태' },
+            ...(Object.keys(ORDER_STATUS_LABELS) as OrderStatus[]).map((s) => ({ value: s, label: ORDER_STATUS_LABELS[s] })),
+          ]}
+        />
       </div>
 
       {loading && <p>불러오는 중...</p>}

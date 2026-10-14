@@ -6,7 +6,8 @@
   "description": "모두 내부 콘솔(modu-system, modu-internal) 공통 기반: 직원 Google 로그인·권한 확인, 게이트웨이 API 클라이언트, 레이아웃, 스타일, 시간대 표시.",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./test/select": "./src/test/select.ts"
   },
   "scripts": {
     "test": "vitest run",

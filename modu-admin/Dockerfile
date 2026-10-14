@@ -12,6 +12,8 @@ RUN npm run build
 FROM nginx:1.27-alpine
 # 컨테이너의 DNS 서버를 NGINX_LOCAL_RESOLVERS 로 읽어 템플릿의 resolver 에 넣는다(공식 이미지 기능).
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
+# 게이트웨이 호스트 이름. k8s 는 GATEWAY_HOST=gateway-service.modu.svc.cluster.local 로 덮어쓴다(nginx resolver 는 search 도메인을 안 쓴다).
+ENV GATEWAY_HOST=gateway-service
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

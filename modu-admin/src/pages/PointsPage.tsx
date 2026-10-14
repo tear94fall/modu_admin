@@ -22,24 +22,25 @@ export default function PointsPage() {
   const [tab, setTab] = useState<Tab>('accounts')
   return (
     <div>
-      <h1>포인트</h1>
-      <div className="tabs">
-        <button
-          type="button"
-          className={tab === 'accounts' ? 'btn btn--ghost tab active' : 'btn btn--ghost tab'}
-          onClick={() => setTab('accounts')}
-        >
-          계정
-        </button>
-        <button
-          type="button"
-          className={tab === 'rules' ? 'btn btn--ghost tab active' : 'btn btn--ghost tab'}
-          onClick={() => setTab('rules')}
-        >
-          적립 규칙
-        </button>
+      <div className="page-head">
+        <div className="page-head-main">
+          <div className="page-head-title">
+            <h1>포인트</h1>
+          </div>
+          <p className="page-head-sub">회원별 포인트 계정을 찾아 내역을 보고, 서비스가 쓰는 적립 규칙을 관리합니다.</p>
+        </div>
       </div>
-      {tab === 'accounts' ? <AccountsTab /> : <RulesTab />}
+      <div className="points-shell">
+        <div className="member-tabs">
+          <button type="button" className={tab === 'accounts' ? 'member-tab active' : 'member-tab'} onClick={() => setTab('accounts')}>
+            계정
+          </button>
+          <button type="button" className={tab === 'rules' ? 'member-tab active' : 'member-tab'} onClick={() => setTab('rules')}>
+            적립 규칙
+          </button>
+        </div>
+        <div className="points-panel">{tab === 'accounts' ? <AccountsTab /> : <RulesTab />}</div>
+      </div>
     </div>
   )
 }
@@ -54,6 +55,7 @@ function AccountsTab() {
   const [accounts, setAccounts] = useState<PointAccount[]>([])
   const [pageNumber, setPageNumber] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,6 +69,7 @@ function AccountsTab() {
         setAccounts(result.content)
         setPageNumber(result.number)
         setTotalPages(result.totalPages)
+        setTotalElements(result.totalElements ?? result.content.length)
       })
       .catch(() => {
         if (!cancelled) setError('포인트 계정 목록을 불러오지 못했습니다')
@@ -89,13 +92,19 @@ function AccountsTab() {
 
   return (
     <>
-      <div className="list-controls">
+      <div className="list-controls points-toolbar">
         <form className="search-form" onSubmit={onSearch}>
           <input type="text" placeholder="이름/이메일 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
           <button type="submit" className="btn btn--primary">
             검색
           </button>
         </form>
+        {!loading && !error && (
+          <span className="points-total">
+            {searchTerm ? `‘${searchTerm}’ 검색 결과 ` : '전체 '}
+            <strong>{totalElements.toLocaleString('ko-KR')}</strong>명
+          </span>
+        )}
       </div>
 
       {loading && <p>불러오는 중...</p>}
@@ -127,20 +136,21 @@ function AccountsTab() {
 
       {!loading && !error && accounts.length > 0 && !isMobile && (
         <>
-          <table className="list-table">
-            <colgroup>
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '22%' }} />
-              <col style={{ width: '32%' }} />
-              <col style={{ width: '16%' }} />
-              <col style={{ width: '22%' }} />
-            </colgroup>
+          <div className="points-table-wrap">
+            <table className="list-table card-table points-table">
+              <colgroup>
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '26%' }} />
+                <col style={{ width: '30%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
             <thead>
               <tr>
                 <th className="num-cell">번호</th>
                 <th>이름</th>
                 <th>이메일</th>
-                <th>잔액</th>
+                <th className="amount-cell">잔액</th>
                 <th>마지막 변동</th>
               </tr>
             </thead>
@@ -148,14 +158,22 @@ function AccountsTab() {
               {accounts.map((a, i) => (
                 <tr key={a.userId} className="clickable-row" onClick={() => open(a.userId)}>
                   <td className="num-cell">{pageNumber * PAGE_SIZE + i + 1}</td>
-                  <td>{a.username ?? '(이름 없음)'}</td>
-                  <td>{a.email ?? ''}</td>
-                  <td>{formatPoints(a.balance)}</td>
-                  <td>{formatDateTime(a.updatedDate ?? a.createdDate)}</td>
+                  <td>
+                    <span className="points-person">
+                      <span className="points-avatar" aria-hidden="true">
+                        {(a.username ?? '?').trim().charAt(0) || '?'}
+                      </span>
+                      <span className="points-name">{a.username ?? '(이름 없음)'}</span>
+                    </span>
+                  </td>
+                  <td className="points-muted">{a.email ?? ''}</td>
+                  <td className="amount-cell points-balance">{formatPoints(a.balance)}</td>
+                  <td className="points-muted">{formatDateTime(a.updatedDate ?? a.createdDate)}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
           <Pager page={page} totalPages={totalPages} onChange={setPage} />
         </>
       )}
@@ -220,6 +238,10 @@ function RulesTab() {
   return (
     <>
       <div className="rules-header">
+        <div className="rules-summary">
+          <span className="category-chip">규칙 {rules.length}개</span>
+          <span className="category-chip">사용 중 {rules.filter((r) => r.enabled).length}개</span>
+        </div>
         <p className="form-hint">
           다른 서비스는 규칙 코드만 보내고 점수·상한은 여기서 정합니다. 하루 상한은 한국 시간 기준이고, 비워 두면 무제한입니다.
           규칙을 지워도 이미 쌓인 이력은 남습니다.
@@ -267,7 +289,8 @@ function RulesTab() {
           )}
         </ul>
       ) : (
-        <table className="list-table rules-table">
+        <div className="points-table-wrap">
+        <table className="list-table card-table rules-table">
           <colgroup>
             <col style={{ width: '30%' }} />
             <col style={{ width: '12%' }} />
@@ -318,6 +341,7 @@ function RulesTab() {
             )}
           </tbody>
         </table>
+        </div>
       )}
     </>
   )

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setDisplayTimeZone } from '@modu/console-core'
+import { chooseOption } from '@modu/console-core/test/select'
 import * as configRepo from '../api/configRepo'
 import ConfigRepoPage from './ConfigRepoPage'
 
@@ -89,5 +90,32 @@ describe('ConfigRepoPage', () => {
     expect(screen.queryByText('spring.datasource.password')).not.toBeInTheDocument()
     expect(screen.getByText('spring.rabbitmq.host')).toBeInTheDocument()
     expect(screen.getByText('검색에 맞는 키가 없습니다')).toBeInTheDocument()
+  })
+
+  it('on a phone picks the file from the drop-down, grouped by folder', async () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+    try {
+      renderPage()
+      await screen.findByText('eureka.client.service-url.defaultZone')
+      const picker = screen.getByRole('combobox', { name: '설정 파일' })
+      expect(picker).toHaveTextContent('application.yml')
+
+      await userEvent.click(picker)
+      expect(screen.getByRole('group', { name: '공통' })).toBeInTheDocument()
+      expect(within(screen.getByRole('group', { name: 'messenger' })).getByRole('option', { name: 'messenger/messenger.yml' })).toBeInTheDocument()
+      await userEvent.click(picker)
+
+      await chooseOption(userEvent, '설정 파일', 'messenger/messenger.yml')
+      expect(await screen.findByText('spring.datasource.password')).toBeInTheDocument()
+      expect(configRepo.getConfigFile).toHaveBeenCalledWith('messenger/messenger.yml')
+    } finally {
+      window.matchMedia = original
+    }
   })
 })

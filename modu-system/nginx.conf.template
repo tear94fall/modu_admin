@@ -6,7 +6,8 @@ resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
 
 upstream gateway {
     zone gateway 64k;
-    server gateway-service:8000 resolve;
+    # GATEWAY_HOST: nginx 의 resolver 는 /etc/resolv.conf 의 search 도메인을 안 쓴다. k8s 에선 FQDN(gateway-service.modu.svc.cluster.local)을 env 로 준다. 기본값(Dockerfile)은 gateway-service.
+    server ${GATEWAY_HOST}:8000 resolve;
 }
 
 server {
@@ -15,8 +16,9 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # 이 콘솔이 부르는 게이트웨이 경로만 넘긴다. 나머지는 SPA 라우팅.
-    location ~ ^/(auth-service|gateway-service|config-service)/ {
+    # 게이트웨이 라우트 prefix 만 넘긴다. 나머지는 SPA 라우팅.
+    # gateway-service·config-service·deploy-service 는 이 콘솔 화면이, 나머지 서비스는 API 문서 화면의 Try it out 이 부른다(modu-admin 과 같은 방식).
+    location ~ ^/(auth-service|gateway-service|config-service|member-service|chat-service|chat-store-service|ws-service|push-service|storage-service|profile-service|point-service|schedule-service|commerce-service|deploy-service)/ {
         proxy_pass http://gateway;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -33,7 +35,9 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
+    # index.html 은 매번 새로 확인한다(해시 붙은 assets 만 오래 캐시). 안 그러면 배포 뒤에도 브라우저가 옛 화면을 띄운다.
     location / {
+        add_header Cache-Control "no-cache" always;
         try_files $uri $uri/ /index.html;
     }
 }

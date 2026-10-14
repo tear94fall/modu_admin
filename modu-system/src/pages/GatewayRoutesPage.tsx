@@ -74,148 +74,214 @@ export default function GatewayRoutesPage() {
   const counts = {
     total: config.routes.length,
     public: config.routes.filter((r) => r.access.type === 'PUBLIC').length,
+    user: config.routes.filter((r) => matchesAccess(r, 'USER')).length,
     admin: config.routes.filter(isConsoleRoute).length,
   }
+  const origins = new Set(config.cors.flatMap((c) => c.allowedOrigins)).size
+  const countOf: Record<AccessFilter, number> = { ALL: counts.total, PUBLIC: counts.public, USER: counts.user, ADMIN: counts.admin }
 
   return (
     <div>
-      <h1>게이트웨이 라우트</h1>
-      <p className="page-note">
-        게이트웨이가 지금 쓰고 있는 설정입니다(읽기 전용). 기준 시각 {formatUtcDateTime(config.generatedAt)} · 라우트 {counts.total}개(공개 {counts.public}, 관리자{' '}
-        {counts.admin})
-      </p>
-
-      <section className="summary-grid">
-        <div className="info-card">
-          <h2>모든 요청에 붙는 필터</h2>
-          <ul className="mono-list">
-            {config.defaultFilters.length === 0 ? <li>없음</li> : config.defaultFilters.map((f) => <li key={formatArgs(f)}>{formatArgs(f)}</li>)}
-          </ul>
+      <header className="page-head">
+        <div className="page-head-main">
+          <h1>게이트웨이 라우트</h1>
+          <p className="page-head-sub">
+            게이트웨이가 지금 쓰고 있는 설정입니다(읽기 전용). 기준 시각 {formatUtcDateTime(config.generatedAt)} · 라우트 {counts.total}개(공개 {counts.public}, 관리자{' '}
+            {counts.admin})
+          </p>
         </div>
-        <div className="info-card">
-          <h2>CORS</h2>
-          {config.cors.length === 0 ? (
-            <p>설정 없음</p>
-          ) : (
-            config.cors.map((c) => (
-              <dl key={c.pattern} className="detail-grid">
-                <dt>경로</dt>
-                <dd className="mono">{c.pattern}</dd>
-                <dt>허용 출처</dt>
-                <dd className="mono">{c.allowedOrigins.join(', ') || '-'}</dd>
-                <dt>허용 메서드</dt>
-                <dd className="mono">{c.allowedMethods.join(', ') || '-'}</dd>
-              </dl>
-            ))
-          )}
+      </header>
+
+      <section className="stat-grid" aria-label="라우트 요약">
+        <div className="stat-card">
+          <div className="stat-card-label">라우트</div>
+          <div className="stat-card-value">
+            {counts.total}
+            <span className="stat-card-unit">개</span>
+          </div>
+        </div>
+        <div className="stat-card stat-card--good">
+          <div className="stat-card-label">공개</div>
+          <div className="stat-card-value">{counts.public}</div>
+        </div>
+        <div className="stat-card stat-card--info">
+          <div className="stat-card-label">사용자 토큰</div>
+          <div className="stat-card-value">{counts.user}</div>
+        </div>
+        <div className="stat-card stat-card--bad">
+          <div className="stat-card-label">관리자 토큰</div>
+          <div className="stat-card-value">{counts.admin}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">CORS 허용 출처</div>
+          <div className="stat-card-value">
+            {origins}
+            <span className="stat-card-unit">곳</span>
+          </div>
         </div>
       </section>
 
-      <div className="list-controls">
-        <input className="route-search" type="search" aria-label="라우트 검색" placeholder="라우트 ID·경로·대상 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-      </div>
-      <div className="access-chips" role="radiogroup" aria-label="인증 조건">
-        {ACCESS_FILTERS.map((f) => (
-          <button key={f.value} type="button" role="radio" aria-checked={access === f.value} className={access === f.value ? 'access-chip access-chip--on' : 'access-chip'} onClick={() => setAccess(f.value)}>
-            {f.label}
-          </button>
-        ))}
+      <div className="route-summary">
+        <section className="section-card">
+          <div className="section-card-head">
+            <div>
+              <h2 className="section-card-title">모든 요청에 붙는 필터</h2>
+              <p className="section-card-hint">라우트마다 붙는 필터보다 먼저 돈다</p>
+            </div>
+            <span className="section-card-count">{config.defaultFilters.length}개</span>
+          </div>
+          <ul className="route-filter-list">
+            {config.defaultFilters.length === 0 ? <li className="card-muted">없음</li> : config.defaultFilters.map((f) => <li key={formatArgs(f)}>{formatArgs(f)}</li>)}
+          </ul>
+        </section>
+        <section className="section-card">
+          <div className="section-card-head">
+            <div>
+              <h2 className="section-card-title">CORS</h2>
+              <p className="section-card-hint">브라우저에서 게이트웨이를 부를 수 있는 출처</p>
+            </div>
+          </div>
+          {config.cors.length === 0 ? (
+            <p className="card-muted">설정 없음</p>
+          ) : (
+            config.cors.map((c) => (
+              <dl key={c.pattern} className="kv-grid route-cors">
+                <dt>경로</dt>
+                <dd>{c.pattern}</dd>
+                <dt>허용 출처</dt>
+                <dd className="route-origins">{c.allowedOrigins.length === 0 ? '-' : c.allowedOrigins.map((o) => <span key={o} className="route-origin">{o}</span>)}</dd>
+                <dt>허용 메서드</dt>
+                <dd>{c.allowedMethods.join(', ') || '-'}</dd>
+              </dl>
+            ))
+          )}
+        </section>
       </div>
 
-      {routes.length === 0 && <p>조건에 맞는 라우트가 없습니다</p>}
+      <section className="section-card route-list">
+        <div className="section-card-head">
+          <div>
+            <h2 className="section-card-title">라우트 목록</h2>
+            <p className="section-card-hint">{isMobile ? '경로·인증·대상' : '행을 누르면 URI·순서·조건·필터가 펼쳐진다'}</p>
+          </div>
+          <span className="section-card-count">
+            {routes.length} / {counts.total}
+          </span>
+        </div>
+        <div className="route-toolbar">
+          <input className="route-search" type="search" aria-label="라우트 검색" placeholder="라우트 ID·경로·대상 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+          <div className="filter-chips" role="radiogroup" aria-label="인증 조건">
+            {ACCESS_FILTERS.map((f) => (
+              <button key={f.value} type="button" role="radio" aria-checked={access === f.value} className={access === f.value ? 'filter-chip filter-chip--on' : 'filter-chip'} onClick={() => setAccess(f.value)}>
+                {f.label}
+                <span className="filter-chip-count" aria-hidden="true">
+                  {countOf[f.value]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {routes.length > 0 && isMobile && (
-        <ul className="card-list">
-          {routes.map((r) => (
-            <li key={r.id} className="card route-card">
-              <span className="card-body">
-                <span className="card-title mono">{r.id}</span>
-                <span className="card-line">
-                  <span className={accessClass(r)}>{accessLabel(r)}</span> → {targetOf(r)}
+        {routes.length === 0 && <p className="card-muted route-empty">조건에 맞는 라우트가 없습니다</p>}
+
+        {routes.length > 0 && isMobile && (
+          <ul className="card-rows">
+            {routes.map((r) => (
+              <li key={r.id} className="route-row">
+                <span className="card-title">{r.id}</span>
+                <span className="route-row-line">
+                  <span className={accessClass(r)}>{accessLabel(r)}</span>
+                  <span className="card-muted">→ {targetOf(r)}</span>
                 </span>
                 {routePaths(r).map((p) => (
-                  <span key={p} className="card-line card-muted mono">
+                  <span key={p} className="route-path">
                     {p}
                   </span>
                 ))}
                 {otherFilters(r).map((f) => (
-                  <span key={formatArgs(f)} className="card-line card-muted mono">
+                  <span key={formatArgs(f)} className="card-muted route-row-filter">
                     {formatArgs(f)}
                   </span>
                 ))}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {routes.length > 0 && !isMobile && (
-        <table className="list-table route-table">
-          <colgroup>
-            <col style={{ width: '22%' }} />
-            <col style={{ width: '34%' }} />
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '8%' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>라우트 ID</th>
-              <th>경로</th>
-              <th>인증</th>
-              <th>대상</th>
-              <th>필터</th>
-            </tr>
-          </thead>
-          <tbody>
-            {routes.map((r) => {
-              const methods = routeMethods(r)
-              const filters = otherFilters(r)
-              const expanded = open === r.id
-              return (
-                <Fragment key={r.id}>
-                  <tr className="clickable-row" onClick={() => setOpen(expanded ? null : r.id)} aria-expanded={expanded}>
-                    <td className="mono">{r.id}</td>
-                    <td className="mono">
-                      {routePaths(r).map((p) => (
-                        <div key={p}>{p}</div>
-                      ))}
-                      {methods.length > 0 && <div className="card-muted">{methods.join(', ')}</div>}
-                    </td>
-                    <td>
-                      <span className={accessClass(r)}>{accessLabel(r)}</span>
-                    </td>
-                    <td className="mono">{targetOf(r)}</td>
-                    <td>{filters.length}</td>
-                  </tr>
-                  {expanded && (
-                    <tr className="route-detail">
-                      <td colSpan={5}>
-                        <dl className="detail-grid">
-                          <dt>URI</dt>
-                          <dd className="mono">{r.uri}</dd>
-                          <dt>순서</dt>
-                          <dd>{r.order}</dd>
-                          <dt>조건</dt>
-                          <dd className="mono">
-                            {r.predicates.map((p) => (
-                              <div key={formatArgs(p)}>{formatArgs(p)}</div>
+        {routes.length > 0 && !isMobile && (
+          <div className="card-table-wrap">
+            <table className="list-table card-table route-table">
+              <colgroup>
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '30%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '6%' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>라우트 ID</th>
+                  <th>경로</th>
+                  <th>인증</th>
+                  <th>대상</th>
+                  <th>필터</th>
+                </tr>
+              </thead>
+              <tbody>
+                {routes.map((r) => {
+                  const methods = routeMethods(r)
+                  const filters = otherFilters(r)
+                  const expanded = open === r.id
+                  return (
+                    <Fragment key={r.id}>
+                      <tr className={expanded ? 'clickable-row route-row--open' : 'clickable-row'} onClick={() => setOpen(expanded ? null : r.id)} aria-expanded={expanded}>
+                        <td className="route-id">{r.id}</td>
+                        <td>
+                          <div className="route-paths">
+                            {routePaths(r).map((p) => (
+                              <div key={p} className="route-path">
+                                {p}
+                              </div>
                             ))}
-                          </dd>
-                          <dt>필터</dt>
-                          <dd className="mono">
-                            {r.filters.length === 0 ? '-' : r.filters.map((f) => <div key={formatArgs(f)}>{formatArgs(f)}</div>)}
-                          </dd>
-                        </dl>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
+                            {methods.length > 0 && <div className="card-muted route-methods">{methods.join(', ')}</div>}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={accessClass(r)}>{accessLabel(r)}</span>
+                        </td>
+                        <td className="route-target">{targetOf(r)}</td>
+                        <td>
+                          <span className="route-filter-count">{filters.length}</span>
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr className="route-detail">
+                          <td colSpan={5}>
+                            <dl className="kv-grid route-detail-grid">
+                              <dt>URI</dt>
+                              <dd>{r.uri}</dd>
+                              <dt>순서</dt>
+                              <dd>{r.order}</dd>
+                              <dt>조건</dt>
+                              <dd>
+                                {r.predicates.map((p) => (
+                                  <div key={formatArgs(p)}>{formatArgs(p)}</div>
+                                ))}
+                              </dd>
+                              <dt>필터</dt>
+                              <dd>{r.filters.length === 0 ? '-' : r.filters.map((f) => <div key={formatArgs(f)}>{formatArgs(f)}</div>)}</dd>
+                            </dl>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

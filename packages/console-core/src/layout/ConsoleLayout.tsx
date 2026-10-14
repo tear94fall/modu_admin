@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { logout as logoutRequest } from '../auth/auth'
 import { clearToken } from '../auth/token'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -17,6 +17,15 @@ interface ConsoleLayoutProps {
 
 const linkClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'nav-link active' : 'nav-link')
 
+/**
+ * 현재 경로가 가리키는 메뉴 하나. NavLink 기본값은 접두 매칭이라 `/deploy` 와 `/deploy/history` 가 동시에 켜진다 —
+ * 경로가 같거나 하위(`/deploy/point-service`)인 링크 중 가장 긴 것 하나만 활성으로 친다.
+ */
+export function activeLink(pathname: string, tos: string[]): string | null {
+  const hits = tos.filter((to) => pathname === to || pathname.startsWith(to.endsWith('/') ? to : `${to}/`))
+  return hits.length ? hits.reduce((a, b) => (b.length > a.length ? b : a)) : null
+}
+
 function Brand({ name }: { name: string }) {
   return (
     <div className="brand">
@@ -28,6 +37,8 @@ function Brand({ name }: { name: string }) {
 }
 
 function NavContent({ sections, onNavigate, onLogout }: { sections: NavSection[]; onNavigate?: () => void; onLogout: () => void }) {
+  const { pathname } = useLocation()
+  const active = activeLink(pathname, sections.flatMap((s) => s.links.map((l) => l.to)))
   return (
     <>
       <div className="sidebar-nav">
@@ -35,7 +46,7 @@ function NavContent({ sections, onNavigate, onLogout }: { sections: NavSection[]
           <div key={section.title} className="nav-section">
             <div className="nav-section-title">{section.title}</div>
             {section.links.map((link) => (
-              <NavLink key={link.to} to={link.to} className={linkClass} onClick={onNavigate}>
+              <NavLink key={link.to} to={link.to} className={() => linkClass({ isActive: link.to === active })} onClick={onNavigate}>
                 {link.label}
               </NavLink>
             ))}

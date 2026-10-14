@@ -8,6 +8,7 @@ import * as points from '../api/points'
 import * as products from '../api/products'
 import * as promotions from '../api/promotions'
 import PromotionFormPage from './PromotionFormPage'
+import { chooseOption } from '../test/select'
 
 const rules: points.PointRule[] = [
   { code: 'DAILY_CHECKIN', name: '출석 체크', points: 10, dailyLimit: 1, totalLimit: null, enabled: true },
@@ -189,14 +190,16 @@ describe('PromotionFormPage', () => {
     await userEvent.type(order, '2')
 
     const select = screen.getByLabelText('보상 포인트 규칙')
+    await userEvent.click(select)
     expect(await screen.findByRole('option', { name: '출석 체크 (DAILY_CHECKIN) · 10 P · 하루 1회' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: '리뷰 작성 (REVIEW) · 100 P · 하루 무제한' })).toBeInTheDocument()
 
-    await userEvent.selectOptions(select, 'REVIEW')
+    await userEvent.keyboard('{Escape}')
+    await chooseOption(userEvent, select, /\(REVIEW\)/)
     expect(screen.getByText(/하루 한도가 없는 규칙입니다/)).toBeInTheDocument()
-    await userEvent.selectOptions(select, 'OLD_EVENT')
+    await chooseOption(userEvent, select, /\(OLD_EVENT\)/)
     expect(screen.getByText(/꺼진 규칙입니다/)).toBeInTheDocument()
-    await userEvent.selectOptions(select, 'DAILY_CHECKIN')
+    await chooseOption(userEvent, select, /\(DAILY_CHECKIN\)/)
     expect(screen.queryByText(/꺼진 규칙입니다/)).not.toBeInTheDocument()
     expect(screen.queryByText(/하루 한도가 없는 규칙입니다/)).not.toBeInTheDocument()
 
@@ -309,7 +312,7 @@ describe('PromotionFormPage', () => {
     const update = vi.spyOn(promotions, 'updatePromotion').mockResolvedValue(checkin)
     renderAt('/promotions/4')
 
-    expect(await screen.findByLabelText('보상 포인트 규칙')).toHaveValue('GONE')
+    expect(await screen.findByLabelText('보상 포인트 규칙')).toHaveTextContent('GONE · 30 P')
     expect(await screen.findByText(/포인트 규칙 목록에 없습니다/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '저장' }))
     expect(update).toHaveBeenCalledWith('4', expect.objectContaining({ pointRuleCode: 'GONE', rewardPoints: 30 }))

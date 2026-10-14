@@ -47,7 +47,7 @@ describe('ReviewDetailPage', () => {
     expect(screen.getByText('화이트')).toBeInTheDocument()
     expect(screen.getByLabelText('별점 4점')).toHaveTextContent('★★★★☆')
     expect(screen.getByText(/머그컵이 튼튼하고 색이 예뻐요/)).toBeInTheDocument()
-    expect(screen.getByText('· me@modu.local')).toBeInTheDocument()
+    expect(screen.getByText('me@modu.local')).toBeInTheDocument()
     expect(screen.getByText('노출')).toHaveClass('status-badge--selling')
     expect(screen.getByRole('button', { name: '숨기기' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '노출하기' })).not.toBeInTheDocument()

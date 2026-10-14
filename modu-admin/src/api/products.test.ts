@@ -47,9 +47,14 @@ describe('products api', () => {
     expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/v1\/products\/7$/)
     expect(fetchMock.mock.calls[1][1]?.method).toBe('PUT')
 
+    fetchMock.mockResolvedValueOnce(json({ id: 7, ...input }))
+    const withBase: ProductInput = { ...input, skus: [{ options: {}, extraPrice: 0, stock: 5, baseStock: 3 }] }
+    await updateProduct('7', withBase)
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body)).skus).toEqual([{ options: {}, extraPrice: 0, stock: 5, baseStock: 3 }])
+
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
     await expect(deleteProduct('7')).resolves.toBeUndefined()
-    expect(fetchMock.mock.calls[2][1]?.method).toBe('DELETE')
+    expect(fetchMock.mock.calls[3][1]?.method).toBe('DELETE')
   })
 
   it('reads the server message only from a 400 JSON body', () => {
