@@ -1,6 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ConsoleLayout, LoginPage, RequireAuth, type NavSection } from '@modu/console-core'
+import BatchJobPage from './pages/BatchJobPage'
+import BatchJobsPage from './pages/BatchJobsPage'
+import BatchRunsPage from './pages/BatchRunsPage'
 import ConfigRepoPage from './pages/ConfigRepoPage'
 import DeployHistoryPage from './pages/DeployHistoryPage'
 import DeployPage from './pages/DeployPage'
@@ -10,7 +13,7 @@ import GatewayRoutesPage from './pages/GatewayRoutesPage'
 // Swagger UI 는 크다. 이 화면을 열 때만 받도록 따로 떼어 낸다(다른 화면은 swagger 를 싣지 않는다).
 const ApiDocsPage = lazy(() => import('./pages/ApiDocsPage'))
 
-/** 시스템 운영 콘솔. 게이트웨이 라우트, 설정 서버(config-repo), 서비스 배포(deploy-service), 서비스별 API 문서 조회. */
+/** 시스템 운영 콘솔. 게이트웨이 라우트, 설정 서버(config-repo), 서비스 배포(deploy-service), 배치 잡(batch-service), 서비스별 API 문서 조회. */
 const SECTIONS: NavSection[] = [
   { title: '게이트웨이', links: [{ to: '/gateway/routes', label: '라우트' }] },
   { title: '설정 서버', links: [{ to: '/config/files', label: 'Config 설정' }] },
@@ -19,6 +22,13 @@ const SECTIONS: NavSection[] = [
     links: [
       { to: '/deploy', label: '서비스 배포' },
       { to: '/deploy/history', label: '배포 이력' },
+    ],
+  },
+  {
+    title: '배치',
+    links: [
+      { to: '/batch', label: '배치 잡' },
+      { to: '/batch/runs', label: '실행 이력' },
     ],
   },
   { title: '개발', links: [{ to: '/api-docs', label: 'API 문서' }] },
@@ -42,6 +52,9 @@ export default function App() {
           <Route path="/deploy" element={<DeployPage />} />
           <Route path="/deploy/history" element={<DeployHistoryPage />} />
           <Route path="/deploy/:name" element={<DeployServicePage />} />
+          <Route path="/batch" element={<BatchJobsPage />} />
+          <Route path="/batch/runs" element={<BatchRunsPage />} />
+          <Route path="/batch/jobs/:id" element={<BatchJobPage />} />
           <Route
             path="/api-docs"
             element={
