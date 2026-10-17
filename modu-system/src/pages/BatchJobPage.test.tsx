@@ -59,6 +59,17 @@ describe('BatchJobPage', () => {
     expect(screen.getByText('등록')).toBeInTheDocument()
   })
 
+  it('runs now after confirming and links the banner to the run', async () => {
+    vi.spyOn(batch, 'runJob').mockResolvedValue({ runId: 'job-abc', status: 'RUNNING' })
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: '지금 실행' }))
+    await userEvent.click(screen.getByRole('button', { name: 'point-outbox-relay 실행' }))
+    expect(batch.runJob).toHaveBeenCalledWith(1)
+    expect(await screen.findByText('실행을 시작했습니다')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '회차 보기' })).toHaveAttribute('href', '/batch/runs?open=job-abc')
+  })
+
   it('edits only the changed fields', async () => {
     const updated = { ...job, cron: '0 0 4 * * *', enabled: false }
     vi.spyOn(batch, 'updateJob').mockImplementation(async () => {

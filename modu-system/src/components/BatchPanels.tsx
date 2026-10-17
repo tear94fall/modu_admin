@@ -37,7 +37,9 @@ export function RunDetail({ run }: { run: BatchRun }) {
     <div className="deploy-detail batch-run-detail">
       <dl className="kv-grid deploy-detail-facts">
         <dt>회차 id</dt>
-        <dd className="mono">{run.id}</dd>
+        <dd>
+          <span className="mono">{run.id}</span> <span className="card-muted">(서비스에 보낸 X-Request-Id)</span>
+        </dd>
         <dt>시작</dt>
         <dd>{formatUtcDateTime(run.startedAt)}</dd>
         <dt>끝</dt>
@@ -93,11 +95,12 @@ export function RunsTable({
   initialOpen?: string | null
   emptyText: string
 }) {
-  // ?open= 이 새 값으로 바뀌면 그 회차를 펼친다 — 어떤 initialOpen 에서 파생했는지 같이 들고 있어 렌더 중에 바꾼다(effect 없이).
+  // ?open= 이 바뀌면 따라간다 — 어떤 initialOpen 에서 파생했는지 같이 들고 있어 렌더 중에 바꾼다(effect 없이).
+  // 새 id 가 오면 그 회차를 펼치고, id 가 사라지면(필터 변경) 펼친 행은 그대로 둔다. 사라졌다가 같은 id 가 다시 오면(뒤로가기) 다시 펼친다.
   const [state, setState] = useState<{ from: string | null; open: string | null }>({ from: initialOpen, open: initialOpen })
-  const arrived = initialOpen !== null && state.from !== initialOpen
-  if (arrived) setState({ from: initialOpen, open: initialOpen })
-  const open = arrived ? initialOpen : state.open
+  const changed = state.from !== initialOpen
+  const open = changed ? (initialOpen ?? state.open) : state.open
+  if (changed) setState({ from: initialOpen, open })
   const toggle = (id: string) => setState({ from: initialOpen, open: open === id ? null : id })
 
   if (runs.length === 0) return <p className="card-muted">{emptyText}</p>
@@ -156,7 +159,7 @@ export function RunsTable({
                   <td>{formatUtcDateTime(r.startedAt)}</td>
                   {showJob && (
                     <td>
-                      <Link to={jobPath(r.batchJobId)} onClick={(e) => e.stopPropagation()}>
+                      <Link className="batch-name-link" to={jobPath(r.batchJobId)} onClick={(e) => e.stopPropagation()}>
                         {r.jobName}
                       </Link>
                     </td>

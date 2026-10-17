@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setDisplayTimeZone } from '@modu/console-core'
+import { MOBILE_QUERY, setDisplayTimeZone } from '@modu/console-core'
 import { chooseOption } from '@modu/console-core/test/select'
 import * as batch from '../api/batch'
 import BatchJobsPage from './BatchJobsPage'
@@ -89,6 +89,20 @@ describe('BatchJobsPage', () => {
 
     await userEvent.click(row)
     expect(screen.getByTestId('location')).toHaveTextContent('/batch/jobs/2')
+  })
+
+  it('shows jobs as cards on a phone and says what to press', async () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({ matches: query === MOBILE_QUERY, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })) as unknown as typeof window.matchMedia
+    try {
+      renderPage()
+      expect(await screen.findByRole('link', { name: 'push-campaigns' })).toHaveAttribute('href', '/batch/jobs/2')
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+      expect(screen.getByText('이름을 누르면 상세로')).toBeInTheDocument()
+      expect(screen.queryByText(/행을 누르면/)).not.toBeInTheDocument()
+    } finally {
+      window.matchMedia = original
+    }
   })
 
   it('runs a job now after confirming and links to the run', async () => {

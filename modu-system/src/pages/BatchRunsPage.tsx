@@ -45,8 +45,10 @@ export default function BatchRunsPage() {
   }, [])
 
   const services = useMemo(() => [...new Set((runs ?? []).map((r) => r.service))].sort(), [runs])
-  /** 배치 후보: 서비스를 골랐으면 그 서비스의 배치만, 아니면 전부. */
-  const jobNames = useMemo(() => [...new Set((runs ?? []).filter((r) => !service || r.service === service).map((r) => r.jobName))].sort(), [runs, service])
+  /** 배치 후보: 고른 서비스의 배치만(서비스를 고르기 전에는 배치 상자를 열지 않는다 — 다른 서비스의 같은 이름 배치가 섞이지 않게). */
+  const jobNames = useMemo(() => (service ? [...new Set((runs ?? []).filter((r) => r.service === service).map((r) => r.jobName))].sort() : []), [runs, service])
+  /** 주소로 받은 값이 최근 N건에 없으면(북마크·오래된 링크) 빈 상자 대신 그 값을 이름 붙여 보여 준다. */
+  const withMissing = (names: string[], current: string) => (current && !names.includes(current) ? [{ value: current, label: `${current} (최근 ${LIMIT}건에 없음)` }, ...names.map((n) => ({ value: n, label: n }))] : names.map((n) => ({ value: n, label: n })))
   const filtered = useMemo(
     () => (runs ?? []).filter((r) => (!service || r.service === service) && (!job || r.jobName === job) && (status === 'ALL' || r.status === status)),
     [runs, service, job, status],
@@ -69,7 +71,7 @@ export default function BatchRunsPage() {
       <header className="page-head">
         <div className="page-head-main">
           <h1>실행 이력</h1>
-          <p className="page-head-sub">최근 {LIMIT}건. 서비스 → 배치 → 상태로 거른다. 행을 누르면 서비스 응답·오류와 OpenSearch 링크가 펼쳐진다. 회차 id 가 서비스에 보낸 X-Request-Id 다.</p>
+          <p className="page-head-sub">최근 {LIMIT}건. 서비스·배치·상태로 거르고, 행을 누르면 서비스 응답·오류·OpenSearch 링크가 펼쳐진다.</p>
         </div>
       </header>
       {error && <p className="error-text">{error}</p>}
@@ -82,14 +84,15 @@ export default function BatchRunsPage() {
               aria-label="서비스"
               value={service}
               onChange={(v) => setFilter('service', v)}
-              options={[{ value: '', label: '모든 서비스' }, ...services.map((s) => ({ value: s, label: s }))]}
+              options={[{ value: '', label: '모든 서비스' }, ...withMissing(services, service)]}
             />
             <Select
               className="deploy-service-select"
               aria-label="배치"
               value={job}
               onChange={(v) => setFilter('job', v)}
-              options={[{ value: '', label: '모든 배치' }, ...jobNames.map((n) => ({ value: n, label: n }))]}
+              disabled={!service}
+              options={[{ value: '', label: '모든 배치' }, ...withMissing(jobNames, job)]}
             />
             <div className="filter-chips" role="radiogroup" aria-label="상태">
               {STATUS_FILTERS.map((f) => (

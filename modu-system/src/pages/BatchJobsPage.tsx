@@ -218,7 +218,7 @@ export default function BatchJobsPage() {
         <div className="section-card-head">
           <div>
             <h2 className="section-card-title">등록된 잡</h2>
-            <p className="section-card-hint">{isMobile ? '행을 누르면 상세로' : '행을 누르면 상세로 · 켜짐/꺼짐은 바로 바뀐다 · 지금 실행은 확인 한 번'}</p>
+            <p className="section-card-hint">{isMobile ? '이름을 누르면 상세로' : '행을 누르면 상세로 · 켜짐/꺼짐은 바로 바뀐다 · 지금 실행은 확인 한 번'}</p>
           </div>
           <div className="section-card-actions">
             <input className="route-search section-card-search" type="search" aria-label="잡 검색" placeholder="서비스·잡·설명·cron 검색" value={keyword} onChange={(e) => setKeyword(e.target.value)} />

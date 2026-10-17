@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiErrorMessage, ConfirmDialog, formatUtcDateTime, useIsMobile } from '@modu/console-core'
-import { deleteJob, FIELD_LABELS, getJob, listJobChanges, listJobRuns, runJob, type BatchChange, type BatchJob, type BatchRun } from '../api/batch'
+import { deleteJob, FIELD_LABELS, getJob, listJobChanges, listJobRuns, runJob, runsPath, type BatchChange, type BatchJob, type BatchRun } from '../api/batch'
 import { JobForm, RunStatusPill, RunsTable } from '../components/BatchPanels'
 
 /** 진행 중인 회차가 있으면 끝날 때까지 5초마다, 아니면 15초마다 다시 읽는다. */
@@ -22,7 +22,7 @@ export default function BatchJobPage() {
   const [deleting, setDeleting] = useState(false)
   const [confirmRun, setConfirmRun] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<{ kind: 'ok' | 'fail'; text: string } | null>(null)
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'fail'; text: string; runId?: string } | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -67,7 +67,7 @@ export default function BatchJobPage() {
     setBusy(true)
     try {
       const r = await runJob(job.id)
-      setNotice(r.status === 'SKIPPED' ? { kind: 'fail', text: '앞 회차가 아직 돌고 있어 건너뛰었습니다' } : { kind: 'ok', text: `실행을 시작했습니다 (회차 ${r.runId})` })
+      setNotice(r.status === 'SKIPPED' ? { kind: 'fail', text: '앞 회차가 아직 돌고 있어 건너뛰었습니다', runId: r.runId } : { kind: 'ok', text: '실행을 시작했습니다', runId: r.runId })
       setConfirmRun(false)
       void refresh()
     } catch (e) {
@@ -116,6 +116,11 @@ export default function BatchJobPage() {
       {notice && (
         <div className={notice.kind === 'ok' ? 'deploy-result deploy-result--ok' : 'deploy-result deploy-result--fail'} role="status">
           <span className="deploy-result-text">{notice.text}</span>
+          {notice.runId && (
+            <Link className="link-chip" to={runsPath(notice.runId)}>
+              회차 보기
+            </Link>
+          )}
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => setNotice(null)}>
             닫기
           </button>
