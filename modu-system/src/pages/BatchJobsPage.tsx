@@ -14,7 +14,7 @@ const matchesJob = (j: BatchJob, keyword: string) => {
 }
 
 /**
- * 배치 목록. 서비스 배포 화면과 같은 짜임(요약 숫자 → 카드 안 표, 행을 누르면 상세): 서비스/잡·주기·다음 실행·마지막 회차를 보여 주고,
+ * 배치 목록. 서비스 배포 화면과 같은 짜임(요약 숫자 → 카드 안 표, 행을 누르면 상세): 배치 이름·서비스·주기·다음 실행·마지막 회차를 보여 주고,
  * 켜기/끄기와 "지금 실행"(확인 한 번)을 바로 한다. 등록은 위의 폼에서(서비스 → 그 서비스의 잡 → 주기). 주기 수정·삭제·이력은 상세에서.
  */
 export default function BatchJobsPage() {
@@ -237,9 +237,12 @@ export default function BatchJobsPage() {
               <li key={j.id} className="deploy-card">
                 <span className="card-body">
                   <Link className="card-title deploy-card-link" to={jobPath(j.id)}>
-                    {j.service}/{j.jobName}
+                    {j.jobName}
                   </Link>
-                  {j.description && <span className="card-line card-muted">{j.description}</span>}
+                  <span className="card-line card-muted">
+                    {j.service}
+                    {j.description && ` · ${j.description}`}
+                  </span>
                   <span className="card-line">
                     <span className="mono">{j.cron}</span> <span className="card-muted">{j.zone}</span>
                   </span>
@@ -259,10 +262,11 @@ export default function BatchJobsPage() {
         {visible.length > 0 && !isMobile && (
           <div className="card-table-wrap">
             <table className="list-table card-table deploy-table batch-jobs">
-              {/* 서비스/잡(이름+설명)이 제일 넓어야 한다: 나머지가 48% + 180px 이고 남는 폭을 가져간다. */}
+              {/* 배치 이름(이름+설명)이 제일 넓어야 한다: 나머지가 62% + 180px 이고 남는 폭을 가져간다. */}
               <colgroup>
                 <col />
-                <col style={{ width: '14%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '13%' }} />
                 <col style={{ width: '13%' }} />
                 <col style={{ width: '14%' }} />
                 <col style={{ width: '7%' }} />
@@ -270,7 +274,8 @@ export default function BatchJobsPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th>서비스 / 잡</th>
+                  <th>배치 이름</th>
+                  <th>서비스</th>
                   <th>주기</th>
                   <th>다음 실행</th>
                   <th>마지막 회차</th>
@@ -283,9 +288,12 @@ export default function BatchJobsPage() {
                   <tr key={j.id} className="clickable-row" onClick={() => navigate(jobPath(j.id))}>
                     <td>
                       <div className="deploy-last">
-                        <div className="deploy-last-line">{j.service}/{j.jobName}</div>
+                        <div className="deploy-last-line">{j.jobName}</div>
                         {j.description && <div className="card-muted deploy-last-meta">{j.description}</div>}
                       </div>
+                    </td>
+                    <td className="deploy-nowrap" title={j.service}>
+                      {j.service}
                     </td>
                     <td>
                       <div className="deploy-last">

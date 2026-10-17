@@ -53,7 +53,12 @@ describe('BatchJobsPage', () => {
     vi.spyOn(batch, 'listJobs').mockResolvedValueOnce(jobs).mockResolvedValue([toggled, jobs[1]])
     renderPage()
 
-    const row = (await screen.findByText('commerce-service/point-outbox-relay')).closest('tr')!
+    const row = (await screen.findByText('point-outbox-relay')).closest('tr')!
+    // 배치 이름과 서비스는 따로 칸을 둔다(머리줄: 배치 이름 · 서비스 · 주기 …).
+    const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+    expect(headers.slice(0, 3)).toEqual(['배치 이름', '서비스', '주기'])
+    expect(within(row).getByText('commerce-service')).toBeInTheDocument()
+    expect(within(row).getByText('아웃박스 릴레이')).toBeInTheDocument()
     expect(within(row).getByText('0 */2 * * * *')).toBeInTheDocument()
     expect(within(row).getByText('2026-10-17 03:02')).toBeInTheDocument()
     expect(within(row).getByText('성공')).toBeInTheDocument()
@@ -77,10 +82,10 @@ describe('BatchJobsPage', () => {
   it('navigates to the job on row click and filters by keyword like the deploy list', async () => {
     renderPage()
 
-    const row = (await screen.findByText('commerce-service/push-campaigns')).closest('tr')!
+    const row = (await screen.findByText('push-campaigns')).closest('tr')!
     await userEvent.type(screen.getByRole('searchbox', { name: '잡 검색' }), 'push')
     expect(screen.getByText('1 / 2')).toBeInTheDocument()
-    expect(screen.queryByText('commerce-service/point-outbox-relay')).not.toBeInTheDocument()
+    expect(screen.queryByText('point-outbox-relay')).not.toBeInTheDocument()
 
     await userEvent.click(row)
     expect(screen.getByTestId('location')).toHaveTextContent('/batch/jobs/2')
