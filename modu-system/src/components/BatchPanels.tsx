@@ -77,7 +77,7 @@ export function RunDetail({ run }: { run: BatchRun }) {
 
 /**
  * 회차 목록. 행을 누르면 결과·오류·OpenSearch 링크가 펼쳐진다. PC 는 표(배포 이력과 같은 모양), 폰은 카드.
- * [showJob] 이면 서비스/잡 칸을 둔다(전체 이력), 아니면 잡 상세 안의 표.
+ * [showJob] 이면 배치 이름·서비스 칸을 둔다(전체 이력), 아니면 잡 상세 안의 표.
  */
 export function RunsTable({
   runs,
@@ -108,9 +108,9 @@ export function RunsTable({
         {runs.map((r) => (
           <li key={r.id} className="deploy-card">
             <button type="button" className="deploy-card-toggle" onClick={() => toggle(r.id)} aria-expanded={open === r.id}>
-              <span className="card-title">{showJob ? `${r.service}/${r.jobName}` : formatUtcDateTime(r.startedAt)}</span>
+              <span className="card-title">{showJob ? r.jobName : formatUtcDateTime(r.startedAt)}</span>
               <span className="card-line card-muted">
-                {showJob && `${formatUtcDateTime(r.startedAt)} · `}
+                {showJob && `${r.service} · ${formatUtcDateTime(r.startedAt)} · `}
                 {TRIGGER_LABELS[r.trigger]}
                 {r.triggeredBy && ` · ${r.triggeredBy}`}
               </span>
@@ -125,13 +125,14 @@ export function RunsTable({
     )
   }
 
-  const columns = showJob ? 5 : 4
+  const columns = showJob ? 6 : 4
   return (
     <div className="card-table-wrap">
       <table className="list-table card-table deploy-table batch-runs">
         <colgroup>
-          <col style={{ width: showJob ? '18%' : '24%' }} />
-          {showJob && <col style={{ width: '30%' }} />}
+          <col style={{ width: showJob ? '16%' : '24%' }} />
+          {showJob && <col style={{ width: '22%' }} />}
+          {showJob && <col style={{ width: '16%' }} />}
           <col />
           <col style={{ width: showJob ? '12%' : '16%' }} />
           <col style={{ width: showJob ? '10%' : '14%' }} />
@@ -139,7 +140,8 @@ export function RunsTable({
         <thead>
           <tr>
             <th>시작</th>
-            {showJob && <th>서비스 / 잡</th>}
+            {showJob && <th>배치 이름</th>}
+            {showJob && <th>서비스</th>}
             <th>실행</th>
             <th>상태</th>
             <th>소요</th>
@@ -155,8 +157,13 @@ export function RunsTable({
                   {showJob && (
                     <td>
                       <Link to={jobPath(r.batchJobId)} onClick={(e) => e.stopPropagation()}>
-                        {r.service}/{r.jobName}
+                        {r.jobName}
                       </Link>
+                    </td>
+                  )}
+                  {showJob && (
+                    <td className="deploy-nowrap" title={r.service}>
+                      {r.service}
                     </td>
                   )}
                   <td>

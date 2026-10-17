@@ -48,17 +48,20 @@ describe('BatchRunsPage', () => {
   it('lists runs newest first and filters by service and status', async () => {
     renderPage()
 
-    expect(await screen.findByText('commerce-service/push-campaigns')).toBeInTheDocument()
+    expect(await screen.findByText('push-campaigns')).toBeInTheDocument()
     expect(batch.listRuns).toHaveBeenCalledWith(undefined, undefined, 100)
+    // 배치 이름과 서비스는 따로 칸을 둔다(머리줄: 시작 · 배치 이름 · 서비스 · 실행 …).
+    expect(screen.getAllByRole('columnheader').map((h) => h.textContent).slice(0, 4)).toEqual(['시작', '배치 이름', '서비스', '실행'])
     expect(screen.getByText('3 / 3')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '실행 이력' })).toBeInTheDocument()
-    const failedRow = screen.getByText('commerce-service/push-campaigns').closest('tr')!
+    const failedRow = screen.getByText('push-campaigns').closest('tr')!
+    expect(within(failedRow).getByText('commerce-service')).toBeInTheDocument()
     expect(within(failedRow).getByText('실패')).toBeInTheDocument()
     expect(within(failedRow).getByText(/임준섭/)).toBeInTheDocument()
 
     await chooseOption(userEvent, '서비스', 'point-service')
     expect(screen.getByText('1 / 3')).toBeInTheDocument()
-    expect(within(screen.getByText('point-service/x').closest('tr')!).getByText('건너뜀')).toBeInTheDocument()
+    expect(within(screen.getByText('x').closest('tr')!).getByText('건너뜀')).toBeInTheDocument()
 
     await chooseOption(userEvent, '서비스', '모든 서비스')
     await userEvent.click(screen.getByRole('radio', { name: '성공' }))
@@ -67,10 +70,31 @@ describe('BatchRunsPage', () => {
     expect(screen.getByText('조건에 맞는 회차가 없다')).toBeInTheDocument()
   })
 
+  it('filters by service and then by one of that service\'s batch jobs', async () => {
+    renderPage()
+    expect(await screen.findByText('push-campaigns')).toBeInTheDocument()
+
+    // 서비스를 고르기 전에는 모든 배치가, 고른 뒤에는 그 서비스의 배치만 후보로 뜬다.
+    await chooseOption(userEvent, '서비스', 'commerce-service')
+    expect(screen.getByText('2 / 3')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('combobox', { name: '배치' }))
+    expect(screen.getByRole('option', { name: 'push-campaigns' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'x' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('option', { name: 'push-campaigns' }))
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(screen.queryByText('point-outbox-relay')).not.toBeInTheDocument()
+
+    // 서비스를 바꾸면 배치 선택은 풀린다.
+    await chooseOption(userEvent, '서비스', 'point-service')
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(screen.getByText('x')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '배치' })).toHaveTextContent('모든 배치')
+  })
+
   it('expands a row to show the service response, the error and the OpenSearch link', async () => {
     renderPage()
 
-    await userEvent.click((await screen.findByText('commerce-service/point-outbox-relay')).closest('tr')!)
+    await userEvent.click((await screen.findByText('point-outbox-relay')).closest('tr')!)
     expect(screen.getByText(/"relayed": 2/)).toBeInTheDocument()
     // 펼친 줄은 배포 이력과 같은 모양(deploy-panel-row)이고 표는 카드 끝까지 닿는다.
     expect(screen.getByText(/"relayed": 2/).closest('tr')).toHaveClass('deploy-panel-row')
@@ -79,7 +103,7 @@ describe('BatchRunsPage', () => {
     expect(link.getAttribute('href')).toContain('job-0000000000000001')
     expect(link.getAttribute('href')).toContain('localhost:5601')
 
-    await userEvent.click(screen.getByText('commerce-service/push-campaigns').closest('tr')!)
+    await userEvent.click(screen.getByText('push-campaigns').closest('tr')!)
     expect(screen.getByRole('alert')).toHaveTextContent('java.lang.IllegalStateException: boom')
   })
 
@@ -96,9 +120,9 @@ describe('BatchRunsPage', () => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({ matches: query.includes('768'), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })) as unknown as typeof window.matchMedia
     try {
       renderPage()
-      expect(await screen.findByText('commerce-service/push-campaigns')).toBeInTheDocument()
+      expect(await screen.findByText('push-campaigns')).toBeInTheDocument()
       expect(screen.queryByRole('table')).not.toBeInTheDocument()
-      await userEvent.click(screen.getByRole('button', { name: /commerce-service\/push-campaigns/ }))
+      await userEvent.click(screen.getByRole('button', { name: /push-campaigns/ }))
       expect(screen.getByRole('alert')).toHaveTextContent('boom')
     } finally {
       window.matchMedia = original
