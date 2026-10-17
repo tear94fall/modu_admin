@@ -217,3 +217,19 @@
 .deploy-pods th { background: #fafafb; color: var(--color-muted); font-size: 12px; font-weight: 600; }
 .deploy-pods tbody tr:last-child td { border-bottom: 0; }
 .deploy-pods tbody tr { cursor: default; }
+
+/* 배치 탭(2026-10-17): 잡 목록·상세·실행 이력. 표·배지·결과 배너는 배포 탭의 클래스를 그대로 쓴다. */
+.batch-result summary { cursor: pointer; font-size: 13px; color: #374151; }
+.batch-result-json { margin: 6px 0 0; padding: 10px; border-radius: 8px; background: #f6f7f9; font-size: 12px; line-height: 1.5; overflow: auto; max-height: 320px; }
+.batch-job-form .form-hint { margin: 4px 0 0; font-size: 12px; }
+.batch-jobs td .filter-chip { cursor: pointer; }
+/* 상단 안내: 공통 .page-head-sub 는 overflow-wrap:anywhere 라 한국어 문장이 글자 중간에서 끊긴다. 띄어쓰기에서만 줄을 바꾼다(긴 토큰은 anywhere 가 여전히 받친다). */
+.page-head-sub { word-break: keep-all; }
+/* 배치 이름 링크: 브라우저 기본색(파랑/방문 보라) 대신 본문 글자색·굵게, 올리면 강조색 + 밑줄(배포 카드의 .deploy-card-link 와 같은 톤). */
+.batch-name-link { color: inherit; font-weight: 600; text-decoration: none; }
+.batch-name-link:hover { color: var(--color-accent); text-decoration: underline; }
+.batch-name-link:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 4px; }
+/* 배치 목록 표: 배치 이름(이름/설명)·주기(cron/타임존) 칸은 두 줄이라 배포 표의 .deploy-last 를 같이 쓴다. 설명·cron 은 길어도 줄을 바꾼다. */
+.batch-jobs .deploy-last-line { white-space: normal; overflow-wrap: anywhere; }
+.batch-jobs .deploy-last-meta { white-space: normal; overflow: visible; text-overflow: clip; }
+.batch-result { margin: 0; }
