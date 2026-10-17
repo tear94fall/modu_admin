@@ -51,6 +51,7 @@ describe('BatchRunsPage', () => {
     expect(await screen.findByText('commerce-service/push-campaigns')).toBeInTheDocument()
     expect(batch.listRuns).toHaveBeenCalledWith(undefined, undefined, 100)
     expect(screen.getByText('3 / 3')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '실행 이력' })).toBeInTheDocument()
     const failedRow = screen.getByText('commerce-service/push-campaigns').closest('tr')!
     expect(within(failedRow).getByText('실패')).toBeInTheDocument()
     expect(within(failedRow).getByText(/임준섭/)).toBeInTheDocument()
@@ -71,12 +72,37 @@ describe('BatchRunsPage', () => {
 
     await userEvent.click((await screen.findByText('commerce-service/point-outbox-relay')).closest('tr')!)
     expect(screen.getByText(/"relayed": 2/)).toBeInTheDocument()
+    // 펼친 줄은 배포 이력과 같은 모양(deploy-panel-row)이고 표는 카드 끝까지 닿는다.
+    expect(screen.getByText(/"relayed": 2/).closest('tr')).toHaveClass('deploy-panel-row')
+    expect(screen.getByText(/"relayed": 2/).closest('.card-table-wrap')).not.toBeNull()
     const link = screen.getByRole('link', { name: 'OpenSearch 에서 이 회차 로그 보기' })
     expect(link.getAttribute('href')).toContain('job-0000000000000001')
     expect(link.getAttribute('href')).toContain('localhost:5601')
 
     await userEvent.click(screen.getByText('commerce-service/push-campaigns').closest('tr')!)
     expect(screen.getByRole('alert')).toHaveTextContent('java.lang.IllegalStateException: boom')
+  })
+
+  it('keeps the opened row when the service filter changes', async () => {
+    renderPage('/batch/runs?open=job-0000000000000003')
+    expect(await screen.findByRole('alert')).toHaveTextContent('boom')
+
+    await chooseOption(userEvent, '서비스', 'commerce-service')
+    expect(screen.getByRole('alert')).toHaveTextContent('boom')
+  })
+
+  it('shows runs as cards on a phone', async () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({ matches: query.includes('768'), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })) as unknown as typeof window.matchMedia
+    try {
+      renderPage()
+      expect(await screen.findByText('commerce-service/push-campaigns')).toBeInTheDocument()
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /commerce-service\/push-campaigns/ }))
+      expect(screen.getByRole('alert')).toHaveTextContent('boom')
+    } finally {
+      window.matchMedia = original
+    }
   })
 
   it('opens the run named by ?open=', async () => {

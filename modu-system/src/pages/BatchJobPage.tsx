@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apiErrorMessage, ConfirmDialog, formatUtcDateTime } from '@modu/console-core'
+import { apiErrorMessage, ConfirmDialog, formatUtcDateTime, useIsMobile } from '@modu/console-core'
 import { deleteJob, FIELD_LABELS, getJob, listJobChanges, listJobRuns, runJob, type BatchChange, type BatchJob, type BatchRun } from '../api/batch'
 import { JobForm, RunStatusPill, RunsTable } from '../components/BatchPanels'
 
@@ -10,6 +10,7 @@ const RUNS_LIMIT = 30
 
 /** 잡 한 건: 정의(수정 폼)·지금 실행·삭제, 이 잡의 회차 이력, 설정 변경 이력(누가 언제 무엇을). */
 export default function BatchJobPage() {
+  const isMobile = useIsMobile()
   const { id = '' } = useParams<{ id: string }>()
   const jobId = Number(id)
   const navigate = useNavigate()
@@ -123,7 +124,7 @@ export default function BatchJobPage() {
 
       <section className="section-card">
         <div className="section-card-head">
-          <strong>정의</strong>
+          <h2 className="section-card-title">정의</h2>
           <span className="card-muted">{job.enabled ? '스케줄 켜짐' : '스케줄 꺼짐(수동 실행만)'}</span>
         </div>
         {editing ? (
@@ -165,20 +166,27 @@ export default function BatchJobPage() {
 
       <section className="section-card">
         <div className="section-card-head">
-          <strong>실행 이력</strong>
+          <div>
+            <h2 className="section-card-title">실행 이력</h2>
+            <p className="section-card-hint">행을 누르면 서비스 응답·오류와 OpenSearch 링크가 펼쳐진다</p>
+          </div>
           <span className="section-card-count">최근 {RUNS_LIMIT}건</span>
         </div>
-        <RunsTable runs={runs} showJob={false} emptyText="아직 돌린 회차가 없다" />
+        <RunsTable runs={runs} showJob={false} isMobile={isMobile} emptyText="아직 돌린 회차가 없다" />
       </section>
 
       <section className="section-card">
         <div className="section-card-head">
-          <strong>설정 변경 이력</strong>
+          <div>
+            <h2 className="section-card-title">설정 변경 이력</h2>
+            <p className="section-card-hint">주기·사용 여부·타임아웃을 누가 언제 바꿨는지</p>
+          </div>
         </div>
         {changes.length === 0 ? (
-          <p className="card-muted route-empty">변경 이력이 없다</p>
+          <p className="card-muted">변경 이력이 없다</p>
         ) : (
-          <table className="list-table deploy-table batch-changes">
+          <div className="card-table-wrap">
+          <table className="list-table card-table deploy-table batch-changes">
             <thead>
               <tr>
                 <th>시각</th>
@@ -200,6 +208,7 @@ export default function BatchJobPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 

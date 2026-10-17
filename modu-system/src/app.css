@@ -219,8 +219,11 @@
 .deploy-pods tbody tr { cursor: default; }
 
 /* 배치 탭(2026-10-17): 잡 목록·상세·실행 이력. 표·배지·결과 배너는 배포 탭의 클래스를 그대로 쓴다. */
-.batch-result { margin: 10px 0 0; }
 .batch-result summary { cursor: pointer; font-size: 13px; color: #374151; }
 .batch-result-json { margin: 6px 0 0; padding: 10px; border-radius: 8px; background: #f6f7f9; font-size: 12px; line-height: 1.5; overflow: auto; max-height: 320px; }
 .batch-job-form .form-hint { margin: 4px 0 0; font-size: 12px; }
 .batch-jobs td .filter-chip { cursor: pointer; }
+/* 배치 목록 표: 서비스/잡·주기 칸은 두 줄(이름/설명, cron/타임존)이라 배포 표의 .deploy-last 를 같이 쓴다. 설명·cron 은 길어도 줄을 바꾼다. */
+.batch-jobs .deploy-last-line { white-space: normal; overflow-wrap: anywhere; }
+.batch-jobs .deploy-last-meta { white-space: normal; overflow: visible; text-overflow: clip; }
+.batch-result { margin: 0; }

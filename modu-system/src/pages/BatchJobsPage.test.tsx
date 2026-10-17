@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setDisplayTimeZone } from '@modu/console-core'
 import { chooseOption } from '@modu/console-core/test/select'
@@ -26,10 +26,13 @@ const jobs: batch.BatchJob[] = [
   { id: 2, service: 'commerce-service', jobName: 'push-campaigns', description: null, cron: '0 * * * * *', zone: 'Asia/Seoul', enabled: false, timeoutSeconds: 600, nextRunAt: null, lastRun: null },
 ]
 
+const Location = () => <div data-testid="location">{useLocation().pathname}</div>
+
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/batch']}>
       <BatchJobsPage />
+      <Location />
     </MemoryRouter>,
   )
 
@@ -44,21 +47,43 @@ describe('BatchJobsPage', () => {
   })
 
   it('lists jobs with cron, next run and last run, and toggles the schedule', async () => {
-    vi.spyOn(batch, 'updateJob').mockResolvedValue({ ...jobs[0], enabled: false, nextRunAt: null })
+    const toggled = { ...jobs[0], enabled: false, nextRunAt: null }
+    vi.spyOn(batch, 'updateJob').mockResolvedValue(toggled)
+    // 토글 뒤 목록을 한 번 더 읽어 맞추므로, 서버가 바뀐 상태를 돌려주는 것으로 둔다.
+    vi.spyOn(batch, 'listJobs').mockResolvedValueOnce(jobs).mockResolvedValue([toggled, jobs[1]])
     renderPage()
 
     const row = (await screen.findByText('commerce-service/point-outbox-relay')).closest('tr')!
     expect(within(row).getByText('0 */2 * * * *')).toBeInTheDocument()
     expect(within(row).getByText('2026-10-17 03:02')).toBeInTheDocument()
     expect(within(row).getByText('성공')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '배치 목록' })).toBeInTheDocument()
+    // 배포 화면처럼 요약 숫자 카드와 카드 제목·설명·건수를 둔다.
+    const summary = screen.getByRole('region', { name: '잡 요약' })
+    expect(within(summary).getByText('잡').nextElementSibling).toHaveTextContent('2')
+    expect(within(summary).getByText('스케줄 켜짐').nextElementSibling).toHaveTextContent('1')
+    expect(screen.getByRole('heading', { name: '등록된 잡' })).toBeInTheDocument()
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(row.closest('.card-table-wrap')).not.toBeNull()
 
     const toggle = within(row).getByRole('switch', { name: 'commerce-service/point-outbox-relay 스케줄 사용' })
     expect(toggle).toHaveAttribute('aria-checked', 'true')
     await userEvent.click(toggle)
     expect(batch.updateJob).toHaveBeenCalledWith(1, { enabled: false })
-    expect(await screen.findByText('commerce-service/point-outbox-relay 스케줄을 꺼습니다')).toBeInTheDocument()
+    expect(await screen.findByText('commerce-service/point-outbox-relay 스케줄을 껐습니다')).toBeInTheDocument()
     expect(within(row).getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('navigates to the job on row click and filters by keyword like the deploy list', async () => {
+    renderPage()
+
+    const row = (await screen.findByText('commerce-service/push-campaigns')).closest('tr')!
+    await userEvent.type(screen.getByRole('searchbox', { name: '잡 검색' }), 'push')
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+    expect(screen.queryByText('commerce-service/point-outbox-relay')).not.toBeInTheDocument()
+
+    await userEvent.click(row)
+    expect(screen.getByTestId('location')).toHaveTextContent('/batch/jobs/2')
   })
 
   it('runs a job now after confirming and links to the run', async () => {

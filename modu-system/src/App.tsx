@@ -27,7 +27,7 @@ const SECTIONS: NavSection[] = [
   {
     title: '배치',
     links: [
-      { to: '/batch', label: '배치 잡' },
+      { to: '/batch', label: '배치 목록' },
       { to: '/batch/runs', label: '실행 이력' },
     ],
   },

@@ -31,7 +31,7 @@ export function RunStatusPill({ status }: { status: RunStatus }) {
   return <span className={cls}>{RUN_STATUS_LABELS[status]}</span>
 }
 
-/** 회차 한 건의 펼친 내용: 핵심 값, 서비스가 돌려준 결과(JSON), 오류, OpenSearch 링크. */
+/** 회차 한 건의 펼친 내용(배포 이력의 펼친 줄과 같은 2단): 왼쪽 핵심 값, 오른쪽 오류·서비스가 돌려준 결과(JSON)·OpenSearch 링크. */
 export function RunDetail({ run }: { run: BatchRun }) {
   return (
     <div className="deploy-detail batch-run-detail">
@@ -52,82 +52,135 @@ export function RunDetail({ run }: { run: BatchRun }) {
           {run.triggeredBy && ` · ${run.triggeredBy}`}
         </dd>
       </dl>
-      {run.error && (
-        <div className="deploy-error-box" role="alert">
-          <span className="deploy-error-label">오류</span>
-          <span className="deploy-error-text">{run.error}</span>
-        </div>
-      )}
-      {run.result && (
-        <details className="batch-result" open>
-          <summary>서비스 응답</summary>
-          <pre className="batch-result-json">{JSON.stringify(run.result, null, 2)}</pre>
-        </details>
-      )}
-      <p className="card-muted">
-        <a className="link-chip" href={openSearchUrl(run.id)} target="_blank" rel="noreferrer">
-          OpenSearch 에서 이 회차 로그 보기
-        </a>
-      </p>
+      <div className="deploy-detail-side">
+        {run.error && (
+          <div className="deploy-error-box" role="alert">
+            <span className="deploy-error-label">오류</span>
+            <p className="deploy-error-text">{run.error}</p>
+          </div>
+        )}
+        {run.result && (
+          <details className="batch-result" open>
+            <summary>서비스 응답</summary>
+            <pre className="batch-result-json">{JSON.stringify(run.result, null, 2)}</pre>
+          </details>
+        )}
+        <p className="card-muted deploy-commit">
+          <a className="link-chip" href={openSearchUrl(run.id)} target="_blank" rel="noreferrer">
+            OpenSearch 에서 이 회차 로그 보기
+          </a>
+        </p>
+      </div>
     </div>
   )
 }
 
-/** 회차 표. 행을 누르면 펼친다. [showJob] 이면 서비스/잡 칸을 둔다(전체 이력), 아니면 잡 상세 안의 표. */
-export function RunsTable({ runs, showJob, initialOpen, emptyText }: { runs: BatchRun[]; showJob: boolean; initialOpen?: string | null; emptyText: string }) {
-  // ?open= 이 바뀌면(결과 배너의 "회차 보기") 그 회차를 펼친다 — 어떤 initialOpen 에서 파생했는지 같이 들고 있어 렌더 중에 바꾼다(effect 없이).
-  const [state, setState] = useState<{ from: string | null | undefined; open: string | null }>({ from: initialOpen, open: initialOpen ?? null })
-  if (state.from !== initialOpen) setState({ from: initialOpen, open: initialOpen ?? null })
-  const open = state.from === initialOpen ? state.open : (initialOpen ?? null)
-  const setOpen = (id: string | null) => setState({ from: initialOpen, open: id })
+/**
+ * 회차 목록. 행을 누르면 결과·오류·OpenSearch 링크가 펼쳐진다. PC 는 표(배포 이력과 같은 모양), 폰은 카드.
+ * [showJob] 이면 서비스/잡 칸을 둔다(전체 이력), 아니면 잡 상세 안의 표.
+ */
+export function RunsTable({
+  runs,
+  showJob,
+  isMobile = false,
+  initialOpen = null,
+  emptyText,
+}: {
+  runs: BatchRun[]
+  showJob: boolean
+  isMobile?: boolean
+  /** 처음부터 펼쳐 둘 회차 id(결과 배너의 "회차 보기"). 새 id 가 오면 그 회차를 펼치고, 사라져도(필터 변경) 펼친 행은 그대로 둔다. */
+  initialOpen?: string | null
+  emptyText: string
+}) {
+  // ?open= 이 새 값으로 바뀌면 그 회차를 펼친다 — 어떤 initialOpen 에서 파생했는지 같이 들고 있어 렌더 중에 바꾼다(effect 없이).
+  const [state, setState] = useState<{ from: string | null; open: string | null }>({ from: initialOpen, open: initialOpen })
+  const arrived = initialOpen !== null && state.from !== initialOpen
+  if (arrived) setState({ from: initialOpen, open: initialOpen })
+  const open = arrived ? initialOpen : state.open
+  const toggle = (id: string) => setState({ from: initialOpen, open: open === id ? null : id })
 
-  if (runs.length === 0) return <p className="card-muted route-empty">{emptyText}</p>
+  if (runs.length === 0) return <p className="card-muted">{emptyText}</p>
+
+  if (isMobile) {
+    return (
+      <ul className="card-rows">
+        {runs.map((r) => (
+          <li key={r.id} className="deploy-card">
+            <button type="button" className="deploy-card-toggle" onClick={() => toggle(r.id)} aria-expanded={open === r.id}>
+              <span className="card-title">{showJob ? `${r.service}/${r.jobName}` : formatUtcDateTime(r.startedAt)}</span>
+              <span className="card-line card-muted">
+                {showJob && `${formatUtcDateTime(r.startedAt)} · `}
+                {TRIGGER_LABELS[r.trigger]}
+                {r.triggeredBy && ` · ${r.triggeredBy}`}
+              </span>
+              <span className="card-line">
+                <RunStatusPill status={r.status} /> {durationLabel(r)}
+              </span>
+            </button>
+            {open === r.id && <RunDetail run={r} />}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  const columns = showJob ? 5 : 4
   return (
-    <table className="list-table deploy-table batch-runs">
-      <thead>
-        <tr>
-          <th>시작</th>
-          {showJob && <th>잡</th>}
-          <th>실행</th>
-          <th>상태</th>
-          <th>소요</th>
-        </tr>
-      </thead>
-      <tbody>
-        {runs.map((r) => {
-          const isOpen = open === r.id
-          return (
-            <Fragment key={r.id}>
-              <tr className="clickable-row" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.id)}>
-                <td>{formatUtcDateTime(r.startedAt)}</td>
-                {showJob && (
+    <div className="card-table-wrap">
+      <table className="list-table card-table deploy-table batch-runs">
+        <colgroup>
+          <col style={{ width: showJob ? '18%' : '24%' }} />
+          {showJob && <col style={{ width: '30%' }} />}
+          <col />
+          <col style={{ width: showJob ? '12%' : '16%' }} />
+          <col style={{ width: showJob ? '10%' : '14%' }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>시작</th>
+            {showJob && <th>서비스 / 잡</th>}
+            <th>실행</th>
+            <th>상태</th>
+            <th>소요</th>
+          </tr>
+        </thead>
+        <tbody>
+          {runs.map((r) => {
+            const isOpen = open === r.id
+            return (
+              <Fragment key={r.id}>
+                <tr className="clickable-row" aria-expanded={isOpen} onClick={() => toggle(r.id)}>
+                  <td>{formatUtcDateTime(r.startedAt)}</td>
+                  {showJob && (
+                    <td>
+                      <Link to={jobPath(r.batchJobId)} onClick={(e) => e.stopPropagation()}>
+                        {r.service}/{r.jobName}
+                      </Link>
+                    </td>
+                  )}
                   <td>
-                    <Link to={jobPath(r.batchJobId)} onClick={(e) => e.stopPropagation()}>
-                      {r.service}/{r.jobName}
-                    </Link>
+                    {TRIGGER_LABELS[r.trigger]}
+                    {r.triggeredBy && <span className="card-muted"> · {r.triggeredBy}</span>}
                   </td>
-                )}
-                <td>
-                  {TRIGGER_LABELS[r.trigger]}
-                  {r.triggeredBy && <span className="card-muted"> · {r.triggeredBy}</span>}
-                </td>
-                <td>
-                  <RunStatusPill status={r.status} />
-                </td>
-                <td className="deploy-num">{durationLabel(r)}</td>
-              </tr>
-              {isOpen && (
-                <tr className="deploy-row-detail">
-                  <td colSpan={showJob ? 5 : 4}>
-                    <RunDetail run={r} />
+                  <td>
+                    <RunStatusPill status={r.status} />
                   </td>
+                  <td className="deploy-num">{durationLabel(r)}</td>
                 </tr>
-              )}
-            </Fragment>
-          )
-        })}
-      </tbody>
-    </table>
+                {isOpen && (
+                  <tr className="deploy-panel-row">
+                    <td colSpan={columns}>
+                      <RunDetail run={r} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
