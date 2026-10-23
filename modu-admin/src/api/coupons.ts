@@ -188,3 +188,27 @@ export function validateCoupon(input: CouponInput): string | null {
   if (input.code != null && !COUPON_CODE.test(input.code)) return '쿠폰 코드는 영문 대문자·숫자 4~20자입니다'
   return null
 }
+
+/** 쿠폰 성과(백오피스 상세). 장 수는 받은 쿠폰, 돈은 이 쿠폰을 쓴 주문(취소 제외). usedByDay 는 표시 시간대 날짜로 묶은 최근 days 일. */
+export interface CouponPerformance {
+  couponId: number
+  issued: number
+  used: number
+  available: number
+  expired: number
+  /** 0~100, 발급이 없으면 null */
+  usageRate: number | null
+  bySource: { source: CouponSource; count: number }[]
+  orders: number
+  cancelledOrders: number
+  discountTotal: number
+  revenue: number
+  avgOrderAmount: number | null
+  zone: string
+  days: number
+  usedByDay: { date: string; count: number }[]
+}
+
+export const getCouponPerformance = (id: string, days: number, zone: string) =>
+  api<CouponPerformance>(`${BASE}/${encodeURIComponent(id)}/performance?days=${days}&zone=${encodeURIComponent(zone)}`)
+

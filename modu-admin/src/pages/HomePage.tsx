@@ -15,6 +15,7 @@ import {
   type Trend,
   trend,
 } from '../api/stats'
+import DayBars, { type Tone } from '../components/DayBars'
 import { formatPrice } from '../util/format'
 import { useDisplayTimeZone } from '../util/timeZone'
 
@@ -46,10 +47,6 @@ async function load<T>(fetcher: () => Promise<T>, fallback: string): Promise<Loa
 
 const num = (n: number) => n.toLocaleString('ko-KR')
 const count = (unit: string) => (n: number) => `${num(n)}${unit}`
-const shortDate = (iso: string) => iso.slice(5).replace('-', '.')
-
-type Tone = 'indigo' | 'green' | 'amber' | 'violet'
-
 /** 어제 대비를 알약으로. 오르면 초록, 내리면 빨강, 같으면 회색. */
 function DeltaPill({ t }: { t: Trend }) {
   const diff = t.today - t.yesterday
@@ -89,47 +86,6 @@ function MetricRow({ label, value, t, sub }: { label: string; value: string; t?:
       <span className="home-metric-label">{label}</span>
       <span className="home-metric-value">{value}</span>
       <span className="home-metric-side">{t ? <DeltaPill t={t} /> : sub}</span>
-    </div>
-  )
-}
-
-interface Series {
-  name: string
-  values: number[]
-  fmt: (n: number) => string
-}
-
-/** 패널 오른쪽 7일 막대. 여러 계열이면 날짜마다 나란히. 오늘은 진하게. */
-function DayBars({ dates, series, tone }: { dates: string[]; series: Series[]; tone: Tone }) {
-  const max = Math.max(1, ...series.flatMap((s) => s.values))
-  return (
-    <div className={`home-chart home-chart--${tone}`} aria-label="7일 추이">
-      <div className="home-chart-bars">
-        {dates.map((date, i) => (
-          <div key={date} className="home-chart-day">
-            <div className="home-chart-group">
-              {series.map((s) => (
-                <span
-                  key={s.name}
-                  className={`home-chart-bar${i === dates.length - 1 ? ' home-chart-bar--today' : ''}`}
-                  style={{ height: `${Math.max(4, ((s.values[i] ?? 0) / max) * 100)}%` }}
-                  title={`${shortDate(date)} ${s.name} ${s.fmt(s.values[i] ?? 0)}`}
-                />
-              ))}
-            </div>
-            <span className="home-chart-label">{i === 0 || i === dates.length - 1 || i === Math.floor(dates.length / 2) ? shortDate(date) : ''}</span>
-          </div>
-        ))}
-      </div>
-      {series.length > 1 && (
-        <div className="home-chart-legend">
-          {series.map((s, i) => (
-            <span key={s.name} className={`home-chart-key home-chart-key--${i}`}>
-              {s.name}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -237,7 +193,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
                 <MetricRow label="활동 · 채팅" value={people(activeOf('CHAT')?.today ?? 0)} sub={`7일 ${people(activeOf('CHAT')?.week ?? 0)}`} />
                 <MetricRow label="활동 · 커머스" value={people(activeOf('COMMERCE')?.today ?? 0)} sub={`7일 ${people(activeOf('COMMERCE')?.week ?? 0)}`} />
               </div>
-              <DayBars dates={member.data.days.map((d) => d.date)} series={[{ name: '신규 가입', values: signups.series, fmt: people }]} tone="indigo" />
+              <DayBars dates={member.data.days.map((d) => d.date)} series={[{ name: '신규 가입', values: signups.series, fmt: people }]} tone="indigo" label={`${days}일 추이`} />
             </>
           )}
         </Panel>
@@ -250,7 +206,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
                 <MetricRow label="새 채팅방" value={count('개')(rooms.today)} t={rooms} />
                 <MetricRow label={`${days}일 메시지`} value={cases(messages.total)} sub="시스템 안내 제외" />
               </div>
-              <DayBars dates={chat.data.days.map((d) => d.date)} series={[{ name: '메시지', values: messages.series, fmt: cases }]} tone="green" />
+              <DayBars dates={chat.data.days.map((d) => d.date)} series={[{ name: '메시지', values: messages.series, fmt: cases }]} tone="green" label={`${days}일 추이`} />
             </>
           )}
         </Panel>
@@ -271,6 +227,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
                   { name: '취소', values: cancelled.series, fmt: cases },
                 ]}
                 tone="amber"
+                label={`${days}일 추이`}
               />
             </>
           )}
@@ -292,6 +249,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
                   { name: '사용', values: spent.series, fmt: points },
                 ]}
                 tone="violet"
+                label={`${days}일 추이`}
               />
             </>
           )}

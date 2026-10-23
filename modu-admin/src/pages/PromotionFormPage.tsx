@@ -33,6 +33,7 @@ import Pager from '../components/Pager'
 import { formatPrice } from '../util/format'
 import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
 import Select from '../components/Select'
+import PromotionPerformanceSection from '../components/PromotionPerformance'
 
 /** 배너 색 빠른 선택. */
 const BANNER_PALETTE = ['#E11D48', '#F97316', '#F59E0B', '#16A34A', '#0EA5E9', '#2563EB', '#7C3AED', '#DB2777', '#111827']
@@ -347,6 +348,7 @@ export default function PromotionFormPage() {
           {editing && savedTitle && <p className="page-head-sub">{savedTitle}</p>}
         </div>
       </div>
+      {editing && id && <PromotionPerformanceSection promotionId={id} />}
       <div className="detail-layout detail-layout--aside-right">
         <div className="detail-main">
           <form className="form-card form-stack" onSubmit={onSubmit} noValidate>

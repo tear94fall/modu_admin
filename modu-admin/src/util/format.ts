@@ -20,3 +20,7 @@ export const STAFF_LABELS: Record<StaffPermission, string> = {
 export function formatPrice(price: number): string {
   return `${price.toLocaleString('ko-KR')}원`
 }
+
+/** '2026-10-23' → '10.23' (막대 라벨·기간 문구). */
+export const shortMonthDay = (iso: string) => iso.slice(5).replace('-', '.')
+

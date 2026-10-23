@@ -89,6 +89,23 @@ describe('CouponFormPage', () => {
     vi.restoreAllMocks()
     vi.spyOn(categories, 'getCategories').mockResolvedValue(tree)
     vi.spyOn(coupons, 'getCouponIssues').mockResolvedValue(emptyPage)
+    vi.spyOn(coupons, 'getCouponPerformance').mockResolvedValue({
+      couponId: 1,
+      issued: 0,
+      used: 0,
+      available: 0,
+      expired: 0,
+      usageRate: null,
+      bySource: [],
+      orders: 0,
+      cancelledOrders: 0,
+      discountTotal: 0,
+      revenue: 0,
+      avgOrderAmount: null,
+      zone: 'Asia/Seoul',
+      days: 14,
+      usedByDay: [],
+    })
   })
 
   it('creates a fixed-amount coupon for all products with a code and unlimited quantity', async () => {

@@ -63,7 +63,7 @@ describe('HomePage', () => {
 
     const chat = screen.getByRole('region', { name: '메신저' })
     expect(within(chat).getByText('보낸 메시지').nextElementSibling).toHaveTextContent('120건')
-    expect(within(chat).getByText('180건')).toBeInTheDocument()
+    expect(within(chat).getByText('7일 메시지').nextElementSibling).toHaveTextContent('180건')
 
     const commerce = screen.getByRole('region', { name: '커머스' })
     expect(within(commerce).getByText('실결제액').nextElementSibling).toHaveTextContent('35,000원')
