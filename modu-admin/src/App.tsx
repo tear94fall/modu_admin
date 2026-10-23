@@ -1,7 +1,8 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth'
 import Layout from './components/Layout'
 import AppSettingsPage from './pages/AppSettingsPage'
+import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import MemberDetailPage from './pages/MemberDetailPage'
 import MembersPage from './pages/MembersPage'
@@ -40,7 +41,7 @@ export default function App() {
             </RequireAuth>
           }
         >
-          <Route path="/" element={<Navigate to="/members" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/members/:id" element={<MemberDetailPage />} />
           <Route path="/rooms" element={<RoomsPage />} />

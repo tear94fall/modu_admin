@@ -2432,3 +2432,58 @@ button, input, select, textarea, optgroup { font-family: inherit; }
   .points-shell > .member-tabs { padding: 0 12px; }
   .points-table-wrap { margin: 0 -16px; }
 }
+
+/* 홈 "오늘의 지표": 위에 큰 숫자 네 개(hero), 아래 서비스 패널 2열 — 패널은 전부 [지표 목록 | 7일 막대] 같은 꼴이라 한 화면으로 읽힌다.
+   서비스마다 색 하나(회원 남색·메신저 초록·커머스 호박·포인트 보라)를 점·막대·hero 에 같이 쓴다. */
+.home-page { --tone: #4f46e5; --tone-soft: #e0e7ff; --tone-bg: #eef2ff; }
+.hero-tile--indigo, .home-panel--indigo, .home-chart--indigo { --tone: #4f46e5; --tone-soft: #c7d2fe; --tone-bg: #eef2ff; }
+.hero-tile--green, .home-panel--green, .home-chart--green { --tone: #059669; --tone-soft: #a7f3d0; --tone-bg: #ecfdf5; }
+.hero-tile--amber, .home-panel--amber, .home-chart--amber { --tone: #d97706; --tone-soft: #fde68a; --tone-bg: #fffbeb; }
+.hero-tile--violet, .home-panel--violet, .home-chart--violet { --tone: #7c3aed; --tone-soft: #ddd6fe; --tone-bg: #f5f3ff; }
+
+.home-hero { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 4px; }
+.hero-tile { display: grid; gap: 6px; align-content: start; min-width: 0; padding: 16px 18px; border: 1px solid var(--tone-soft); border-radius: 14px;
+  background: linear-gradient(160deg, var(--tone-bg), #fff 70%); }
+.hero-tile-label { font-size: 12px; font-weight: 600; color: var(--tone); letter-spacing: 0.01em; }
+.hero-tile-value { font-size: 28px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; color: #111827; }
+.hero-tile-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.hero-tile--empty .hero-tile-value { color: #9ca3af; }
+
+.delta-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.delta-pill--up { background: #dcfce7; color: #15803d; }
+.delta-pill--down { background: #fee2e2; color: #b91c1c; }
+.delta-pill--flat { background: #f3f4f6; color: #6b7280; }
+
+.home-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+.home-panel { min-width: 0; border: 1px solid #e5e7eb; border-radius: 14px; background: #fff; padding: 14px 18px 16px; }
+.home-panel-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.home-dot { align-self: center; width: 10px; height: 10px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 0 4px var(--tone-bg); }
+.home-panel-title { margin: 0; font-size: 15px; font-weight: 700; }
+.home-panel-caption { font-size: 12px; color: var(--color-muted); }
+.home-panel-error, .home-panel-loading { margin: 8px 0 0; }
+.home-panel-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 44%); gap: 16px; align-items: stretch; }
+
+.home-metrics { display: grid; align-content: start; }
+.home-metric { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid #f3f4f6; }
+.home-metric:first-child { border-top: 0; padding-top: 0; }
+.home-metric-label { font-size: 13px; color: #374151; }
+.home-metric-value { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.home-metric-side { min-width: 92px; text-align: right; font-size: 12px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+
+.home-chart { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; padding: 10px 10px 6px; border-radius: 10px; background: var(--tone-bg); min-height: 120px; }
+.home-chart-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; align-items: end; height: 100%; }
+.home-chart-day { display: grid; grid-template-rows: minmax(0, 1fr) 14px; gap: 4px; height: 100%; min-width: 0; }
+.home-chart-group { display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 100%; }
+.home-chart-bar { flex: 1; max-width: 18px; min-width: 4px; border-radius: 3px 3px 0 0; background: var(--tone-soft); transition: height 0.2s; }
+.home-chart-bar--today { background: var(--tone); }
+.home-chart-group .home-chart-bar:nth-child(2) { opacity: 0.55; }
+.home-chart-label { font-size: 10px; color: var(--color-muted); text-align: center; white-space: nowrap; }
+.home-chart-legend { display: flex; gap: 10px; font-size: 11px; color: var(--color-muted); }
+.home-chart-key::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 2px; background: var(--tone); vertical-align: 0; }
+.home-chart-key--1::before { opacity: 0.55; }
+
+@media (max-width: 1100px) { .home-hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-panels { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .home-hero { grid-template-columns: 1fr; } .home-panel-body { grid-template-columns: 1fr; } .home-metric-side { min-width: 0; } }
+.home-period { white-space: nowrap; }
+.home-days { align-self: center; margin: 0; }
+
