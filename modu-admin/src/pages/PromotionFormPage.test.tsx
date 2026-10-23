@@ -120,6 +120,7 @@ describe('PromotionFormPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.spyOn(points, 'listRules').mockResolvedValue(rules)
+    vi.spyOn(promotions, 'getPromotionPerformance').mockResolvedValue({ promotionId: 1, exhibition: null, attendance: null, coupons: null })
     vi.spyOn(promotions, 'getAttendances').mockResolvedValue({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 15 })
   })
 

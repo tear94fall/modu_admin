@@ -169,3 +169,33 @@ export function validatePromotion(input: PromotionInput): string | null {
 /** 보상 규칙 선택지 글자. "출석 체크 (DAILY_CHECKIN) · 10 P · 하루 1회" */
 export const ruleOptionLabel = (r: PointRule) =>
   `${r.name} (${r.code}) · ${formatPoints(r.points)} · ${r.dailyLimit == null ? '하루 무제한' : `하루 ${r.dailyLimit}회`}`
+
+/** 기획전·이벤트 성과. 종류에 맞는 항목만 온다(기획전 → exhibition, 출석 → attendance, 쿠폰 받기 → coupons). */
+export interface ExhibitionPerformance {
+  orders: number
+  cancelledOrders: number
+  units: number
+  sales: number
+  products: { productId: number; name: string; units: number; sales: number }[]
+}
+export interface AttendancePerformance {
+  participants: number
+  checks: number
+  rewardPoints: number
+  byDay: { date: string; count: number }[]
+}
+export interface EventCouponPerformance {
+  couponId: number
+  name: string
+  issued: number
+  used: number
+}
+export interface PromotionPerformance {
+  promotionId: number
+  exhibition: ExhibitionPerformance | null
+  attendance: AttendancePerformance | null
+  coupons: EventCouponPerformance[] | null
+}
+
+export const getPromotionPerformance = (id: string) => api<PromotionPerformance>(`${BASE}/${encodeURIComponent(id)}/performance`)
+

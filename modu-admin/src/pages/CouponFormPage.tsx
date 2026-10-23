@@ -31,6 +31,7 @@ import { type ProductStatus, searchProducts, STATUS_LABELS, validationMessage } 
 import { formatPromotionDate } from '../api/promotions'
 import Pager from '../components/Pager'
 import { formatPrice } from '../util/format'
+import CouponPerformanceSection from '../components/CouponPerformance'
 import { formatUtcDateTime, timeZoneLabel, useDisplayTimeZone } from '../util/timeZone'
 
 const MAX_SCOPE_PRODUCTS = 100
@@ -508,40 +509,7 @@ export default function CouponFormPage() {
           {saved && <p className="page-head-sub">발급 {quantityLabel(saved)}</p>}
         </div>
       </div>
-      {saved && (
-        <section className="stat-grid coupon-stat-grid" aria-label="발급 요약">
-          <div className="stat-card">
-            <span className="stat-card-label">발급</span>
-            <span className="stat-card-value">
-              {saved.issuedCount.toLocaleString('ko-KR')}
-              <span className="stat-card-unit">장</span>
-            </span>
-            <span className="stat-card-sub">{saved.totalQuantity != null ? `총 ${saved.totalQuantity.toLocaleString('ko-KR')}장 중` : '수량 무제한'}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card-label">사용</span>
-            <span className="stat-card-value">
-              {saved.usedCount.toLocaleString('ko-KR')}
-              <span className="stat-card-unit">장</span>
-            </span>
-            <span className="stat-card-sub">{saved.issuedCount > 0 ? `사용률 ${Math.round((saved.usedCount / saved.issuedCount) * 100)}%` : '아직 발급 없음'}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card-label">남은 수량</span>
-            <span className="stat-card-value">
-              {saved.totalQuantity != null ? (
-                <>
-                  {Math.max(0, saved.totalQuantity - saved.issuedCount).toLocaleString('ko-KR')}
-                  <span className="stat-card-unit">장</span>
-                </>
-              ) : (
-                '무제한'
-              )}
-            </span>
-            <span className="stat-card-sub">1인 1장</span>
-          </div>
-        </section>
-      )}
+      {editing && id && saved && <CouponPerformanceSection couponId={id} coupon={saved} />}
       <div className={editing && id ? 'detail-layout detail-layout--aside-right' : undefined}>
         <div className="detail-main">
           <form className="form-card form-stack" onSubmit={onSubmit} noValidate>
