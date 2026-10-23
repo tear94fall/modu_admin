@@ -1,13 +1,29 @@
-import { useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
-import { changeOrderStatus, getOrder, NEXT_STATUSES, type OrderDetail, ORDER_STATUS_LABELS, type OrderStatus } from '../api/orders'
+import {
+  ACTOR_LABELS,
+  CANCEL_REASONS,
+  CARRIERS,
+  type ChangeStatusInput,
+  changeOrderStatus,
+  getOrder,
+  type OrderDetail,
+  ORDER_STATUS_LABELS,
+} from '../api/orders'
 import { validationMessage } from '../api/products'
 import CopyButton from '../components/CopyButton'
+import OrderTimeline from '../components/OrderTimeline'
+import Select from '../components/Select'
 import { formatDateTime, formatPrice } from '../util/format'
 import { statusClass } from './OrdersPage'
 
-/** 주문 상세와 상태 변경. 허용된 다음 상태만 버튼으로 보이고, 취소는 확인을 거친다. */
+const REFUND_LABELS = { NONE: '', PENDING: '포인트 환불 보내는 중', DONE: '포인트 환불됨', FAILED: '포인트 환불 실패 — 확인 필요' } as const
+
+/**
+ * 주문 상세와 운영 처리. 결제완료면 배송 시작(택배사·송장)과 취소(사유)를, 배송중이면 배송 완료를 할 수 있다.
+ * 배송 정보·취소/환불·처리 이력을 함께 보여 준다.
+ */
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [order, setOrder] = useState<OrderDetail | null>(null)
@@ -17,6 +33,13 @@ export default function OrderDetailPage() {
   const [working, setWorking] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // 배송 시작 폼
+  const [carrier, setCarrier] = useState<string>(CARRIERS[0])
+  const [customCarrier, setCustomCarrier] = useState('')
+  const [trackingNo, setTrackingNo] = useState('')
+  // 취소 폼
+  const [reason, setReason] = useState<string>(CANCEL_REASONS[0])
+  const [customReason, setCustomReason] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -38,22 +61,34 @@ export default function OrderDetailPage() {
     }
   }, [id])
 
-  const change = async (next: OrderStatus) => {
-    if (!id || !order) return
-    if (next === 'CANCELLED' && !window.confirm(`주문 ${order.orderNo} 을 취소할까요? 재고가 복구됩니다.`)) return
+  const apply = async (input: ChangeStatusInput, done: string) => {
+    if (!id) return
     setMessage(null)
     setError(null)
     setWorking(true)
     try {
-      const saved = await changeOrderStatus(id, next)
+      const saved = await changeOrderStatus(id, input)
       setOrder(saved)
-      setMessage(`${ORDER_STATUS_LABELS[next]} 으로 바꿨습니다`)
+      setMessage(done)
     } catch (err) {
       setError(validationMessage(err) ?? '상태를 바꾸지 못했습니다')
     } finally {
       setWorking(false)
     }
   }
+  const ship = (e: FormEvent) => {
+    e.preventDefault()
+    const c = carrier === '기타' ? customCarrier.trim() : carrier
+    void apply({ status: 'SHIPPING', carrier: c, trackingNo: trackingNo.trim() }, '배송중으로 바꿨습니다')
+  }
+  const cancel = (e: FormEvent) => {
+    e.preventDefault()
+    if (!order) return
+    const r = reason === '기타' ? customReason.trim() : reason
+    if (!window.confirm(`주문 ${order.orderNo} 을 취소할까요? 재고·쿠폰·포인트가 돌아갑니다.\n사유: ${r}`)) return
+    void apply({ status: 'CANCELLED', reason: r }, '주문을 취소했습니다')
+  }
+  const deliver = () => void apply({ status: 'DELIVERED' }, '배송완료로 바꿨습니다')
 
   const backLink = (
     <Link to="/orders" className="back-link">
@@ -70,8 +105,8 @@ export default function OrderDetailPage() {
     )
   if (loadError || !order) return <p className="error-text">{loadError}</p>
 
-  const next = NEXT_STATUSES[order.status]
   const quantity = order.items.reduce((sum, item) => sum + item.quantity, 0)
+  const refund = order.pointRefundStatus ?? 'NONE'
 
   return (
     <div>
@@ -119,30 +154,69 @@ export default function OrderDetailPage() {
             <dd>
               {order.paymentMethod} · {formatDateTime(order.paidAt)}
             </dd>
+            {order.shippedAt && (
+              <>
+                <dt>배송 시작</dt>
+                <dd>{formatDateTime(order.shippedAt)}</dd>
+              </>
+            )}
+            {order.deliveredAt && (
+              <>
+                <dt>배송 완료</dt>
+                <dd>{formatDateTime(order.deliveredAt)}</dd>
+              </>
+            )}
             {order.cancelledAt && (
               <>
                 <dt>취소</dt>
-                <dd>{formatDateTime(order.cancelledAt ?? undefined)}</dd>
+                <dd>{formatDateTime(order.cancelledAt)}</dd>
               </>
             )}
           </dl>
 
-          {(next.length > 0 || message || error) && (
-            <div className="member-profile-section">
-              <h2 className="member-profile-section-title">상태 변경</h2>
-              {next.length > 0 && (
-                <div className="summary-actions">
-                  {next.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={n === 'CANCELLED' ? 'btn btn--danger' : 'btn btn--primary'}
-                      disabled={working}
-                      onClick={() => change(n)}
-                    >
-                      {n === 'CANCELLED' ? '주문 취소' : `${ORDER_STATUS_LABELS[n]} 으로`}
+          {(order.status === 'PAID' || order.status === 'SHIPPING' || message || error) && (
+            <div className="member-profile-section" aria-label="처리">
+              <h2 className="member-profile-section-title">처리</h2>
+              {order.status === 'PAID' && (
+                <>
+                  <form className="op-form" onSubmit={ship} aria-label="배송 시작">
+                    <div className="op-form-row">
+                      <Select
+                        aria-label="택배사"
+                        value={carrier}
+                        onChange={setCarrier}
+                        options={[...CARRIERS.map((c) => ({ value: c, label: c })), { value: '기타', label: '기타(직접 입력)' }]}
+                      />
+                      {carrier === '기타' && (
+                        <input aria-label="택배사 이름" placeholder="택배사 이름" maxLength={30} value={customCarrier} onChange={(e) => setCustomCarrier(e.target.value)} />
+                      )}
+                      <input aria-label="송장번호" placeholder="송장번호" maxLength={40} value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} />
+                    </div>
+                    <button type="submit" className="btn btn--primary" disabled={working || trackingNo.trim() === '' || (carrier === '기타' && customCarrier.trim() === '')}>
+                      배송 시작
                     </button>
-                  ))}
+                  </form>
+                  <form className="op-form op-form--danger" onSubmit={cancel} aria-label="주문 취소">
+                    <div className="op-form-row">
+                      <Select
+                        aria-label="취소 사유"
+                        value={reason}
+                        onChange={setReason}
+                        options={[...CANCEL_REASONS.map((r) => ({ value: r, label: r })), { value: '기타', label: '기타(직접 입력)' }]}
+                      />
+                      {reason === '기타' && <input aria-label="취소 사유 입력" placeholder="사유" maxLength={200} value={customReason} onChange={(e) => setCustomReason(e.target.value)} />}
+                    </div>
+                    <button type="submit" className="btn btn--danger" disabled={working || (reason === '기타' && customReason.trim() === '')}>
+                      주문 취소
+                    </button>
+                  </form>
+                </>
+              )}
+              {order.status === 'SHIPPING' && (
+                <div className="summary-actions">
+                  <button type="button" className="btn btn--primary" disabled={working} onClick={deliver}>
+                    배송완료로
+                  </button>
                 </div>
               )}
               {message && <p className="result-text">{message}</p>}
@@ -154,35 +228,45 @@ export default function OrderDetailPage() {
         <div className="detail-main">
           <section className="section-card" aria-label="주문 상품">
             <div className="section-card-head">
-              <h2 className="section-card-title">상품 ({order.items.length})</h2>
+              <h2 className="section-card-title">주문 상품</h2>
             </div>
             <ul className="order-items">
               {order.items.map((item) => (
                 <li key={item.id} className="order-item">
                   {item.imageUrl ? <img src={item.imageUrl} alt="" className="product-thumb" /> : <span className="product-thumb image-placeholder" />}
-                  <span className="order-item-body">
-                    <span className="card-title">{item.productName}</span>
-                    {item.optionLabel && <span className="card-line card-muted">{item.optionLabel}</span>}
-                    <span className="card-line">
+                  <div className="order-item-body">
+                    <Link to={`/products/${item.productId}`} className="order-item-name">
+                      {item.productName}
+                    </Link>
+                    <span className="card-muted">{item.optionLabel}</span>
+                  </div>
+                  <div className="order-item-amount">
+                    <span className="card-muted">
                       {formatPrice(item.unitPrice)} × {item.quantity}
                     </span>
-                  </span>
-                  <span className="order-item-amount">{formatPrice(item.lineAmount)}</span>
+                    <strong>{formatPrice(item.lineAmount)}</strong>
+                  </div>
                 </li>
               ))}
             </ul>
-            <div className="order-sum">
-              <div className="order-total muted">
+            <div className="order-total">
+              <div className="order-total-row">
                 <span>상품 금액</span>
                 <span>{formatPrice(order.totalAmount)}</span>
               </div>
+              {(order.couponDiscount ?? 0) > 0 && (
+                <div className="order-total-row">
+                  <span>쿠폰 할인{order.couponName ? ` (${order.couponName})` : ''}</span>
+                  <span>-{formatPrice(order.couponDiscount ?? 0)}</span>
+                </div>
+              )}
               {order.pointAmount > 0 && (
-                <div className="order-total muted">
-                  <span>포인트 사용{order.status === 'CANCELLED' ? ' (환불됨)' : ''}</span>
+                <div className="order-total-row">
+                  <span>포인트 사용</span>
                   <span>-{formatPrice(order.pointAmount)}</span>
                 </div>
               )}
-              <div className="order-total order-total--grand">
+              <div className="order-total-row order-total-row--sum">
                 <span>결제 금액</span>
                 <strong>{formatPrice(order.paymentAmount)}</strong>
               </div>
@@ -192,6 +276,7 @@ export default function OrderDetailPage() {
           <section className="section-card" aria-label="배송 정보">
             <div className="section-card-head">
               <h2 className="section-card-title">배송 정보</h2>
+              {order.trackingNo && <span className="card-muted">{order.status === 'DELIVERED' ? '배송 완료' : '배송 중'}</span>}
             </div>
             <dl className="kv-grid">
               <dt>받는 사람</dt>
@@ -202,7 +287,44 @@ export default function OrderDetailPage() {
               <dd>
                 ({order.zipCode}) {order.address1} {order.address2 ?? ''}
               </dd>
+              {order.trackingNo && (
+                <>
+                  <dt>택배</dt>
+                  <dd className="member-profile-id">
+                    {order.carrier} <code>{order.trackingNo}</code>
+                    <CopyButton text={order.trackingNo} label="송장번호 복사" />
+                  </dd>
+                </>
+              )}
             </dl>
+          </section>
+
+          {order.status === 'CANCELLED' && (
+            <section className="section-card section-card--cancel" aria-label="취소·환불">
+              <div className="section-card-head">
+                <h2 className="section-card-title">취소 · 환불</h2>
+                <span className="card-muted">{order.cancelledBy ? `${ACTOR_LABELS[order.cancelledBy]} 취소` : ''}</span>
+              </div>
+              <dl className="kv-grid">
+                <dt>사유</dt>
+                <dd>{order.cancelReason ?? '(사유 없음)'}</dd>
+                <dt>환불</dt>
+                <dd>
+                  결제 {formatPrice(order.paymentAmount)} 환불(모의)
+                  {order.pointAmount > 0 && ` · ${REFUND_LABELS[refund] || `포인트 ${formatPrice(order.pointAmount)}`}`}
+                  {(order.couponDiscount ?? 0) > 0 && ' · 쿠폰 반환됨'}
+                </dd>
+                <dt>재고</dt>
+                <dd>주문 수량 {quantity}개 복구됨</dd>
+              </dl>
+            </section>
+          )}
+
+          <section className="section-card" aria-label="처리 이력">
+            <div className="section-card-head">
+              <h2 className="section-card-title">처리 이력</h2>
+            </div>
+            <OrderTimeline events={order.events ?? []} />
           </section>
         </div>
       </div>

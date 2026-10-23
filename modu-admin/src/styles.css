@@ -2187,6 +2187,17 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 .section-card .order-items { gap: 0; margin: 0 -20px; border-top: 1px solid #eef0f3; }
 .section-card .order-item { padding: 14px 20px; border-bottom: 1px solid #eef0f3; }
 .section-card .order-item .product-thumb { width: 56px; height: 56px; border-radius: 8px; }
+/* 상품명 링크는 본문 색, 올렸을 때만 밑줄 (브라우저 기본 파랑·보라 금지) */
+.order-item-name { color: #111827; font-weight: 600; text-decoration: none; }
+.order-item-name:hover { color: var(--color-accent); text-decoration: underline; }
+.order-item-name:visited { color: #111827; }
+/* 단가 × 수량 위, 줄 금액 아래 — 두 값이 한 줄에 붙어 보이지 않게 */
+.section-card .order-item-amount { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.section-card .order-item-amount strong { font-size: 15px; font-weight: 700; color: #111827; }
+.section-card .order-total { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 8px; padding-top: 14px; border-top: 0; font-size: 14px; }
+.order-total-row { display: flex; justify-content: space-between; gap: 16px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.order-total-row--sum { margin-top: 4px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 15px; color: #111827; font-weight: 600; }
+.order-total-row--sum strong { font-size: 20px; }
 .order-sum { display: grid; gap: 8px; margin-top: 16px; }
 .order-sum .order-total { padding-top: 0; border-top: 0; font-size: 14px; }
 .order-sum .order-total--grand { margin-top: 4px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 16px; }
@@ -2534,4 +2545,37 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 .home-chart--dense .home-chart-col { min-width: 1px; }
 .home-chart--dense .home-chart-bar { border-radius: 2px 2px 0 0; }
 .home-chart-plot { overflow: visible; }
+
+/* 주문 운영: 처리 폼(상세 사이드), 목록 일괄 배송, 모달, 처리 이력 타임라인 */
+.op-form { display: grid; gap: 8px; margin-bottom: 12px; }
+.op-form-row { display: grid; gap: 6px; }
+.op-form input { padding: 7px 10px; border: 1px solid var(--color-border); border-radius: 8px; font: inherit; }
+.op-form--danger { padding-top: 12px; border-top: 1px dashed #e5e7eb; }
+.bulk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
+.bulk-note { color: #b45309; }
+.check-cell { width: 32px; text-align: center; }
+.check-cell input { width: 15px; height: 15px; cursor: pointer; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, 0.45); }
+.modal { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; border-radius: 14px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25); }
+.modal--wide { width: min(760px, 100%); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #e5e7eb; }
+.modal-title { margin: 0; font-size: 16px; font-weight: 700; }
+.modal-close { border: 0; background: none; font-size: 22px; line-height: 1; color: var(--color-muted); cursor: pointer; }
+.modal-body { padding: 16px 18px; }
+.modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+.ship-carrier { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 10px; margin-bottom: 12px; }
+.ship-carrier input { padding: 7px 10px; border: 1px solid var(--color-border); border-radius: 8px; font: inherit; }
+.ship-table input { width: 100%; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 6px; font: inherit; }
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline-item { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; padding: 0 0 14px; }
+.timeline-item::before { content: ''; position: absolute; left: 6px; top: 14px; bottom: -2px; border-left: 2px solid #e5e7eb; }
+.timeline-item:last-child::before { display: none; }
+.timeline-dot { position: relative; z-index: 1; width: 14px; height: 14px; margin-top: 2px; border-radius: 50%; border: 3px solid #fff; background: #9ca3af; box-shadow: 0 0 0 1px #e5e7eb; }
+.timeline-item--paid .timeline-dot { background: #2563eb; }
+.timeline-item--shipping .timeline-dot { background: #d97706; }
+.timeline-item--delivered .timeline-dot { background: #16a34a; }
+.timeline-item--cancelled .timeline-dot { background: #dc2626; }
+.timeline-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 14px; }
+.timeline-meta { margin-top: 2px; font-size: 12px; color: var(--color-muted); overflow-wrap: anywhere; }
+.section-card--cancel { border-color: #fecaca; background: #fff7f7; }
 

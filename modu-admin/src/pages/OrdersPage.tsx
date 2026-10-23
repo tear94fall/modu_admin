@@ -1,7 +1,8 @@
-import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react'
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PAGE_SIZE } from '../api/client'
 import { ORDER_STATUS_LABELS, type OrderStatus, type OrderSummary, searchOrders } from '../api/orders'
+import OrderShipModal from '../components/OrderShipModal'
 import Pager from '../components/Pager'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { formatDateTime, formatPrice } from '../util/format'
@@ -32,6 +33,11 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /** 목록에서 체크한 주문 id. 상태와 무관하게 고를 수 있고, 목록이 바뀌면 비운다. */
+  const [selected, setSelected] = useState<number[]>([])
+  const allCheckRef = useRef<HTMLInputElement>(null)
+  const [shipping, setShipping] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -43,6 +49,7 @@ export default function OrdersPage() {
         setOrders(result.content)
         setPageNumber(result.number)
         setTotalPages(result.totalPages)
+        setSelected([])
       })
       .catch(() => {
         if (!cancelled) setError('주문 목록을 불러오지 못했습니다')
@@ -53,7 +60,7 @@ export default function OrdersPage() {
     return () => {
       cancelled = true
     }
-  }, [searchTerm, page, status])
+  }, [searchTerm, page, status, reloadKey])
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault()
@@ -69,6 +76,20 @@ export default function OrdersPage() {
   }
   const filtered = searchTerm !== '' || status !== null
   const title = (o: OrderSummary) => (o.itemCount > 1 ? `${o.firstItemName} 외 ${o.itemCount - 1}건` : o.firstItemName)
+  /** 체크한 주문 중 배송 처리가 가능한(결제완료) 것과 그렇지 않은 것 */
+  const picked = orders.filter((o) => selected.includes(o.id))
+  const shippable = picked.filter((o) => o.status === 'PAID')
+  const excluded = picked.length - shippable.length
+  const allChecked = orders.length > 0 && selected.length === orders.length
+  const toggle = (id: number) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  const toggleAll = () => setSelected(allChecked ? [] : orders.map((o) => o.id))
+  useEffect(() => {
+    if (allCheckRef.current) allCheckRef.current.indeterminate = selected.length > 0 && !allChecked
+  }, [selected.length, allChecked])
+  const shipDone = () => {
+    setShipping(false)
+    setReloadKey((k) => k + 1)
+  }
 
   return (
     <div>
@@ -96,6 +117,18 @@ export default function OrdersPage() {
         />
       </div>
 
+      {!isMobile && !loading && !error && orders.length > 0 && (
+        <div className="bulk-bar">
+          <span className="card-muted">
+            {selected.length === 0 ? '주문을 체크하면 한 번에 처리할 수 있습니다' : `${selected.length}건 선택`}
+            {excluded > 0 && <span className="bulk-note"> · 결제완료가 아닌 {excluded}건은 배송 처리에서 제외</span>}
+          </span>
+          <button type="button" className="btn btn--primary" disabled={shippable.length === 0} onClick={() => setShipping(true)}>
+            배송 처리{shippable.length > 0 ? ` (${shippable.length}건)` : ''}
+          </button>
+        </div>
+      )}
+      {shipping && <OrderShipModal orders={shippable} onClose={() => setShipping(false)} onDone={shipDone} />}
       {loading && <p>불러오는 중...</p>}
       {error && <p className="error-text">{error}</p>}
       {!loading && !error && orders.length === 0 && <p>{filtered ? '검색 결과가 없습니다' : '주문이 없습니다'}</p>}
@@ -129,15 +162,19 @@ export default function OrdersPage() {
         <>
           <table className="list-table">
             <colgroup>
-              <col style={{ width: '6%' }} />
+              <col style={{ width: '4%' }} />
+              <col style={{ width: '5%' }} />
               <col style={{ width: '16%' }} />
-              <col style={{ width: '30%' }} />
-              <col style={{ width: '14%' }} />
+              <col style={{ width: '29%' }} />
+              <col style={{ width: '13%' }} />
               <col style={{ width: '12%' }} />
-              <col style={{ width: '22%' }} />
+              <col style={{ width: '21%' }} />
             </colgroup>
             <thead>
               <tr>
+                <th className="check-cell">
+                  <input ref={allCheckRef} type="checkbox" aria-label="이 페이지 주문 전체 선택" checked={allChecked} onChange={toggleAll} />
+                </th>
                 <th className="num-cell">번호</th>
                 <th>주문번호</th>
                 <th>상품</th>
@@ -149,6 +186,9 @@ export default function OrdersPage() {
             <tbody>
               {orders.map((o, i) => (
                 <tr key={o.id} className="clickable-row" role="button" tabIndex={0} onClick={() => open(o.id)} onKeyDown={(e) => onRowKey(e, o.id)}>
+                  <td className="check-cell" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <input type="checkbox" aria-label={`${o.orderNo} 선택`} checked={selected.includes(o.id)} onChange={() => toggle(o.id)} />
+                  </td>
                   <td className="num-cell">{pageNumber * PAGE_SIZE + i + 1}</td>
                   <td>{o.orderNo}</td>
                   <td title={title(o)}>{title(o)}</td>
