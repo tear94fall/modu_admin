@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import * as stats from '../api/stats'
+import * as stock from '../api/stock'
 import HomePage from './HomePage'
 
 const days = ['2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23']
@@ -35,6 +36,15 @@ describe('HomePage', () => {
       days: days.map((date, i) => ({ date, orders: i === 6 ? 2 : 0, amount: i === 6 ? 35000 : 0, couponUsed: 0, cancelled: 0 })),
     })
     vi.spyOn(stats, 'getPointStats').mockRejectedValue(new ApiError(503, 'down'))
+    vi.spyOn(stock, 'getStockAlerts').mockResolvedValue({
+      low: 5,
+      high: 100,
+      salesDays: 30,
+      sellingProducts: 24,
+      soldOut: [{ productId: 7, name: '모두 버킷햇', imageUrl: null, wishCount: 3, skuCount: 1, sold: 0 }],
+      lowStock: [{ skuId: 1, productId: 2, productName: '모두 후드 집업', imageUrl: null, optionLabel: 'XL', stock: 5, wishCount: 0, sold: 2 }],
+      overstock: [],
+    })
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -66,6 +76,10 @@ describe('HomePage', () => {
     expect(within(chat).getByText('7일 메시지').nextElementSibling).toHaveTextContent('180건')
 
     const commerce = screen.getByRole('region', { name: '커머스' })
+    // 커머스 패널 아래 재고 경고 한 줄 → 재고 화면
+    const alert = within(commerce).getByRole('link', { name: '재고 경고' })
+    expect(alert).toHaveTextContent('품절 1종 · 부족 1종 · 과다 0종')
+    expect(alert).toHaveAttribute('href', '/stock')
     expect(within(commerce).getByText('실결제액').nextElementSibling).toHaveTextContent('35,000원')
 
     await waitFor(() => expect(screen.getByText('포인트 지표를 불러오지 못했습니다')).toBeInTheDocument())

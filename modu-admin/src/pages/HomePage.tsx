@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { errorMessage } from '../api/pushCampaigns'
 import {
@@ -15,6 +16,7 @@ import {
   type Trend,
   trend,
 } from '../api/stats'
+import { getStockAlerts, type StockAlerts } from '../api/stock'
 import DayBars, { type Tone } from '../components/DayBars'
 import { formatPrice } from '../util/format'
 import { useDisplayTimeZone } from '../util/timeZone'
@@ -90,6 +92,20 @@ function MetricRow({ label, value, t, sub }: { label: string; value: string; t?:
   )
 }
 
+/** 커머스 패널 아래 재고 경고 한 줄. 품절·부족·과다가 하나라도 있으면 주황, 없으면 회색. 누르면 재고 화면으로. */
+function StockAlertLink({ alerts }: { alerts: StockAlerts }) {
+  const soldOut = alerts.soldOut.length
+  const low = new Set(alerts.lowStock.map((s) => s.productId)).size
+  const over = new Set(alerts.overstock.map((s) => s.productId)).size
+  const warn = soldOut + low + over > 0
+  return (
+    <Link to="/stock" className={`home-alert${warn ? ' home-alert--warn' : ''}`} aria-label="재고 경고">
+      <span className="home-alert-text">{warn ? `품절 ${num(soldOut)}종 · 부족 ${num(low)}종 · 과다 ${num(over)}종` : '재고 경고 없음'}</span>
+      <span className="home-alert-more">재고 보기 ›</span>
+    </Link>
+  )
+}
+
 function Panel({ title, caption, tone, error, loading, children }: { title: string; caption: string; tone: Tone; error: string | null; loading: boolean; children?: ReactNode }) {
   return (
     <section className={`home-panel home-panel--${tone}`} aria-label={title}>
@@ -123,6 +139,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
   const [chat, setChat] = useState<Loaded<ChatStats> | null>(null)
   const [order, setOrder] = useState<Loaded<OrderStats> | null>(null)
   const [point, setPoint] = useState<Loaded<PointStats> | null>(null)
+  const [stock, setStock] = useState<Loaded<StockAlerts> | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -131,6 +148,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
     load(() => getChatStats(days, zone), '채팅 지표를 불러오지 못했습니다').then((r) => !cancelled && setChat(r))
     load(() => getOrderStats(days, zone), '주문 지표를 불러오지 못했습니다').then((r) => !cancelled && setOrder(r))
     load(() => getPointStats(days, zone), '포인트 지표를 불러오지 못했습니다').then((r) => !cancelled && setPoint(r))
+    load(() => getStockAlerts(), '재고 정보를 불러오지 못했습니다').then((r) => !cancelled && setStock(r))
     return () => {
       cancelled = true
     }
@@ -219,6 +237,7 @@ function HomeStats({ zone, days, onDays }: { zone: string; days: number; onDays:
                 <MetricRow label="실결제액" value={formatPrice(amount.today)} t={amount} />
                 <MetricRow label="쿠폰 사용 주문" value={cases(coupons.today)} t={coupons} />
                 <MetricRow label="취소" value={cases(cancelled.today)} t={cancelled} />
+                {stock?.data && <StockAlertLink alerts={stock.data} />}
               </div>
               <DayBars
                 dates={order.data.days.map((d) => d.date)}
