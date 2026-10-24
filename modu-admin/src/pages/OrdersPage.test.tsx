@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -61,5 +61,43 @@ describe('OrdersPage', () => {
     await userEvent.type(screen.getByLabelText('주문 검색'), 'ABC')
     await userEvent.click(screen.getByRole('button', { name: '검색' }))
     expect(search).toHaveBeenLastCalledWith('ABC', 0, { status: 'SHIPPING' })
+  })
+
+  it('selects paid orders and ships them in one go, then reloads the list', async () => {
+    const user = userEvent.setup()
+    const search = vi.spyOn(orders, 'searchOrders').mockResolvedValue(page([order(), order({ id: 2, orderNo: '20260919-ZZZ999', status: 'SHIPPING' }), order({ id: 3, orderNo: '20260919-QQQ333' })]))
+    const ship = vi.spyOn(orders, 'shipOrders').mockResolvedValue({
+      results: [
+        { orderId: 1, ok: true, message: null, status: 'SHIPPING' },
+        { orderId: 3, ok: false, message: '송장번호를 적어 주세요.', status: null },
+      ],
+    })
+    renderPage()
+    await screen.findByText('20260919-ZZZ999')
+
+    // 아무 주문이나 체크할 수 있고, 배송 처리는 결제완료 주문만 센다
+    expect(screen.getByRole('button', { name: '배송 처리' })).toBeDisabled()
+    await user.click(screen.getByRole('checkbox', { name: '이 페이지 주문 전체 선택' }))
+    expect(screen.getByText('3건 선택')).toBeInTheDocument()
+    expect(screen.getByText('· 결제완료가 아닌 1건은 배송 처리에서 제외')).toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: '20260919-ZZZ999 선택' }))
+    expect(screen.getByText('2건 선택')).toBeInTheDocument()
+    expect(screen.queryByText(/제외/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '배송 처리 (2건)' }))
+
+    const dialog = screen.getByRole('dialog', { name: '배송 처리 (2건)' })
+    expect(within(dialog).getByRole('button', { name: '2건 배송 시작' })).toBeDisabled()
+    await user.type(within(dialog).getByLabelText('20260919-ABC123 송장번호'), '111')
+    await user.type(within(dialog).getByLabelText('20260919-QQQ333 송장번호'), '333')
+    await user.click(within(dialog).getByRole('button', { name: '2건 배송 시작' }))
+
+    expect(ship).toHaveBeenCalledWith([
+      { orderId: 1, carrier: 'CJ대한통운', trackingNo: '111' },
+      { orderId: 3, carrier: 'CJ대한통운', trackingNo: '333' },
+    ])
+    expect(await within(dialog).findByText('1건 처리됨 · 1건 실패')).toBeInTheDocument()
+    expect(within(dialog).getByText('송장번호를 적어 주세요.')).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: '닫기' }))
+    expect(search).toHaveBeenCalledTimes(2)
   })
 })
