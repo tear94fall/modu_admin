@@ -17,6 +17,7 @@ import OrdersPage from './pages/OrdersPage'
 import PointAccountPage from './pages/PointAccountPage'
 import PointsPage from './pages/PointsPage'
 import ProductsPage from './pages/ProductsPage'
+import StockPage from './pages/StockPage'
 import PromotionFormPage from './pages/PromotionFormPage'
 import PromotionsPage from './pages/PromotionsPage'
 import PushCampaignDetailPage from './pages/PushCampaignDetailPage'
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/new" element={<ProductFormPage />} />
           <Route path="/products/:id" element={<ProductFormPage />} />
+          <Route path="/stock" element={<StockPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           {/* 커머스 > 고객은 회원 화면으로 합쳤다. 옛 주소는 회원 목록(커머스)·회원 상세(커머스 탭)로 보낸다. */}

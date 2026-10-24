@@ -28,6 +28,7 @@ const SECTIONS = [
     links: [
       { to: '/categories', label: '카테고리' },
       { to: '/products', label: '상품' },
+      { to: '/stock', label: '재고' },
       { to: '/orders', label: '주문' },
       { to: '/tiers', label: '회원 등급' },
       { to: '/reviews', label: '리뷰' },
