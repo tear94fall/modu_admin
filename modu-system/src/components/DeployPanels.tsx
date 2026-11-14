@@ -269,12 +269,24 @@ export function DeployProgress({ initial, onFinished, onClose }: { initial: Depl
       )}
       {pollError && <p className="error-text">{pollError}</p>}
 
-      {deployment.commit && (
+      {(deployment.commit || deployment.workflowUrl) && (
         <p className="card-muted deploy-commit">
-          커밋{' '}
-          <a className="link-chip" href={deployment.commit.url} target="_blank" rel="noreferrer">
-            {deployment.commit.sha.slice(0, 7)}
-          </a>
+          {deployment.commit && (
+            <>
+              커밋{' '}
+              <a className="link-chip" href={deployment.commit.url} target="_blank" rel="noreferrer">
+                {deployment.commit.sha.slice(0, 7)}
+              </a>
+            </>
+          )}
+          {deployment.workflowUrl && (
+            <>
+              {deployment.commit && ' · '}
+              <a className="link-chip" href={deployment.workflowUrl} target="_blank" rel="noreferrer">
+                Temporal 에서 보기
+              </a>
+            </>
+          )}
         </p>
       )}
 
@@ -361,6 +373,16 @@ export function DeploymentDetail({ d }: { d: Deployment }) {
               <dd>
                 <a className="link-chip" href={d.commit.url} target="_blank" rel="noreferrer">
                   {d.commit.sha.slice(0, 7)}
+                </a>
+              </dd>
+            </>
+          )}
+          {d.workflowUrl && (
+            <>
+              <dt>Temporal</dt>
+              <dd>
+                <a className="link-chip" href={d.workflowUrl} target="_blank" rel="noreferrer">
+                  Temporal 에서 보기
                 </a>
               </dd>
             </>

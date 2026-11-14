@@ -41,6 +41,8 @@ export interface DeployService {
 export interface DeployServicesResponse {
   services: DeployService[]
   argocd: { application: string; url: string }
+  /** Temporal UI 뿌리(맥 127.0.0.1 전용)와 네임스페이스. 기록별 링크는 Deployment.workflowUrl. */
+  temporal: { namespace: string; url: string }
 }
 
 export interface ImageTag {
@@ -94,6 +96,10 @@ export interface Deployment {
   rollout?: Rollout | null
   commit?: { sha: string; url: string } | null
   error?: string | null
+  /** Temporal 워크플로 실행 id(deploy-<service> 의 run). 스레드 시절·옛 기록은 없다. */
+  workflowRunId?: string | null
+  /** "Temporal 에서 보기" 링크(서버가 만든다). 없으면 링크를 그리지 않는다. */
+  workflowUrl?: string | null
 }
 
 export const getDeployServices = () => api<DeployServicesResponse>(`${BASE}/services`)

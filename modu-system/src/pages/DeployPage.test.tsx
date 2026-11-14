@@ -61,6 +61,7 @@ const services: deploy.DeployServicesResponse = {
     },
   ],
   argocd: { application: 'modu-dev', url: 'http://localhost:8090/applications/modu-dev' },
+  temporal: { namespace: 'platform', url: 'http://localhost:8233' },
 }
 
 const tags: deploy.ImageTag[] = [
