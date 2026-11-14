@@ -22,6 +22,7 @@ const services: deploy.DeployServicesResponse = {
     },
   ],
   argocd: { application: 'modu-dev', url: 'http://localhost:8090/applications/modu-dev' },
+  temporal: { namespace: 'platform', url: 'http://localhost:8233' },
 }
 
 const history: deploy.Deployment[] = [
@@ -43,6 +44,8 @@ const history: deploy.Deployment[] = [
     ],
     commit: { sha: 'abc1234def', url: 'https://github.com/x/c' },
     error: 'point-service-new-1: CrashLoopBackOff',
+    workflowRunId: 'run-2',
+    workflowUrl: 'http://localhost:8233/namespaces/platform/workflows/deploy-point-service/run-2/history',
   },
   {
     id: 'dep-1',
@@ -160,11 +163,19 @@ describe('DeployServicePage', () => {
     expect(within(steps).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['✓커밋성공커밋 abc1234', '✓Argo 동기화성공Synced', '!롤아웃실패CrashLoopBackOff'])
     expect(within(section).getByText('point-service-new-1: CrashLoopBackOff').closest('.deploy-error-box')).not.toBeNull()
     expect(within(section).getByRole('link', { name: 'abc1234' })).toHaveAttribute('href', 'https://github.com/x/c')
+    expect(within(section).getByRole('link', { name: 'Temporal 에서 보기' })).toHaveAttribute('href', 'http://localhost:8233/namespaces/platform/workflows/deploy-point-service/run-2/history')
     const facts = within(section).getByText('develop-5708871 → develop-9378b00').closest('dl')!
     expect(within(facts).getByText('2026-10-06 05:00')).toBeInTheDocument()
     expect(within(facts).getByText('2026-10-06 05:01')).toBeInTheDocument()
     expect(within(facts).getByText('60초')).toBeInTheDocument()
     expect(within(facts).getByTitle('joonsub2990@gmail.com')).toHaveTextContent('joonsub2990')
+  })
+
+  it('shows no Temporal link for a record without a workflow run (old thread-era record)', async () => {
+    renderPage()
+    const section = (await screen.findByText('배포 이력')).closest('section')!
+    await userEvent.click(within(section).getByText('develop-5708871', { selector: 'td' }).closest('tr')!)
+    expect(within(section).queryByRole('link', { name: 'Temporal 에서 보기' })).not.toBeInTheDocument()
   })
 
   it('opens the tag picker from the detail card', async () => {

@@ -152,7 +152,7 @@ export default function DeployPage() {
         <div className="page-head-main">
           <h1>서비스 배포</h1>
           <p className="page-head-sub">
-            GHCR 태그를 골라 modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 지켜봅니다. Argo 앱 {data.argocd.application}
+            GHCR 태그를 골라 modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 지켜봅니다. Argo 앱 {data.argocd.application} · 배포 실행은 Temporal 워크플로({data.temporal.namespace})
           </p>
         </div>
         <div className="page-head-actions">
