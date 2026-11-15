@@ -11,6 +11,7 @@ import {
   type DeployService,
   type DeployServicesResponse,
   type ImageTag,
+  CANARY_DISABLED_REASON
 } from '../api/deploy'
 import { DeployBy, DeploymentList, DeploymentStatusPill, DeployProgress, ServiceStatusPill, TagPicker } from '../components/DeployPanels'
 import { findResumable, forgetOpen, rememberOpen } from '../util/openDeployments'
@@ -19,7 +20,7 @@ const POLL_MS = 15_000
 const HISTORY_LIMIT = 20
 const LOCKED_REASON = '이 서비스의 배포가 진행 중이다. 끝난 뒤에 배포·롤백할 수 있다.'
 
-type Panel = { mode: 'pick' } | { mode: 'progress'; deployment: Deployment }
+type Panel = { mode: 'pick'; canary?: boolean } | { mode: 'progress'; deployment: Deployment }
 
 /**
  * 서비스 한 개의 배포 상세. 왼쪽 요약 카드(태그·준비 상태·마지막 배포, 배포·롤백), 오른쪽은 태그 고르기 → 확인 → 진행 카드, 그 아래 이 서비스의 배포 이력.
@@ -239,6 +240,18 @@ export default function DeployServicePage() {
               </button>
               <button
                 type="button"
+                className="btn btn--secondary"
+                disabled={busy || running || !service.canaryCapable}
+                title={running ? LOCKED_REASON : !service.canaryCapable ? CANARY_DISABLED_REASON : `단계(${(service.canarySteps ?? []).map((w) => `${w}%`).join(' → ')} → 100%)마다 멈춰 확인하며 배포한다`}
+                onClick={() => {
+                  setActionError(null)
+                  setPanel({ mode: 'pick', canary: true })
+                }}
+              >
+                카나리 배포
+              </button>
+              <button
+                type="button"
                 className="btn btn--danger"
                 disabled={busy || !last || running || rollbackNoop}
                 onClick={openRollback}
@@ -255,6 +268,11 @@ export default function DeployServicePage() {
                 롤백
               </button>
             </div>
+            {service.rolloutPaused && !service.rolloutPaused.deploymentId && (
+              <p className="deploy-lock-note">
+                멈춤(배포 기록 없음) — Rollout 이 {service.rolloutPaused.weight}% 단계에서 멈춰 있다(배포 탭 밖에서 템플릿이 바뀐 경우). 서비스 목록의 진행/중단으로 푼다.
+              </p>
+            )}
             {running && <p className="deploy-lock-note">{LOCKED_REASON}</p>}
             {!running && rollbackNoop && <p className="deploy-lock-note">{ROLLBACK_NOOP_REASON}</p>}
             {actionError && <p className="error-text deploy-row-error">{actionError}</p>}
@@ -264,7 +282,7 @@ export default function DeployServicePage() {
         <div className="detail-main">
           {panel?.mode === 'pick' && (
             <section ref={panelRef} className="section-card deploy-panel-card">
-              <TagPicker service={service} onStarted={openProgress} onClose={closePanel} lockedReason={running ? LOCKED_REASON : null} />
+              <TagPicker service={service} onStarted={openProgress} onClose={closePanel} lockedReason={running ? LOCKED_REASON : null} mode={panel.canary ? 'CANARY' : 'DIRECT'} />
             </section>
           )}
           {panel?.mode === 'progress' && (

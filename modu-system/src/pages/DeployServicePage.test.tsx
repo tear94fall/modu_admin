@@ -19,6 +19,9 @@ const services: deploy.DeployServicesResponse = {
       updatedReplicas: 1,
       status: 'PROGRESSING',
       lastDeployment: { id: 'dep-1', tag: 'develop-5708871', by: 'joonsub2990@gmail.com', finishedAt: '2026-10-06T04:00:00Z', status: 'SUCCEEDED' },
+      canaryCapable: true,
+      canarySteps: [50],
+      rolloutPaused: null,
     },
   ],
   argocd: { application: 'modu-dev', url: 'http://localhost:8090/applications/modu-dev' },
@@ -232,7 +235,7 @@ describe('DeployServicePage', () => {
     dialog = screen.getByRole('dialog', { name: 'point-service 배포' })
     await user.click(within(dialog).getByRole('button', { name: 'develop-9378b00 배포' }))
     expect(start).toHaveBeenCalledTimes(1)
-    expect(start).toHaveBeenCalledWith('point-service', 'develop-9378b00')
+    expect(start).toHaveBeenCalledWith('point-service', 'develop-9378b00', 'DIRECT')
 
     const progress = await screen.findByRole('group', { name: 'point-service 배포 진행' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -373,5 +376,93 @@ describe('DeployServicePage', () => {
   it('tells when the service is not a deploy target', async () => {
     renderPage('nope-service')
     expect(await screen.findByText('배포 대상 서비스가 아닙니다: nope-service')).toBeInTheDocument()
+  })
+
+  // ---- 카나리 ------------------------------------------------------------------------------------------------------------
+
+  const canaryWaiting: deploy.Deployment = {
+    ...running,
+    id: 'dep-c',
+    mode: 'CANARY',
+    step: 'ROLLOUT',
+    percent: 75,
+    steps: [running.steps![0], running.steps![1], { name: 'ROLLOUT', status: 'RUNNING', message: '카나리 50% · 준비 2/2' }],
+    canary: {
+      totalSteps: 1, currentStep: 1, weight: 50, waiting: true, waitingSince: '2026-10-06T05:00:30Z',
+      canaryPods: ['point-service-new-1'], stablePods: ['point-service-old-1'], history: [],
+      live: { phase: 'Paused', weight: 50, ready: 2, desired: 2, pods: [{ name: 'point-service-new-1', phase: 'Running', ready: true, reason: '' }, { name: 'point-service-old-1', phase: 'Running', ready: true, reason: '' }] },
+    },
+  }
+
+  it('카나리 배포 is disabled with the reason when the service has a single pod', async () => {
+    vi.spyOn(deploy, 'getDeployServices').mockResolvedValue({ ...services, services: [{ ...services.services[0], canaryCapable: false, canarySteps: [] }] })
+    renderPage()
+    const btn = await screen.findByRole('button', { name: '카나리 배포' })
+    expect(btn).toBeDisabled()
+    expect(btn).toHaveAttribute('title', '파드가 1개라 카나리 배포를 할 수 없다')
+  })
+
+  it('카나리 배포 opens the picker in canary mode and starts the deployment with mode CANARY', async () => {
+    const start = vi.spyOn(deploy, 'deployService').mockResolvedValue(canaryWaiting)
+    vi.spyOn(deploy, 'getDeployment').mockResolvedValue(canaryWaiting)
+    vi.spyOn(deploy, 'getDeploymentErrors').mockResolvedValue({ count: 0, lines: [], error: null })
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: '카나리 배포' }))
+    const picker = await screen.findByRole('group', { name: 'point-service 카나리 배포 태그 선택' })
+    await user.click(within(picker).getByRole('radio', { name: /develop-9378b00/ }))
+    await user.click(within(picker).getByRole('button', { name: '카나리 배포' }))
+    const dialog = screen.getByRole('dialog', { name: 'point-service 카나리 배포' })
+    await user.click(within(dialog).getByRole('button', { name: 'develop-9378b00 카나리 배포' }))
+    expect(start).toHaveBeenCalledWith('point-service', 'develop-9378b00', 'CANARY')
+  })
+
+  it('a waiting canary shows the ratio, live pods, error logs and promote/abort buttons', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.spyOn(deploy, 'getDeployment').mockResolvedValue(canaryWaiting)
+    const errors = vi.spyOn(deploy, 'getDeploymentErrors').mockResolvedValue({ count: 2, lines: [{ time: '2026-10-06T05:00:40Z', pod: 'point-service-new-1', message: 'NullPointerException' }], error: null })
+    const promote = vi.spyOn(deploy, 'promoteDeployment').mockResolvedValue(undefined)
+    sessionStorage.setItem('modu-deploy-open:point-service', 'dep-c')
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderPage()
+
+    const progress = await screen.findByRole('group', { name: 'point-service 배포 진행' })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+    })
+    expect(within(progress).getByText(/단계 1\/1/)).toBeInTheDocument()
+    expect(within(progress).getByRole('progressbar', { name: '카나리 비율' })).toHaveAttribute('aria-valuenow', '50')
+    expect(within(progress).getAllByText('point-service-new-1')[0].closest('tr')).toHaveTextContent('새')
+    expect(within(progress).getAllByText('point-service-old-1')[0].closest('tr')).toHaveTextContent('옛')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000)
+    })
+    expect(errors).toHaveBeenCalledWith('dep-c', '2026-10-06T05:00:30Z')
+    const logs = within(progress).getByRole('region', { name: '새 파드 에러 로그' })
+    expect(logs).toHaveTextContent('2건')
+    expect(logs).toHaveTextContent('NullPointerException')
+
+    await user.click(within(progress).getByRole('button', { name: '완료 → 100%' }))
+    expect(promote).toHaveBeenCalledWith('dep-c')
+    expect(within(progress).getByRole('button', { name: '중단' })).toBeInTheDocument()
+  })
+
+  it('an aborted canary record shows the 중단 pill and its step history', async () => {
+    const aborted: deploy.Deployment = {
+      ...canaryWaiting, status: 'ABORTED', finishedAt: '2026-10-06T05:10:00Z', error: '운영자가 중단(joonsub2990@gmail.com) — 옛 태그 develop-5708871 로 되돌림',
+      canary: { ...canaryWaiting.canary!, waiting: false, live: null, history: [{ step: 1, weight: 50, action: 'ABORT', by: 'joonsub2990@gmail.com', at: '2026-10-06T05:09:00Z' }] },
+    }
+    vi.spyOn(deploy, 'listDeployments').mockResolvedValue([aborted, ...history])
+    const user = userEvent.setup()
+    renderPage()
+
+    const section = (await screen.findByText('배포 이력')).closest('section')!
+    const row = within(section).getByText('중단', { selector: '.status-badge' }).closest('tr')!
+    await user.click(row)
+    const timeline = within(section).getByRole('list', { name: '카나리 단계 이력' })
+    expect(timeline).toHaveTextContent('50%')
+    expect(timeline).toHaveTextContent('중단')
+    expect(timeline).toHaveTextContent('joonsub2990')
   })
 })
