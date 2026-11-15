@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { formatUtcDateTime, useIsMobile, apiErrorMessage } from '@modu/console-core'
+import { ConfirmDialog, formatUtcDateTime, useIsMobile, apiErrorMessage } from '@modu/console-core'
 import { getDeployServices, isFinished, listDeployments, matchesService, type Deployment, type DeployService, type DeployServicesResponse, abortRollout, promoteRollout } from '../api/deploy'
 import { DeployBy, DeploymentList, DeploymentStatusPill, DeployProgress, ServiceStatusPill } from '../components/DeployPanels'
 import { NARROW_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
@@ -29,6 +29,8 @@ export default function DeployPage() {
   const [progress, setProgress] = useState<Record<string, Deployment>>({})
   /** 기록 없이 멈춘 Rollout 을 서비스 행에서 진행/중단하는 동안 잠그는 서비스 이름. */
   const [rolloutActing, setRolloutActing] = useState<string | null>(null)
+  /** 서비스 행의 "중단" 은 확인을 거친다(되돌릴 길이 재시도뿐이라) — 확인 중인 서비스. */
+  const [confirmAbort, setConfirmAbort] = useState<DeployService | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -110,32 +112,44 @@ export default function DeployPage() {
   )
   /** 배포 기록 없이 단계에서 멈춘 Rollout(배포 탭 밖에서 템플릿이 바뀐 경우): 배지 + 직접 진행/중단. */
   const pausedWithoutRecord = (s: DeployService) => !!s.rolloutPaused && !s.rolloutPaused.deploymentId
-  const rolloutAction = async (s: DeployService, kind: 'promote' | 'abort') => {
+  /** 중단된 채 남은 Rollout(기록 없음): 서버의 rollout/promote 가 abort 를 풀어 첫 단계부터 다시 돌린다(= 재시도). */
+  const abortedWithoutRecord = (s: DeployService) => !!s.rolloutAborted && !s.rolloutPaused && !isRunning(s)
+  const rolloutAction = async (s: DeployService, kind: 'promote' | 'abort' | 'retry') => {
     setRolloutActing(s.name)
+    setConfirmAbort(null)
     try {
-      if (kind === 'promote') await promoteRollout(s.name)
-      else await abortRollout(s.name)
+      if (kind === 'abort') await abortRollout(s.name)
+      else await promoteRollout(s.name)
       void refresh()
     } catch (e) {
-      setError(apiErrorMessage(e, kind === 'promote' ? 'Rollout 을 진행하지 못했습니다' : 'Rollout 을 중단하지 못했습니다'))
+      setError(apiErrorMessage(e, kind === 'abort' ? 'Rollout 을 중단하지 못했습니다' : kind === 'retry' ? 'Rollout 을 재시도하지 못했습니다' : 'Rollout 을 진행하지 못했습니다'))
     } finally {
       setRolloutActing(null)
     }
   }
   const pausedBadge = (s: DeployService) =>
-    pausedWithoutRecord(s) && (
-      <span className="deploy-paused">
+    pausedWithoutRecord(s) ? (
+      <span className="deploy-paused" onClick={(e) => e.stopPropagation()}>
         <span className="status-badge status-badge--selling" title={`Rollout 이 ${s.rolloutPaused!.weight}% 단계에서 멈춰 있다 — 배포 탭 밖에서 템플릿이 바뀜`}>
           멈춤(배포 기록 없음)
         </span>
         <button type="button" className="btn btn--secondary btn--sm" disabled={rolloutActing === s.name} onClick={() => void rolloutAction(s, 'promote')} aria-label={`${s.name} 진행`}>
           진행
         </button>
-        <button type="button" className="btn btn--danger btn--sm" disabled={rolloutActing === s.name} onClick={() => void rolloutAction(s, 'abort')} aria-label={`${s.name} 중단`}>
+        <button type="button" className="btn btn--danger btn--sm" disabled={rolloutActing === s.name} onClick={() => setConfirmAbort(s)} aria-label={`${s.name} 중단`}>
           중단
         </button>
       </span>
-    )
+    ) : abortedWithoutRecord(s) ? (
+      <span className="deploy-paused" onClick={(e) => e.stopPropagation()}>
+        <span className="status-badge status-badge--cancelled" title="Rollout 이 중단된 채 남아 있다 — 재시도하면 첫 단계부터 다시 돌아 멈춘다">
+          중단됨(배포 기록 없음)
+        </span>
+        <button type="button" className="btn btn--secondary btn--sm" disabled={rolloutActing === s.name} onClick={() => void rolloutAction(s, 'retry')} aria-label={`${s.name} 재시도`}>
+          재시도
+        </button>
+      </span>
+    ) : null
   const detailLink = (s: DeployService) => (
     <Link className="btn btn--secondary btn--sm" to={detailPath(s.name)} aria-label={`${s.name} 상세`}>
       상세
@@ -192,6 +206,17 @@ export default function DeployPage() {
         </div>
       </header>
       {error && <p className="error-text">{error}</p>}
+      {confirmAbort && (
+        <ConfirmDialog
+          title={`${confirmAbort.name} Rollout 중단`}
+          confirmLabel="중단하고 되돌리기"
+          busy={rolloutActing === confirmAbort.name}
+          onConfirm={() => void rolloutAction(confirmAbort, 'abort')}
+          onCancel={() => setConfirmAbort(null)}
+        >
+          <p>새 버전 파드를 내리고 옛 버전으로 되돌린다. 배포 기록이 없어 git 태그는 건드리지 않는다 — 되돌릴 길은 이 행의 "재시도" 뿐이다.</p>
+        </ConfirmDialog>
+      )}
 
       <section className="stat-grid" aria-label="서비스 요약">
         <div className="stat-card">

@@ -418,6 +418,25 @@ describe('DeployServicePage', () => {
     expect(start).toHaveBeenCalledWith('point-service', 'develop-9378b00', 'CANARY')
   })
 
+  it('the promote button names the next step weight from the live rollout steps, not 100%', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const twoSteps: deploy.Deployment = {
+      ...canaryWaiting,
+      canary: { ...canaryWaiting.canary!, totalSteps: 2, currentStep: 1, weight: 33, live: { ...canaryWaiting.canary!.live!, weight: 33, stepWeights: [33, 66] } },
+    }
+    vi.spyOn(deploy, 'getDeployment').mockResolvedValue(twoSteps)
+    vi.spyOn(deploy, 'getDeploymentErrors').mockResolvedValue({ count: 0, lines: [], error: null })
+    sessionStorage.setItem('modu-deploy-open:point-service', 'dep-c')
+    renderPage()
+
+    const progress = await screen.findByRole('group', { name: 'point-service 배포 진행' })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+    })
+    expect(within(progress).getByRole('button', { name: '다음 단계 → 66%' })).toBeInTheDocument()
+    expect(within(progress).queryByRole('button', { name: /100%/ })).not.toBeInTheDocument()
+  })
+
   it('a waiting canary shows the ratio, live pods, error logs and promote/abort buttons', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.spyOn(deploy, 'getDeployment').mockResolvedValue(canaryWaiting)

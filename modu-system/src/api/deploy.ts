@@ -44,6 +44,8 @@ export interface DeployService {
   canarySteps?: number[]
   /** 단계에서 멈춘 Rollout. deploymentId 가 없으면 배포 기록 없이 멈춘 것(배포 탭 밖에서 템플릿이 바뀜). */
   rolloutPaused?: { stepIndex: number; weight: number; deploymentId: string | null } | null
+  /** Rollout 이 중단(abort)된 채 남아 있다 — 서비스 행의 "재시도" 가 abort 를 풀어 첫 단계부터 다시 돌린다. */
+  rolloutAborted?: boolean
 }
 
 export interface CanaryHistory {
@@ -60,6 +62,8 @@ export interface RolloutLive {
   ready: number
   desired: number
   pods: RolloutPod[]
+  /** Rollout 의 단계 가중치 — "다음 단계 → W%" 는 stepWeights[currentStep](없으면 100). */
+  stepWeights?: number[]
 }
 
 export interface CanaryView {

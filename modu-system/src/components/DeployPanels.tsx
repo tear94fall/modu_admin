@@ -488,7 +488,7 @@ function CanaryPanel({ deployment, canary, onChanged }: { deployment: Deployment
       {deployment.status === 'RUNNING' && (
         <div className="deploy-panel-actions">
           <button type="button" className="btn btn--primary" disabled={!waiting || acting !== null} onClick={() => void act('promote')}>
-            {acting === 'promote' ? '넘기는 중...' : nextWeightLabel(canary, undefined)}
+            {acting === 'promote' ? '넘기는 중...' : nextWeightLabel(canary, canary.live?.stepWeights)}
           </button>
           <button type="button" className="btn btn--danger" disabled={!waiting || acting !== null} onClick={() => setConfirmAbort(true)}>
             중단
