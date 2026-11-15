@@ -6,8 +6,10 @@ import { api } from '@modu/console-core'
  */
 const BASE = '/deploy-service/api-system/deploy'
 
-export type ServiceStatus = 'READY' | 'PROGRESSING' | 'DEGRADED'
-export type DeploymentStatus = 'RUNNING' | 'SUCCEEDED' | 'FAILED'
+export type ServiceStatus = 'READY' | 'PROGRESSING' | 'DEGRADED' | 'PAUSED'
+export type DeploymentStatus = 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'ABORTED'
+/** DIRECT = 한 번에 끝까지(배포), CANARY = 단계마다 사람이 다음 단계/중단. */
+export type DeployMode = 'DIRECT' | 'CANARY'
 export type StepName = 'COMMIT' | 'SYNC' | 'ROLLOUT'
 export type StepStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'
 
@@ -36,6 +38,48 @@ export interface DeployService {
   updatedReplicas: number
   status: ServiceStatus
   lastDeployment: LastDeployment | null
+  /** 파드 2개 이상(Rollout) — 카나리 배포 버튼 활성. */
+  canaryCapable?: boolean
+  /** 카나리 단계 가중치(예: [50], [33, 66]). */
+  canarySteps?: number[]
+  /** 단계에서 멈춘 Rollout. deploymentId 가 없으면 배포 기록 없이 멈춘 것(배포 탭 밖에서 템플릿이 바뀜). */
+  rolloutPaused?: { stepIndex: number; weight: number; deploymentId: string | null } | null
+}
+
+export interface CanaryHistory {
+  step: number
+  weight: number
+  action: 'PROMOTE' | 'ABORT'
+  by: string
+  at: string
+}
+
+export interface RolloutLive {
+  phase: string
+  weight: number
+  ready: number
+  desired: number
+  pods: RolloutPod[]
+}
+
+export interface CanaryView {
+  totalSteps: number
+  currentStep: number
+  weight: number
+  waiting: boolean
+  waitingSince?: string | null
+  canaryPods: string[]
+  stablePods: string[]
+  history: CanaryHistory[]
+  /** 대기 중 조회 시점의 Rollout·파드(서버가 채움). */
+  live?: RolloutLive | null
+}
+
+export interface ErrorLogs {
+  /** null 이면 조회 실패(error 참고). */
+  count: number | null
+  lines: { time: string; pod: string; message: string }[]
+  error?: string | null
 }
 
 export interface DeployServicesResponse {
@@ -100,14 +144,28 @@ export interface Deployment {
   workflowRunId?: string | null
   /** "Temporal 에서 보기" 링크(서버가 만든다). 없으면 링크를 그리지 않는다. */
   workflowUrl?: string | null
+  mode?: DeployMode
+  canary?: CanaryView | null
 }
 
 export const getDeployServices = () => api<DeployServicesResponse>(`${BASE}/services`)
 
 export const getServiceTags = (name: string) => api<{ tags: ImageTag[] }>(`${BASE}/services/${encodeURIComponent(name)}/tags`)
 
-export const deployService = (name: string, tag: string) =>
-  api<Deployment>(`${BASE}/services/${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify({ tag }) })
+export const deployService = (name: string, tag: string, mode: DeployMode = 'DIRECT') =>
+  api<Deployment>(`${BASE}/services/${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify({ tag, mode }) })
+
+/** 카나리 다음 단계 / 중단(사람의 결정 → 워크플로 Signal). 대기 중이 아니면 409. */
+export const promoteDeployment = (id: string) => api<void>(`${BASE}/deployments/${encodeURIComponent(id)}/promote`, { method: 'POST' })
+export const abortDeployment = (id: string) => api<void>(`${BASE}/deployments/${encodeURIComponent(id)}/abort`, { method: 'POST' })
+
+/** 대기 중인 카나리의 새 파드 ERROR 로그(OpenSearch). */
+export const getDeploymentErrors = (id: string, since: string) =>
+  api<ErrorLogs>(`${BASE}/deployments/${encodeURIComponent(id)}/errors?since=${encodeURIComponent(since)}`)
+
+/** 배포 기록 없이 단계에서 멈춘 Rollout 을 직접 진행/중단. */
+export const promoteRollout = (name: string) => api<void>(`${BASE}/services/${encodeURIComponent(name)}/rollout/promote`, { method: 'POST' })
+export const abortRollout = (name: string) => api<void>(`${BASE}/services/${encodeURIComponent(name)}/rollout/abort`, { method: 'POST' })
 
 /** 마지막으로 성공한 배포의 previousTag 로 되돌린다(없으면 409). */
 export const rollbackService = (name: string) => api<Deployment>(`${BASE}/services/${encodeURIComponent(name)}/rollback`, { method: 'POST' })
@@ -125,9 +183,17 @@ export const STEP_NAMES: StepName[] = ['COMMIT', 'SYNC', 'ROLLOUT']
 
 export const STEP_LABELS: Record<StepName, string> = { COMMIT: '커밋', SYNC: 'Argo 동기화', ROLLOUT: '롤아웃' }
 
-export const SERVICE_STATUS_LABELS: Record<ServiceStatus, string> = { READY: '정상', PROGRESSING: '진행 중', DEGRADED: '이상' }
+export const SERVICE_STATUS_LABELS: Record<ServiceStatus, string> = { READY: '정상', PROGRESSING: '진행 중', DEGRADED: '이상', PAUSED: '멈춤' }
 
-export const DEPLOYMENT_STATUS_LABELS: Record<DeploymentStatus, string> = { RUNNING: '진행 중', SUCCEEDED: '성공', FAILED: '실패' }
+export const DEPLOYMENT_STATUS_LABELS: Record<DeploymentStatus, string> = { RUNNING: '진행 중', SUCCEEDED: '성공', FAILED: '실패', ABORTED: '중단' }
+
+export const CANARY_DISABLED_REASON = '파드가 1개라 카나리 배포를 할 수 없다'
+
+/** 다음 단계 버튼 글자: 마지막 단계면 100%, 아니면 다음 가중치. */
+export function nextWeightLabel(c: Pick<CanaryView, 'currentStep' | 'totalSteps'>, steps: number[] | undefined): string {
+  const next = steps && c.currentStep < steps.length ? steps[c.currentStep] : 100
+  return c.currentStep >= c.totalSteps ? '완료 → 100%' : `다음 단계 → ${next}%`
+}
 
 /** 검색어가 서비스 이름·저장소·실행 중 태그·Git 태그 중 하나에 들어 있는지(대소문자 무시). */
 export function matchesService(s: DeployService, keyword: string): boolean {
@@ -153,7 +219,7 @@ export const historyEntryPath = (d: Pick<Deployment, 'id' | 'service'>) =>
   `/deploy/history?service=${encodeURIComponent(d.service)}&open=${encodeURIComponent(d.id)}`
 
 /** 배포가 끝났는지(더 폴링하지 않는다). */
-export const isFinished = (d: Deployment) => d.status === 'SUCCEEDED' || d.status === 'FAILED'
+export const isFinished = (d: Deployment) => d.status === 'SUCCEEDED' || d.status === 'FAILED' || d.status === 'ABORTED'
 
 /** 끝난 배포의 소요 시간(초). 아직 진행 중이거나 시각을 못 읽으면 null. */
 export function durationSeconds(d: Pick<Deployment, 'startedAt' | 'finishedAt'>): number | null {

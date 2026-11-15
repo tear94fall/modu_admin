@@ -2,24 +2,32 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiErrorMessage, ConfirmDialog, formatUtcDateTime } from '@modu/console-core'
 import {
+  abortDeployment,
+  type CanaryHistory,
+  type CanaryView,
+  type Deployment,
   DEPLOYMENT_STATUS_LABELS,
+  type DeploymentStatus,
+  type DeploymentStep,
+  type DeployMode,
+  type DeployService,
   deployService,
   durationLabel,
   durationSeconds,
+  type ErrorLogs,
   getDeployment,
+  getDeploymentErrors,
   getServiceTags,
   historyEntryPath,
+  type ImageTag,
   isFinished,
+  nextWeightLabel,
+  promoteDeployment,
   SERVICE_STATUS_LABELS,
+  type ServiceStatus,
   shortBy,
   STEP_LABELS,
   stepStates,
-  type Deployment,
-  type DeploymentStatus,
-  type DeploymentStep,
-  type DeployService,
-  type ImageTag,
-  type ServiceStatus,
   type StepStatus,
 } from '../api/deploy'
 
@@ -29,7 +37,8 @@ const DEPLOYMENT_POLL_MS = 2_000
 const STEP_STATUS_LABELS: Record<StepStatus, string> = { PENDING: '대기', RUNNING: '진행 중', SUCCEEDED: '성공', FAILED: '실패' }
 
 export function ServiceStatusPill({ status }: { status: ServiceStatus }) {
-  const cls = status === 'READY' ? 'status-badge status-badge--done' : status === 'PROGRESSING' ? 'status-badge status-badge--shipping' : 'status-badge status-badge--cancelled'
+  const cls =
+    status === 'READY' ? 'status-badge status-badge--done' : status === 'PROGRESSING' ? 'status-badge status-badge--shipping' : status === 'PAUSED' ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'
   return <span className={cls}>{SERVICE_STATUS_LABELS[status]}</span>
 }
 
@@ -43,7 +52,8 @@ export function DeployBy({ by, byId }: { by: string; byId?: string | null }) {
 }
 
 export function DeploymentStatusPill({ status }: { status: DeploymentStatus }) {
-  const cls = status === 'SUCCEEDED' ? 'status-badge status-badge--done' : status === 'RUNNING' ? 'status-badge status-badge--shipping' : 'status-badge status-badge--cancelled'
+  const cls =
+    status === 'SUCCEEDED' ? 'status-badge status-badge--done' : status === 'RUNNING' ? 'status-badge status-badge--shipping' : status === 'ABORTED' ? 'status-badge status-badge--selling' : 'status-badge status-badge--cancelled'
   return <span className={cls}>{DEPLOYMENT_STATUS_LABELS[status]}</span>
 }
 
@@ -51,7 +61,22 @@ export function DeploymentStatusPill({ status }: { status: DeploymentStatus }) {
  * 태그 목록에서 하나 고르고, 한 번 더 확인한 뒤 배포를 시작한다. 현재 태그는 "같은 태그 다시 배포"를 켜야 보낼 수 있다.
  * [lockedReason] 이 있으면(이 서비스 배포가 진행 중) 고를 수는 있어도 보낼 수 없다.
  */
-export function TagPicker({ service, onStarted, onClose, lockedReason }: { service: DeployService; onStarted: (d: Deployment) => void; onClose: () => void; lockedReason?: string | null }) {
+export function TagPicker({
+  service,
+  onStarted,
+  onClose,
+  lockedReason,
+  mode = 'DIRECT',
+}: {
+  service: DeployService
+  onStarted: (d: Deployment) => void
+  onClose: () => void
+  lockedReason?: string | null
+  /** CANARY 면 단계마다 멈춰 사람이 다음 단계/중단을 정한다(파드 2개 이상). */
+  mode?: DeployMode
+}) {
+  const canary = mode === 'CANARY'
+  const verb = canary ? '카나리 배포' : '배포'
   const [tags, setTags] = useState<ImageTag[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
@@ -82,7 +107,7 @@ export function TagPicker({ service, onStarted, onClose, lockedReason }: { servi
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const d = await deployService(service.name, chosen.tag)
+      const d = await deployService(service.name, chosen.tag, mode)
       setConfirming(false)
       onStarted(d)
     } catch (e) {
@@ -93,10 +118,12 @@ export function TagPicker({ service, onStarted, onClose, lockedReason }: { servi
   }
 
   return (
-    <div className="deploy-panel" role="group" aria-label={`${service.name} 배포 태그 선택`}>
+    <div className="deploy-panel" role="group" aria-label={`${service.name} ${verb} 태그 선택`}>
       <div className="deploy-panel-head">
         <div className="deploy-panel-title">
-          <strong>{service.name} 배포할 태그</strong>
+          <strong>
+            {service.name} {canary ? '카나리로 ' : ''}배포할 태그
+          </strong>
           <span className="card-muted deploy-panel-sub">지금 실행 중 {service.runningTag}</span>
         </div>
         <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>
@@ -137,13 +164,13 @@ export function TagPicker({ service, onStarted, onClose, lockedReason }: { servi
       {submitError && <p className="error-text">{submitError}</p>}
       <div className="deploy-panel-actions">
         <button type="button" className="btn btn--primary" disabled={!canSubmit} onClick={() => setConfirming(true)}>
-          {submitting ? '시작하는 중...' : '배포'}
+          {submitting ? '시작하는 중...' : verb}
         </button>
       </div>
       {confirming && chosen && (
         <ConfirmDialog
-          title={`${service.name} 배포`}
-          confirmLabel={`${chosen.tag} 배포`}
+          title={`${service.name} ${verb}`}
+          confirmLabel={`${chosen.tag} ${verb}`}
           busy={submitting}
           onConfirm={() => void submit()}
           onCancel={() => setConfirming(false)}
@@ -160,7 +187,11 @@ export function TagPicker({ service, onStarted, onClose, lockedReason }: { servi
             <dt>태그 생성</dt>
             <dd>{formatUtcDateTime(chosen.createdAt)}</dd>
           </dl>
-          <p className="card-muted">modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 진행한다.</p>
+          <p className="card-muted">
+            {canary
+              ? `modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 단계(${(service.canarySteps ?? []).map((w) => `${w}%`).join(' → ')} → 100%)마다 멈춰 다음 단계/중단을 기다린다.`
+              : 'modu_infra kustomization 에 커밋하고 Argo CD 동기화 → 롤아웃까지 진행한다.'}
+          </p>
         </ConfirmDialog>
       )}
     </div>
@@ -255,6 +286,15 @@ export function DeployProgress({ initial, onFinished, onClose }: { initial: Depl
           </Link>
         </div>
       )}
+      {deployment.status === 'ABORTED' && (
+        <div className="deploy-result deploy-result--fail" role="status">
+          <strong className="deploy-result-title">카나리 중단</strong>
+          <span className="deploy-result-text">{deployment.error || '옛 버전으로 되돌렸다'}</span>
+          <Link className="link-chip" to={historyEntryPath(deployment)}>
+            이력에서 보기
+          </Link>
+        </div>
+      )}
       {deployment.status === 'FAILED' && (
         <div className="deploy-result deploy-result--fail" role="alert">
           <strong className="deploy-result-title">배포 실패</strong>
@@ -290,7 +330,9 @@ export function DeployProgress({ initial, onFinished, onClose }: { initial: Depl
         </p>
       )}
 
-      {rollout && rollout.pods.length > 0 && (
+      {deployment.mode === 'CANARY' && deployment.canary && <CanaryPanel deployment={deployment} canary={deployment.canary} onChanged={setDeployment} />}
+
+      {!(deployment.mode === 'CANARY' && deployment.canary?.live) && rollout && rollout.pods.length > 0 && (
         <table className="list-table deploy-pods">
           <colgroup>
             <col style={{ width: '46%' }} />
@@ -319,6 +361,164 @@ export function DeployProgress({ initial, onFinished, onClose }: { initial: Depl
         </table>
       )}
     </div>
+  )
+}
+
+const ERROR_LOGS_POLL_MS = 5000
+
+/**
+ * 카나리 진행 패널: 비율 바(새 n/전체 N), 단계 n/m, 새/옛 파드 표(대기 중엔 조회 시점 live), 새 파드 에러 로그(5초 폴링), 다음 단계/중단 버튼.
+ * 비율을 올리는 건 사람만 — 버튼은 대기 중(canary.waiting)일 때만 활성.
+ */
+function CanaryPanel({ deployment, canary, onChanged }: { deployment: Deployment; canary: CanaryView; onChanged: (d: Deployment) => void }) {
+  const [errors, setErrors] = useState<ErrorLogs | null>(null)
+  const [acting, setActing] = useState<'promote' | 'abort' | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [confirmAbort, setConfirmAbort] = useState(false)
+  const waiting = deployment.status === 'RUNNING' && canary.waiting
+  const since = canary.waitingSince ?? deployment.startedAt
+  const live = canary.live ?? null
+  const weight = live?.weight ?? canary.weight
+  const total = live?.desired ?? deployment.rollout?.desired ?? 0
+  const canaryCount = total > 0 ? Math.round((weight / 100) * total) : 0
+  const pods = live?.pods ?? deployment.rollout?.pods ?? []
+
+  useEffect(() => {
+    if (!waiting) return
+    let cancelled = false
+    const load = () =>
+      getDeploymentErrors(deployment.id, since)
+        .then((e) => {
+          if (!cancelled) setErrors(e)
+        })
+        .catch((e) => {
+          if (!cancelled) setErrors({ count: null, lines: [], error: apiErrorMessage(e, '로그 조회 실패') })
+        })
+    void load()
+    const timer = setInterval(() => void load(), ERROR_LOGS_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [deployment.id, since, waiting])
+
+  const act = async (kind: 'promote' | 'abort') => {
+    setActing(kind)
+    setActionError(null)
+    try {
+      if (kind === 'promote') await promoteDeployment(deployment.id)
+      else await abortDeployment(deployment.id)
+      // 버튼을 바로 잠근다 — 다음 폴링이 waiting=false 를 가져온다
+      onChanged({ ...deployment, canary: { ...canary, waiting: false } })
+    } catch (e) {
+      setActionError(apiErrorMessage(e, kind === 'promote' ? '다음 단계로 넘기지 못했습니다' : '중단하지 못했습니다'))
+    } finally {
+      setActing(null)
+      setConfirmAbort(false)
+    }
+  }
+
+  return (
+    <div className="deploy-canary" role="group" aria-label="카나리 진행">
+      <div className="deploy-canary-head">
+        <strong>
+          카나리 · 단계 {canary.currentStep}/{canary.totalSteps}
+        </strong>
+        <span className="card-muted">
+          새 버전 {canaryCount}/{total} 파드 ({weight}%)
+          {live?.phase && ` · ${live.phase}`}
+          {waiting && ' · 결정을 기다리는 중'}
+        </span>
+      </div>
+      <div className="deploy-progress">
+        <div className="deploy-progress-bar" role="progressbar" aria-label="카나리 비율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={weight}>
+          <div className="deploy-progress-fill" style={{ width: `${weight}%` }} />
+        </div>
+        <span className="deploy-progress-text deploy-num">{weight}%</span>
+      </div>
+      {pods.length > 0 && (
+        <table className="list-table deploy-pods">
+          <colgroup>
+            <col style={{ width: '42%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '12%' }} />
+            <col />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>파드</th>
+              <th>버전</th>
+              <th>단계</th>
+              <th>준비</th>
+              <th>사유</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pods.map((p) => (
+              <tr key={p.name}>
+                <td>{p.name}</td>
+                <td>{canary.canaryPods.includes(p.name) ? <span className="status-badge status-badge--selling">새</span> : <span className="status-badge">옛</span>}</td>
+                <td>{p.phase}</td>
+                <td>{p.ready ? '준비됨' : '대기'}</td>
+                <td className="card-muted">{p.reason || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {waiting && (
+        <section className="deploy-canary-logs" role="region" aria-label="새 파드 에러 로그">
+          <h4 className="deploy-canary-logs-title">
+            새 파드 에러 로그{' '}
+            {errors == null ? <span className="card-muted">불러오는 중...</span> : errors.count == null ? <span className="error-text">{errors.error ?? '로그 조회 실패'}</span> : <span className={errors.count > 0 ? 'error-text' : 'card-muted'}>{errors.count}건</span>}
+          </h4>
+          {errors && errors.lines.length > 0 && (
+            <ul className="deploy-canary-log-lines">
+              {errors.lines.map((l, i) => (
+                <li key={`${l.time}-${i}`}>
+                  <span className="card-muted">{formatUtcDateTime(l.time)}</span> <span className="card-muted">{l.pod}</span> {l.message}
+                </li>
+              ))}
+            </ul>
+          )}
+          {errors && errors.count === 0 && <p className="card-muted">대기 시작 뒤 새 파드의 ERROR 로그가 없다.</p>}
+        </section>
+      )}
+      {deployment.status === 'RUNNING' && (
+        <div className="deploy-panel-actions">
+          <button type="button" className="btn btn--primary" disabled={!waiting || acting !== null} onClick={() => void act('promote')}>
+            {acting === 'promote' ? '넘기는 중...' : nextWeightLabel(canary, undefined)}
+          </button>
+          <button type="button" className="btn btn--danger" disabled={!waiting || acting !== null} onClick={() => setConfirmAbort(true)}>
+            중단
+          </button>
+        </div>
+      )}
+      {actionError && <p className="error-text">{actionError}</p>}
+      {confirmAbort && (
+        <ConfirmDialog title={`${deployment.service} 카나리 중단`} confirmLabel="중단하고 되돌리기" busy={acting === 'abort'} onConfirm={() => void act('abort')} onCancel={() => setConfirmAbort(false)}>
+          <p>
+            새 버전 파드를 내리고 옛 버전({deployment.previousTag ?? '이전 태그'})으로 되돌린다. modu_infra 의 태그도 이전 태그로 다시 커밋한다.
+          </p>
+        </ConfirmDialog>
+      )}
+    </div>
+  )
+}
+
+/** 기록 상세의 카나리 단계 이력(누가 언제 몇 % 에서 무엇을). */
+function CanaryHistoryList({ history }: { history: CanaryHistory[] }) {
+  if (history.length === 0) return <p className="card-muted">단계 결정이 없다.</p>
+  return (
+    <ol className="deploy-canary-history" aria-label="카나리 단계 이력">
+      {history.map((h, i) => (
+        <li key={`${h.at}-${i}`}>
+          <span className="card-muted">{formatUtcDateTime(h.at)}</span> 단계 {h.step} · {h.weight}% · {h.action === 'PROMOTE' ? '다음 단계' : '중단'} ·{' '}
+          <DeployBy by={h.by} />
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -377,6 +577,12 @@ export function DeploymentDetail({ d }: { d: Deployment }) {
               </dd>
             </>
           )}
+          {d.mode === 'CANARY' && (
+            <>
+              <dt>방식</dt>
+              <dd>카나리{d.canary ? ` (단계 ${d.canary.currentStep}/${d.canary.totalSteps}, ${d.canary.weight}%)` : ''}</dd>
+            </>
+          )}
           {d.workflowUrl && (
             <>
               <dt>Temporal</dt>
@@ -388,9 +594,10 @@ export function DeploymentDetail({ d }: { d: Deployment }) {
             </>
           )}
         </dl>
+        {d.mode === 'CANARY' && d.canary && <CanaryHistoryList history={d.canary.history} />}
         {d.error && (
           <div className="deploy-error-box">
-            <span className="deploy-error-label">오류</span>
+            <span className="deploy-error-label">{d.status === 'ABORTED' ? '중단' : '오류'}</span>
             <p className="deploy-error-text">{d.error}</p>
           </div>
         )}

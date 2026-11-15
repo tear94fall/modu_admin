@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { formatUtcDateTime, useIsMobile } from '@modu/console-core'
-import { getDeployServices, isFinished, listDeployments, matchesService, type Deployment, type DeployService, type DeployServicesResponse } from '../api/deploy'
+import { formatUtcDateTime, useIsMobile, apiErrorMessage } from '@modu/console-core'
+import { getDeployServices, isFinished, listDeployments, matchesService, type Deployment, type DeployService, type DeployServicesResponse, abortRollout, promoteRollout } from '../api/deploy'
 import { DeployBy, DeploymentList, DeploymentStatusPill, DeployProgress, ServiceStatusPill } from '../components/DeployPanels'
 import { NARROW_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
 import { findResumable, forgetOpen } from '../util/openDeployments'
@@ -27,6 +27,8 @@ export default function DeployPage() {
   const [keyword, setKeyword] = useState('')
   /** 되살린 진행 카드. 서비스 이름으로 묶는다(표가 15초마다 갱신돼도 흔들리지 않는다). */
   const [progress, setProgress] = useState<Record<string, Deployment>>({})
+  /** 기록 없이 멈춘 Rollout 을 서비스 행에서 진행/중단하는 동안 잠그는 서비스 이름. */
+  const [rolloutActing, setRolloutActing] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -106,6 +108,34 @@ export default function DeployPage() {
       배포
     </button>
   )
+  /** 배포 기록 없이 단계에서 멈춘 Rollout(배포 탭 밖에서 템플릿이 바뀐 경우): 배지 + 직접 진행/중단. */
+  const pausedWithoutRecord = (s: DeployService) => !!s.rolloutPaused && !s.rolloutPaused.deploymentId
+  const rolloutAction = async (s: DeployService, kind: 'promote' | 'abort') => {
+    setRolloutActing(s.name)
+    try {
+      if (kind === 'promote') await promoteRollout(s.name)
+      else await abortRollout(s.name)
+      void refresh()
+    } catch (e) {
+      setError(apiErrorMessage(e, kind === 'promote' ? 'Rollout 을 진행하지 못했습니다' : 'Rollout 을 중단하지 못했습니다'))
+    } finally {
+      setRolloutActing(null)
+    }
+  }
+  const pausedBadge = (s: DeployService) =>
+    pausedWithoutRecord(s) && (
+      <span className="deploy-paused">
+        <span className="status-badge status-badge--selling" title={`Rollout 이 ${s.rolloutPaused!.weight}% 단계에서 멈춰 있다 — 배포 탭 밖에서 템플릿이 바뀜`}>
+          멈춤(배포 기록 없음)
+        </span>
+        <button type="button" className="btn btn--secondary btn--sm" disabled={rolloutActing === s.name} onClick={() => void rolloutAction(s, 'promote')} aria-label={`${s.name} 진행`}>
+          진행
+        </button>
+        <button type="button" className="btn btn--danger btn--sm" disabled={rolloutActing === s.name} onClick={() => void rolloutAction(s, 'abort')} aria-label={`${s.name} 중단`}>
+          중단
+        </button>
+      </span>
+    )
   const detailLink = (s: DeployService) => (
     <Link className="btn btn--secondary btn--sm" to={detailPath(s.name)} aria-label={`${s.name} 상세`}>
       상세
@@ -315,7 +345,10 @@ export default function DeployPage() {
                     <td className={tagMismatch(s) ? 'deploy-tag--diff' : undefined} title={tagMismatch(s) ? '실행 중인 태그와 다르다' : undefined}>
                       {s.gitTag}
                     </td>
-                    <td>{readiness(s)}</td>
+                    <td>
+                      {readiness(s)}
+                      {pausedBadge(s)}
+                    </td>
                     <td>{renderLast(s)}</td>
                     <td className="deploy-actions-cell" onClick={(e) => e.stopPropagation()}>
                       <span className="deploy-actions">

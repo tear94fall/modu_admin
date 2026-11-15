@@ -254,4 +254,18 @@ describe('DeployPage', () => {
     renderPage()
     expect(await screen.findByText(/배포 서비스에 연결하지 못했습니다/)).toBeInTheDocument()
   })
+
+  it('a rollout paused without a deployment record shows the 멈춤 badge and 진행 patches the rollout', async () => {
+    vi.spyOn(deploy, 'getDeployServices').mockResolvedValue({
+      ...services,
+      services: [{ ...services.services[1], status: 'PAUSED', canaryCapable: true, canarySteps: [50], rolloutPaused: { stepIndex: 1, weight: 50, deploymentId: null } }],
+    })
+    const promote = vi.spyOn(deploy, 'promoteRollout').mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    renderPage()
+
+    expect(await screen.findByText('멈춤(배포 기록 없음)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'chat-service 진행' }))
+    expect(promote).toHaveBeenCalledWith('chat-service')
+  })
 })
