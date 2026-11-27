@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | `modu-admin/` | 모두의 어드민 | 기존 백오피스. 회원, 채팅방, 푸시, 앱 설정, 포인트·쿠폰, 상품, 주문, 리뷰, 기획전·이벤트 운영 (어드민 권한) | 5173 | 8081 |
 | `modu-system/` | 모두 시스템 | 시스템 운영. 게이트웨이 라우트, 설정 서버(config-repo) 조회, 서비스 배포, 배치 잡 (시스템 권한) | 5176 | 8084 |
-| `modu-internal/` | 모두 인터널 | 사내 업무. 회원 조회, 직원 지정·권한 관리(최상위만) (인터널 권한) | 5177 | 8085 |
+| `modu-internal/` | 모두 인터널 | 직원 전용. 직원 목록·권한 보기(인터널 권한), 직원 추가·권한 변경·해제(최상위만). 회원 조회는 모두의 어드민 | 5177 | 8085 |
 | `packages/console-core/` | 공통 기반 | 직원 Google 로그인·권한 확인, 게이트웨이 API 클라이언트, 레이아웃, 스타일, 시간대 표시 | - | - |
 
 ## 구조
@@ -27,10 +27,10 @@
 
 | 권한 | 토큰 roles | 쓸 수 있는 것 |
 |---|---|---|
-| 최상위 `SUPER` | `ROLE_SUPER` + 아래 셋 모두 | 모든 콘솔. 직원 지정·권한 변경·해제를 할 수 있는 유일한 권한(모두 인터널의 회원 상세, 직원 메뉴) |
+| 최상위 `SUPER` | `ROLE_SUPER` + 아래 셋 모두 | 모든 콘솔. 직원 지정·권한 변경·해제를 할 수 있는 유일한 권한(모두 인터널의 직원 추가·직원 상세) |
 | 어드민 `ADMIN` | `ROLE_ADMIN` | 모두의 어드민 |
 | 시스템 `SYSTEM` | `ROLE_SYSTEM` | 모두 시스템 |
-| 인터널 `INTERNAL` | `ROLE_INTERNAL` | 모두 인터널(회원·직원 조회, 권한은 읽기만) |
+| 인터널 `INTERNAL` | `ROLE_INTERNAL` | 모두 인터널(직원 목록·권한 읽기만) |
 
 직원 한 명은 권한을 1~4개 가진다(member-service 의 `staff`, `staff_permission` 테이블). refresh 때 서버가 권한을 다시 읽으므로, 권한을 바꾸면 다음 토큰 갱신부터 반영되고 직원에서 해제되면 refresh 가 실패해 로그아웃된다.
 
@@ -43,7 +43,7 @@ insert into staff (member_id, created_date, modified_date) values (<member_id>, 
 insert into staff_permission (member_id, permission) values (<member_id>, 'SUPER');
 ```
 
-그다음부터는 그 계정으로 모두 인터널에 들어가 회원 상세에서 다른 직원을 지정한다.
+그다음부터는 그 계정으로 모두 인터널에 들어가 "직원 추가"에서 회원을 찾아 다른 직원을 지정한다.
 
 ### Google 클라이언트 설정
 
@@ -61,7 +61,8 @@ Google 웹 클라이언트 ID 는 커머스 웹과 같은 것을 쓴다(비밀 �
 - modu-system 의 Config 설정 조회는 `GET /config-service/api-admin/config-repo/files`, `/file?path=` 를 쓴다. 게이트웨이가 `ROLE_SYSTEM` 토큰을 보고 config-service 로 넘기며, 비밀값은 config-service 가 가려서 준다.
 - modu-system 의 배포 탭(`/deploy`, 메뉴 배포 → 서비스 배포)은 deploy-service(modu_chat `backend/`, 게이트웨이 `/deploy-service/api-system/deploy/...`, `ROLE_SYSTEM`)를 쓴다. 서비스마다 실행 중 태그·modu_infra kustomization 의 Git 태그·준비 상태를 보여 주고, GHCR 태그(`develop-*`·`master-*`)를 골라 배포하면 deploy-service 가 kustomization 을 커밋 → Argo CD 동기화 → 롤아웃을 차례로 진행한다. 화면은 2초마다 `GET /deployments/{id}` 를 읽어 단계(커밋 → Argo 동기화 → 롤아웃)·진행률·파드 상태를 보여 주고, 롤백은 마지막 성공 배포의 이전 태그로 다시 배포한다. 서비스 상세(`/deploy/{name}`)는 그 서비스의 태그·준비 상태·배포 이력을, 배포 이력(`/deploy/history`)은 최근 50건을 서비스·상태로 걸러 보여 준다(행을 펼치면 단계·커밋·오류). 이력은 deploy-service 메모리에만 있어 다시 뜨면 비워진다(dev). nginx·Vite proxy 에 `deploy-service` 경로가 들어 있다.
 - modu-system 의 배치 탭(`/batch`, 메뉴 배치 → 배치 목록·실행 이력, 목록·이력 화면은 배포 탭과 같은 짜임 — 요약 숫자·카드 안 표·행 클릭·폰에서는 카드)은 batch-service(modu_platform, 게이트웨이 `/batch-service/api-system/batch/...`, `ROLE_SYSTEM`)를 쓴다. 잡 등록은 서비스를 고르면 그 서비스가 알려 주는 잡 목록(`GET /api-internal/v1/jobs`)에서 고르고 주기(6자리 cron, 입력하면 다음 실행 시각 미리보기)·타임존·타임아웃·사용 여부를 정한다. 목록(`/batch`, 배치 이름·서비스·주기·다음 실행·마지막 회차 칸, 검색)에서 켜기/끄기와 "지금 실행"(확인 한 번, 202 로 회차 id)을 바로 하고, 상세(`/batch/jobs/{id}`)에서 주기 수정·삭제와 그 잡의 회차·설정 변경 이력(누가 언제 무엇을)을 본다. 실행 이력(`/batch/runs`)은 최근 100건을 서비스 → 그 서비스의 배치 → 상태(성공·실패·시간 초과·건너뜀·진행 중)로 걸러(표는 시작·배치 이름·서비스·실행·상태·소요) 보여 주고 행을 펼치면 서비스 응답(JSON)·오류·OpenSearch 링크(`VITE_OPENSEARCH_DASHBOARDS_URL`, 기본 http://localhost:5601 — 회차 id 가 서비스에 보낸 X-Request-Id 라 양쪽 로그가 한 id 로 묶인다)가 나온다. nginx·Vite proxy 에 `batch-service` 경로가 들어 있다.
-- modu-internal 은 member-service 직원 API 를 쓴다. 회원 조회 `GET /member-service/api-staff/member`, `/member/{id}`(`ROLE_INTERNAL`), 직원 목록·지정·해제 `GET /member-service/api-super/staff`, `PUT|DELETE /member-service/api-super/staff/{memberId}`(`ROLE_SUPER`). 둘 다 `/member-service/` 아래라 Vite proxy·nginx 설정은 그대로다.
+- modu-internal 은 member-service 직원 API 를 쓴다(2026-11-27 직원 전용으로 정리). 직원 목록·한 명 `GET /member-service/api-staff/staff`, `/staff/{memberId}`(`ROLE_INTERNAL`), 직원 지정·해제 `PUT|DELETE /member-service/api-super/staff/{memberId}` 와 직원으로 지정할 회원 찾기 `GET /member-service/api-super/member`(`ROLE_SUPER`). 모두 `/member-service/` 아래라 Vite proxy·nginx 설정은 그대로다. 옛 `/members` 주소는 `/staff` 로 보낸다.
+- modu-admin 회원 목록 위의 요약 카드(회원·탈퇴·직원·채팅/커머스/둘 다/이용 기록 없음)는 `GET /member-service/api-admin/member/summary` 를 쓰고, 서비스 카드를 누르면 그 필터가 켜진다.
 
 ## 개발
 
