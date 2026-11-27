@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { formatUtcDateTime, hasRole, STAFF_PERMISSIONS, timeZoneLabel, useDisplayTimeZone, useIsMobile } from '@modu/console-core'
 import { displayName, listStaff, permissionLabel, type StaffEntry, type StaffPermission } from '../api/members'
 import MemberAvatar from '../components/MemberAvatar'
 import StaffBadges from '../components/StaffBadges'
 
-/** 직원 목록(최상위만). 권한과 마지막 변경을 보이고, 줄을 누르면 회원 상세(권한 변경)로 간다. */
+/** 직원 목록(인터널 권한이면 본다). 권한과 마지막 변경을 보이고, 줄을 누르면 직원 상세로 간다. 직원 추가는 최상위만. */
 export default function StaffPage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const timeZone = useDisplayTimeZone()
   const isSuper = hasRole('ROLE_SUPER')
   const [staff, setStaff] = useState<StaffEntry[]>([])
-  const [loading, setLoading] = useState(isSuper)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isSuper) return
     let cancelled = false
     listStaff()
       .then((r) => {
@@ -31,21 +30,9 @@ export default function StaffPage() {
     return () => {
       cancelled = true
     }
-  }, [isSuper])
+  }, [])
 
-  if (!isSuper)
-    return (
-      <div>
-        <header className="page-head">
-          <div className="page-head-main">
-            <h1>직원</h1>
-          </div>
-        </header>
-        <p className="error-text">직원 목록은 최상위 관리자만 볼 수 있습니다</p>
-      </div>
-    )
-
-  const open = (s: StaffEntry) => navigate(`/members/${s.memberId}`)
+  const open = (s: StaffEntry) => navigate(`/staff/${s.memberId}`)
   const changedBy = (s: StaffEntry) => s.modifiedByName || s.modifiedBy
 
   const countOf = (p: StaffPermission) => staff.filter((s) => s.permissions.includes(p)).length
@@ -57,9 +44,17 @@ export default function StaffPage() {
         <div className="page-head-main">
           <h1>직원</h1>
           <p className="page-head-sub">
-            콘솔 권한이 있는 직원입니다. 직원을 새로 지정하려면 회원 조회에서 회원을 열어 권한을 고르세요. 시각은 {timeZoneLabel(timeZone)} 기준입니다.
+            콘솔 권한이 있는 직원입니다. {isSuper ? '직원을 새로 지정하려면 "직원 추가"에서 회원을 찾아 권한을 고르세요. ' : '직원 지정·권한 변경은 최상위 관리자만 할 수 있습니다. '}
+            시각은 {timeZoneLabel(timeZone)} 기준입니다.
           </p>
         </div>
+        {isSuper && (
+          <div className="page-head-actions">
+            <Link to="/staff/new" className="btn btn--primary">
+              직원 추가
+            </Link>
+          </div>
+        )}
       </header>
 
       {!loading && !error && (
@@ -90,7 +85,7 @@ export default function StaffPage() {
             <h2 id="staff-list-heading" className="section-card-title">
               직원 목록
             </h2>
-            <p className="section-card-hint">{isMobile ? '누르면 회원 상세(권한 변경)로 이동합니다' : '행을 누르면 회원 상세(권한 변경)로 이동합니다'}</p>
+            <p className="section-card-hint">{isMobile ? '누르면 직원 상세로 이동합니다' : '행을 누르면 직원 상세(권한)로 이동합니다'}</p>
           </div>
           {!loading && !error && <span className="section-card-count">{staff.length}명</span>}
         </div>

@@ -42,6 +42,36 @@ describe('MembersPage', () => {
   beforeEach(() => {
     clearImageCache()
     vi.spyOn(customers, 'lookupCustomers').mockResolvedValue(new Map())
+    vi.spyOn(members, 'getMemberSummary').mockResolvedValue({ active: 0, withdrawn: 0, staff: 0, chat: 0, commerce: 0, both: 0, none: 0 })
+  })
+
+  it('shows the member summary cards above the list, and a service card applies that filter', async () => {
+    vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+    vi.spyOn(members, 'getMemberSummary').mockResolvedValue({ active: 1234, withdrawn: 56, staff: 4, chat: 900, commerce: 300, both: 120, none: 154 })
+    renderAt()
+
+    const summary = await screen.findByRole('region', { name: '회원 요약' })
+    const card = (label: string) => within(summary).getByText(label).closest('.stat-card') as HTMLElement
+    expect(card('회원')).toHaveTextContent('1,234')
+    expect(card('회원')).toHaveTextContent('탈퇴 56')
+    expect(card('직원')).toHaveTextContent('4')
+    expect(card('채팅 이용')).toHaveTextContent('900')
+    expect(card('커머스 이용')).toHaveTextContent('300')
+    expect(card('둘 다')).toHaveTextContent('120')
+    expect(card('이용 기록 없음')).toHaveTextContent('154')
+
+    await userEvent.click(within(summary).getByRole('button', { name: /커머스 이용/ }))
+    await waitFor(() => expect(location()).toBe('/members?service=COMMERCE'))
+    expect(within(summary).getByRole('button', { name: /커머스 이용/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps the list usable when the summary fails', async () => {
+    vi.spyOn(members, 'searchMembers').mockResolvedValue(emptyPage)
+    vi.spyOn(members, 'getMemberSummary').mockRejectedValue(new Error('503'))
+    renderAt()
+    expect(await screen.findByRole('textbox', { name: '회원 검색' })).toBeInTheDocument()
+    await waitFor(() => expect(members.getMemberSummary).toHaveBeenCalled())
+    expect(screen.queryByRole('region', { name: '회원 요약' })).not.toBeInTheDocument()
   })
 
   it('renders columns in order (번호, 이름, 이메일, 사용자 ID, 직원, 이용 서비스, 가입일) with formatted createdDate', async () => {

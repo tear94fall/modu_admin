@@ -2156,6 +2156,10 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 .stat-card-sub { font-size: 12px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
 .stat-card--accent { border-color: #c7d2fe; background: linear-gradient(135deg, #eef2ff, #f5f3ff); }
 .stat-card--accent .stat-card-value { color: #3730a3; }
+/* 회원 목록 위 요약 — 서비스 카드는 눌러서 필터가 된다. */
+.members-summary { margin: 4px 0 16px; }
+.stat-card--button { cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.stat-card--button:hover { border-color: #a5b4fc; }
 
 /* 폼 화면: 섹션마다 흰 카드, 저장 줄은 화면 아래에 붙는다. form-card 의 하위 규칙(제목·검색 줄 폭)은 그대로 쓴다. */
 .form-card.form-stack { display: grid; gap: 16px; max-width: none; min-width: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }

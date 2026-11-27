@@ -19,10 +19,10 @@ const PERMISSION_HINTS: Record<StaffPermission, string> = {
   SUPER: '모든 콘솔(어드민·시스템·인터널)을 포함하고, 직원 지정·권한 변경을 할 수 있습니다.',
   ADMIN: '모두의 어드민(회원·채팅·커머스 운영)',
   SYSTEM: '모두 시스템(게이트웨이·설정 서버)',
-  INTERNAL: '모두 인터널(회원·직원 조회)',
+  INTERNAL: '모두 인터널(직원 목록·권한 보기)',
 }
 
-/** 회원 상세의 "직원 권한". 최상위는 네 권한을 골라 저장하거나 직원에서 해제한다. 저장·해제는 확인 대화상자(바뀌는 권한)를 한 번 더 거친다. */
+/** 직원 상세·직원 추가의 "직원 권한". 최상위는 네 권한을 골라 저장하거나 직원에서 해제한다. 저장·해제는 확인 대화상자(바뀌는 권한)를 한 번 더 거친다. */
 export default function StaffPermissionCard({ memberId, memberName, memberEmail, staff, withdrawn, editable, onChange }: StaffPermissionCardProps) {
   const timeZone = useDisplayTimeZone()
   const [selected, setSelected] = useState<StaffPermission[]>(staff?.permissions ?? [])
@@ -99,7 +99,7 @@ export default function StaffPermissionCard({ memberId, memberName, memberEmail,
 
   const added = next.filter((p) => !current.includes(p))
   const removed = current.filter((p) => !next.includes(p))
-  const canSave = !busy && dirty && next.length > 0
+  const canSave = !busy && dirty && next.length > 0 && !withdrawn
 
   const pills = (list: StaffPermission[], tone: 'add' | 'remove' | 'plain') =>
     list.length === 0 ? (

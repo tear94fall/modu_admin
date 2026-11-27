@@ -5,7 +5,9 @@ import { type AdminCustomer, type CustomerLookup, isAgreed, lookupCustomers, sea
 import {
   DEFAULT_MEMBER_SORT,
   findMemberByUserId,
+  getMemberSummary,
   type Member,
+  type MemberSummary,
   type MemberSort,
   SERVICE_FILTERS,
   type ServiceFilter,
@@ -36,6 +38,7 @@ const SERVICE_CHIPS: { label: string; value: ServiceFilter | null }[] = [
   { label: '채팅', value: 'CHAT' },
   { label: '커머스', value: 'COMMERCE' },
   { label: '둘 다', value: 'BOTH' },
+  { label: '이용 기록 없음', value: 'NONE' },
 ]
 
 const AGREED_CHIPS: { label: string; value: boolean | null }[] = [
@@ -80,6 +83,20 @@ export default function MembersPage() {
   /** 이 페이지 회원들의 커머스 고객 정보(userId → 등급). 못 읽으면 비워 두고 배지만 빠진다. */
   const [customers, setCustomers] = useState<Map<string, CustomerLookup>>(new Map())
   const [tiers, setTiers] = useState<TierSummary[]>([])
+  /** 목록 위 숫자. 못 읽으면 카드만 빠지고 목록은 그대로. */
+  const [summary, setSummary] = useState<MemberSummary | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getMemberSummary()
+      .then((s) => {
+        if (!cancelled) setSummary(s)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // 등급 칩은 커머스를 고를 때만 필요하다.
   const commerceSelected = service === 'COMMERCE'
@@ -186,9 +203,48 @@ export default function MembersPage() {
   const tierChips: { label: string; value: string | null }[] = [{ label: '전체', value: null }, ...tiers.map((t) => ({ label: t.name, value: t.code }))]
   const rows = commerceSource ? commerceRows : members
 
+  /** 서비스 카드는 같은 이름의 칩과 같은 필터다(숫자는 탈퇴 회원을 뺀 것). 다시 누르면 전체로. */
+  const serviceCard = (label: string, value: ServiceFilter, count: number) => (
+    <button
+      type="button"
+      className={service === value ? 'stat-card stat-card--accent stat-card--button' : 'stat-card stat-card--button'}
+      aria-pressed={service === value}
+      onClick={() => selectService(service === value ? null : value)}
+    >
+      <div className="stat-card-label">{label}</div>
+      <div className="stat-card-value">
+        {count.toLocaleString('ko-KR')}
+        <span className="stat-card-unit">명</span>
+      </div>
+    </button>
+  )
+
   return (
     <div>
       <h1>회원 관리</h1>
+      {summary && (
+        <section className="stat-grid members-summary" aria-label="회원 요약">
+          <div className="stat-card">
+            <div className="stat-card-label">회원</div>
+            <div className="stat-card-value">
+              {summary.active.toLocaleString('ko-KR')}
+              <span className="stat-card-unit">명</span>
+            </div>
+            <div className="stat-card-sub">탈퇴 {summary.withdrawn.toLocaleString('ko-KR')} · 아래 숫자는 탈퇴 제외</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-label">직원</div>
+            <div className="stat-card-value">
+              {summary.staff.toLocaleString('ko-KR')}
+              <span className="stat-card-unit">명</span>
+            </div>
+          </div>
+          {serviceCard('채팅 이용', 'CHAT', summary.chat)}
+          {serviceCard('커머스 이용', 'COMMERCE', summary.commerce)}
+          {serviceCard('둘 다', 'BOTH', summary.both)}
+          {serviceCard('이용 기록 없음', 'NONE', summary.none)}
+        </section>
+      )}
       <div className="list-controls">
         <form className="search-form" onSubmit={onSearch}>
           <input

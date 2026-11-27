@@ -69,6 +69,18 @@ export async function findMemberByUserId(userId: string): Promise<Member | null>
   return result.content.find((m) => m.userId === userId) ?? null
 }
 export const getMember = (id: string) => api<MemberDetail>(`/member-service/api-admin/member/${id}`)
+
+/** 회원 목록 위 요약. 서비스 숫자는 목록의 서비스 필터와 같은 기준이되 **탈퇴 회원은 뺀다** — 목록은 탈퇴 회원도 보여 주므로 총계가 조금 다를 수 있다. */
+export interface MemberSummary {
+  active: number
+  withdrawn: number
+  staff: number
+  chat: number
+  commerce: number
+  both: number
+  none: number
+}
+export const getMemberSummary = () => api<MemberSummary>('/member-service/api-admin/member/summary')
 export const getMe = () => api<MemberDetail>('/member-service/api-admin/member/me')
 export const updateMe = (body: { username?: string; statusMessage?: string; profileImage?: string; wallpaperImage?: string }) =>
   api<MemberDetail>('/member-service/api-admin/member/me', { method: 'PUT', body: JSON.stringify(body) })
